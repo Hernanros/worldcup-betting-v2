@@ -4,7 +4,8 @@ const PLAYER_KEY = "wc_player"
 export const getToken = () => localStorage.getItem(TOKEN_KEY)
 export const getPlayer = () => {
   const raw = localStorage.getItem(PLAYER_KEY)
-  return raw ? JSON.parse(raw) : null
+  if (!raw) return null
+  try { return JSON.parse(raw) } catch { return null }
 }
 export const setAuth = (token, player) => {
   localStorage.setItem(TOKEN_KEY, token)

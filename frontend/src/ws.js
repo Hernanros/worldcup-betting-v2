@@ -44,5 +44,9 @@ export function connectWS() {
 
 export function disconnectWS() {
   clearTimeout(reconnectTimeout)
-  if (socket) { socket.close(); socket = null }
+  if (socket) {
+    socket.onclose = null   // prevent reconnect handler from firing on intentional close
+    socket.close()
+    socket = null
+  }
 }

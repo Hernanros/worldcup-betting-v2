@@ -41,22 +41,33 @@ export async function streamSuggestChallenge(matchId, onChunk, onDone) {
     body: JSON.stringify({ match_id: matchId }),
   })
 
+  if (!resp.ok) {
+    const err = await resp.json().catch(() => ({ detail: "Unknown error" }))
+    onDone()
+    throw new Error(err.detail || JSON.stringify(err))
+  }
+
+  if (!resp.body) { onDone(); return }
+
   const reader = resp.body.getReader()
   const decoder = new TextDecoder()
 
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-    const lines = decoder.decode(value).split("\n")
-    for (const line of lines) {
-      if (!line.startsWith("data: ")) continue
-      const data = line.slice(6)
-      if (data === "[DONE]") { onDone(); return }
-      try {
-        const parsed = JSON.parse(data)
-        if (parsed.text) onChunk(parsed.text)
-      } catch {}
+  try {
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      const lines = decoder.decode(value).split("\n")
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue
+        const data = line.slice(6)
+        if (data === "[DONE]") { onDone(); return }
+        try {
+          const parsed = JSON.parse(data)
+          if (parsed.text) onChunk(parsed.text)
+        } catch {}
+      }
     }
+  } finally {
+    onDone()
   }
-  onDone()
 }
