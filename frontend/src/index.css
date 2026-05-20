@@ -12,6 +12,7 @@
     min-height: 100dvh;
   }
   ::-webkit-scrollbar { width: 0; height: 0; }
+  * { scrollbar-width: none; }
 }
 
 @layer utilities {
