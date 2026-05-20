@@ -52,13 +52,13 @@ export default function PredictionRow({ entry, onSaved }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-        <input type="number" min={0} value={home} onChange={(e) => setHome(e.target.value)}
+        <input type="number" min={0} step={1} value={home} onChange={(e) => setHome(e.target.value)}
           disabled={locked}
           style={{ width: 52, background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 6,
             padding: "5px 8px", color: "#e2e8f0", fontSize: 14, textAlign: "center",
             cursor: locked ? "not-allowed" : "auto", opacity: locked ? 0.5 : 1 }} />
         <span style={{ color: "#6b7280", fontSize: 12 }}>—</span>
-        <input type="number" min={0} value={away} onChange={(e) => setAway(e.target.value)}
+        <input type="number" min={0} step={1} value={away} onChange={(e) => setAway(e.target.value)}
           disabled={locked}
           style={{ width: 52, background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 6,
             padding: "5px 8px", color: "#e2e8f0", fontSize: 14, textAlign: "center",

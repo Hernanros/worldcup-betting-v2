@@ -50,7 +50,7 @@ export default function BetsPage() {
             <div key={b.id} style={{ background: "#13131f", border: "1px solid #2d2b55",
               borderRadius: 10, padding: 12, marginBottom: 8 }}>
               <div style={{ display: "flex", justifyContent: "space-between" }}>
-                <span style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 13 }}>{b.bet_type.replace("_", " ")}</span>
+                <span style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 13 }}>{b.bet_type.replaceAll("_", " ")}</span>
                 <span style={{ color: STATUS_COLOR[b.status] || "#fbbf24", fontSize: 11, fontWeight: 700 }}>{b.status}</span>
               </div>
               <div style={{ color: "#a78bfa", fontSize: 13, marginTop: 4 }}>{b.selection}</div>
