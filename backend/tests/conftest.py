@@ -67,7 +67,7 @@ async def make_match(db, status="upcoming", home="Argentina", away="Brazil") -> 
     return m
 
 
-async def join_player(client, name="Alice", code="testcode") -> dict:
+async def join_player(client, name="Alice", code="friends2026") -> dict:
     resp = await client.post("/api/auth/join", json={"name": name, "code": code})
     assert resp.status_code == 200
     return resp.json()
