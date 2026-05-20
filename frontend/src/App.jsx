@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom"
 import { useEffect, useState } from "react"
 import { isLoggedIn, getPlayer } from "./auth.js"
 import { connectWS, disconnectWS } from "./ws.js"
@@ -12,7 +12,7 @@ import AIPage from "./pages/AIPage.jsx"
 import BottomNav from "./components/BottomNav.jsx"
 import TopBar from "./components/TopBar.jsx"
 
-function ProtectedLayout({ children }) {
+function ProtectedLayout() {
   const [balance, setBalance] = useState(getPlayer()?.token_balance ?? 0)
 
   useEffect(() => {
@@ -26,7 +26,7 @@ function ProtectedLayout({ children }) {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
       <TopBar balance={balance} onBalanceChange={setBalance} />
       <main style={{ flex: 1, overflowY: "auto", paddingBottom: "72px" }}>
-        {children}
+        <Outlet />
       </main>
       <BottomNav />
     </div>
@@ -38,12 +38,14 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/join" element={<JoinPage />} />
-        <Route path="/" element={<ProtectedLayout><MatchesPage /></ProtectedLayout>} />
-        <Route path="/matches/:id" element={<ProtectedLayout><MatchDetailPage /></ProtectedLayout>} />
-        <Route path="/bets" element={<ProtectedLayout><BetsPage /></ProtectedLayout>} />
-        <Route path="/predict" element={<ProtectedLayout><PredictionsPage /></ProtectedLayout>} />
-        <Route path="/rankings" element={<ProtectedLayout><LeaderboardPage /></ProtectedLayout>} />
-        <Route path="/ai" element={<ProtectedLayout><AIPage /></ProtectedLayout>} />
+        <Route element={<ProtectedLayout />}>
+          <Route path="/" element={<MatchesPage />} />
+          <Route path="/matches/:id" element={<MatchDetailPage />} />
+          <Route path="/bets" element={<BetsPage />} />
+          <Route path="/predict" element={<PredictionsPage />} />
+          <Route path="/rankings" element={<LeaderboardPage />} />
+          <Route path="/ai" element={<AIPage />} />
+        </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

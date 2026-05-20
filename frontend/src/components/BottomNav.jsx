@@ -31,6 +31,7 @@ export default function BottomNav() {
                 fontSize: 10,
                 fontWeight: isActive ? 700 : 400,
                 background: isActive ? "linear-gradient(90deg, #a855f7, #3b82f6)" : undefined,
+                backgroundClip: isActive ? "text" : undefined,
                 WebkitBackgroundClip: isActive ? "text" : undefined,
                 WebkitTextFillColor: isActive ? "transparent" : "#6b7280",
               }}>{label}</div>

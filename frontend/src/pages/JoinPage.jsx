@@ -61,6 +61,8 @@ export default function JoinPage() {
             onChange={(e) => setName(e.target.value)}
             placeholder="Your name"
             required
+            maxLength={50}
+            autoComplete="name"
             style={{
               background: "#0c0c14",
               border: "1px solid #2d2b55",
@@ -78,6 +80,8 @@ export default function JoinPage() {
             placeholder="Invite code"
             type="password"
             required
+            maxLength={30}
+            autoComplete="off"
             style={{
               background: "#0c0c14",
               border: "1px solid #2d2b55",

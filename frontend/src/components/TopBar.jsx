@@ -1,17 +1,20 @@
-import { useEffect } from "react"
+import { useEffect, useRef } from "react"
 import { subscribe } from "../ws.js"
 import { api } from "../api.js"
 
 export default function TopBar({ balance, onBalanceChange }) {
+  const onBalanceChangeRef = useRef(onBalanceChange)
+  useEffect(() => { onBalanceChangeRef.current = onBalanceChange })
+
   useEffect(() => {
     const unsub = subscribe(async (event) => {
       if (event.type === "leaderboard_updated" || event.type === "match_settled") {
         const me = await api.get("/api/players/me").catch(() => null)
-        if (me) onBalanceChange(me.token_balance)
+        if (me) onBalanceChangeRef.current(me.token_balance)
       }
     })
     return unsub
-  }, [onBalanceChange])
+  }, [])
 
   return (
     <header style={{
