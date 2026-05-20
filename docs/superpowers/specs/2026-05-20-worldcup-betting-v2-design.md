@@ -261,3 +261,79 @@ WS   /ws/{player_id}                         live updates
 2. Run `python scripts/seed.py` once to import matches and seed the KO bracket
 3. Frontend deployed as static build (Railway static site or separate Vite deploy)
 4. Set env vars: `JWT_SECRET`, `INVITE_CODE`, `ODDS_API_KEY`, `FOOTBALL_API_KEY`, `ANTHROPIC_API_KEY`, `DATABASE_URL`
+
+---
+
+## Cost Estimation
+
+The tournament runs ~6 weeks (June 11 – July 19, 2026). Costs below are per month unless noted. Two scenarios: **admin only** (single user, testing/demoing) and **10 friends** (realistic group).
+
+### Railway (backend + PostgreSQL)
+
+Railway charges per-resource usage. A lightweight FastAPI app + small Postgres DB sits comfortably on the Hobby plan.
+
+| Resource | Monthly cost |
+|---|---|
+| Railway Hobby account | $5 |
+| Backend service (512 MB RAM, low traffic) | ~$5 |
+| PostgreSQL (shared, < 1 GB data) | ~$5 |
+| **Railway total** | **~$15/month** |
+
+Same for both scenarios — traffic is light either way.
+
+### Odds API (the-odds-api.com)
+
+Used to import match odds at tournament start and refresh before each match.
+
+| Scenario | Requests needed | Cost |
+|---|---|---|
+| Admin only | ~100 (seed + occasional refresh) | **Free tier** ($0) |
+| 10 friends | ~200–400 (refreshes for 80 matches) | **Free tier** ($0) |
+
+Free tier allows 500 requests/month. The tournament has 80 matches total; fetching odds once per match at import time costs 80 requests. Even with periodic refreshes, the free tier covers it comfortably.
+
+### Football API (live scores + top scorer)
+
+The poller hits this every 60 seconds but **only while matches are live** (locked status). Group stage has up to 4 matches/day; knockout rounds have fewer.
+
+| Phase | Live hours/day | Polls/hour | Matches/day | Requests/day |
+|---|---|---|---|---|
+| Group stage (12 days) | ~2 hrs/match | 60 | 4 | ~480 |
+| Knockouts (16 days) | ~2 hrs/match | 60 | 1–2 | ~120–240 |
+
+Monthly total: ~8,000–10,000 requests. Free tier on api-football.com is 100/day — not enough.
+
+| Plan | Price | Monthly requests | Fits? |
+|---|---|---|---|
+| Free | $0 | 3,000 | No |
+| Basic | ~$10/month | 7,500 | Tight for group stage |
+| Standard | ~$20/month | 30,000 | Comfortable |
+
+**Recommendation:** Start on Basic ($10/month). If polling falls behind during busy group-stage days, upgrade to Standard for that month only.
+
+*Admin-only scenario:* same cost — the poller runs regardless of how many users are logged in.
+
+### Anthropic Claude API (AI challenge generator)
+
+Each call sends ~1,000 input tokens (match context + player state) and receives ~600 output tokens (2–3 challenge suggestions).
+
+Using **Claude Sonnet 4.6** pricing ($3/M input, $15/M output):
+
+| Scenario | Calls/tournament | Input cost | Output cost | Total |
+|---|---|---|---|---|
+| Admin only | ~50 calls | $0.15 | $0.45 | **~$0.60** |
+| 10 friends (5 calls/person/week) | ~3,000 calls | $9.00 | $27.00 | **~$36** |
+
+Admin-only AI cost is negligible. With a full friend group, keep an eye on heavy AI usage — optionally rate-limit to 10 suggestions/player/day to stay under $40 for the tournament.
+
+### Total Cost Summary
+
+| Service | Admin only (6 weeks) | 10 friends (6 weeks) |
+|---|---|---|
+| Railway | ~$22 | ~$22 |
+| Odds API | $0 | $0 |
+| Football API | ~$15 | ~$15 |
+| Claude API | ~$1 | ~$54 |
+| **Total** | **~$38** | **~$91** |
+
+Both scenarios are cheap for a tournament-length hobby app. The AI generator is the main variable cost at scale — trivial for admin-only, modest for a group of friends.
