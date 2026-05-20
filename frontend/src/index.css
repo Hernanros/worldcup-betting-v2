@@ -29,3 +29,8 @@
     box-shadow: 0 0 30px rgba(168, 85, 247, 0.15);
   }
 }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}

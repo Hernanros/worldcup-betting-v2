@@ -9,11 +9,18 @@ export default function MatchesPage() {
   const [matches, setMatches] = useState([])
   const [filter, setFilter] = useState("All")
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   async function load() {
-    const data = await api.get("/api/matches").catch(() => [])
-    setMatches(data)
-    setLoading(false)
+    setError(null)
+    try {
+      const data = await api.get("/api/matches")
+      setMatches(data)
+    } catch (err) {
+      setError(err.message || "Failed to load matches")
+    } finally {
+      setLoading(false)
+    }
   }
 
   useEffect(() => {
@@ -58,7 +65,8 @@ export default function MatchesPage() {
       </div>
 
       {loading && <p style={{ color: "#6b7280", textAlign: "center" }}>Loading matches...</p>}
-      {!loading && filtered.length === 0 && (
+      {error && <p style={{ color: "#f87171", textAlign: "center", fontSize: 13 }}>⚠ {error}</p>}
+      {!loading && !error && filtered.length === 0 && (
         <p style={{ color: "#6b7280", textAlign: "center" }}>No matches found.</p>
       )}
       {filtered.map((m) => <MatchCard key={m.id} match={m} />)}
