@@ -24,6 +24,7 @@ export default function BetPanel({ match, odds, onBetPlaced }) {
   async function submit() {
     const sel = betType === "correct_score" ? customScore : selection
     if (!sel) return setMsg("Pick a selection first")
+    if (!stake || stake <= 0) return setMsg("Stake must be positive")
     setLoading(true)
     setMsg("")
     try {

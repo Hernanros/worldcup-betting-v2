@@ -8,12 +8,16 @@ export default function ChallengePanel({ match, challenges, onUpdate }) {
   const [selection, setSelection] = useState("")
   const [acceptorSelection, setAcceptorSelection] = useState("")
   const [loading, setLoading] = useState(false)
+  const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
 
-  const acceptorStake = Math.max(1, Math.round(issuerStake * (issuerOdds / acceptorOdds)))
+  const acceptorStake = acceptorOdds > 0
+    ? Math.max(1, Math.round(issuerStake * (issuerOdds / acceptorOdds)))
+    : 0
 
   async function issue() {
     if (!selection || !acceptorSelection) return setMsg("Fill in both picks")
+    if (!issuerStake || issuerStake <= 0) return setMsg("Stake must be positive")
     setLoading(true); setMsg("")
     try {
       const r = await api.post(`/api/matches/${match.id}/challenges`, {
@@ -27,11 +31,13 @@ export default function ChallengePanel({ match, challenges, onUpdate }) {
   }
 
   async function accept(challengeId) {
+    setAcceptingId(challengeId)
     try {
       const r = await api.post(`/api/challenges/${challengeId}/accept`, {})
       setMsg(`✓ Challenge accepted! Balance: ${r.new_balance}`)
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
+    finally { setAcceptingId(null) }
   }
 
   return (
@@ -88,10 +94,16 @@ export default function ChallengePanel({ match, challenges, onUpdate }) {
                   {c.issuer_stake} vs {c.acceptor_stake} tokens
                 </div>
               </div>
-              <button onClick={() => accept(c.id)}
-                style={{ background: "#1e1b3a", color: "#a78bfa", border: "1px solid #2d2b55",
-                  borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer" }}>
-                Accept
+              <button
+                onClick={() => accept(c.id)}
+                disabled={acceptingId === c.id}
+                style={{
+                  background: "#1e1b3a", color: "#a78bfa", border: "1px solid #2d2b55",
+                  borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 700,
+                  cursor: acceptingId === c.id ? "not-allowed" : "pointer",
+                  opacity: acceptingId === c.id ? 0.6 : 1,
+                }}>
+                {acceptingId === c.id ? "..." : "Accept"}
               </button>
             </div>
           ))}
