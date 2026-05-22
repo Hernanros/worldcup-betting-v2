@@ -4,6 +4,3 @@ buildCommand = "rm -f package-lock.json && npm install && npm run build"
 
 [build.env]
 NODE_VERSION = "22"
-
-[deploy]
-startCommand = "npx serve dist --listen $PORT --no-clipboard"
