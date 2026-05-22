@@ -7,7 +7,10 @@ from app.database import init_db, engine, Base
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    init_db(app.state.database_url)
+    url = app.state.database_url
+    if url.startswith("postgresql://"):
+        url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+    init_db(url)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
     if not getattr(app.state, "testing", False):
