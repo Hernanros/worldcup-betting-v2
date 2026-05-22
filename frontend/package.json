@@ -11,13 +11,15 @@
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview",
+    "start": "serve -s dist -l $PORT",
     "test": "vitest"
   },
   "dependencies": {
     "framer-motion": "^12.39.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-router-dom": "^6.30.3"
+    "react-router-dom": "^6.30.3",
+    "serve": "^14.2.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
