@@ -6,4 +6,4 @@ buildCommand = "rm -f package-lock.json && npm install && npm run build"
 NODE_VERSION = "22"
 
 [deploy]
-startCommand = "node_modules/.bin/vite preview --host 0.0.0.0 --port $PORT"
+startCommand = "node server.js"
