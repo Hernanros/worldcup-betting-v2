@@ -146,7 +146,8 @@ async def seed(reset: bool = False):
                 print(f"  skip (exists): {home} vs {away}")
                 skipped += 1
                 continue
-            kickoff = datetime.fromisoformat(kickoff_str.replace("Z", "+00:00"))
+            # DB column is TIMESTAMP WITHOUT TIME ZONE — store as naive UTC
+            kickoff = datetime.fromisoformat(kickoff_str.replace("Z", "+00:00")).replace(tzinfo=None)
             db.add(Match(
                 home_team=home,
                 away_team=away,
