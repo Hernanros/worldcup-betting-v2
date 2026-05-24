@@ -34,11 +34,18 @@ export default function JoinPage() {
       justifyContent: "center",
       padding: 24,
       background: "#0c0c14",
+      backgroundImage: "url(https://upload.wikimedia.org/wikipedia/commons/thumb/9/9c/FWC_2018_-_Final_-_CRO_v_FRA_-_Photo_096.jpg/1280px-FWC_2018_-_Final_-_CRO_v_FRA_-_Photo_096.jpg)",
+      backgroundSize: "cover",
+      backgroundPosition: "center 30%",
+      position: "relative",
     }}>
+    {/* dark overlay */}
+    <div style={{ position: "absolute", inset: 0, background: "rgba(12,12,20,0.82)" }} />
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         style={{
+          position: "relative",
           background: "#13131f",
           border: "1px solid #2d2b55",
           borderRadius: 16,

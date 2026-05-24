@@ -1,14 +1,20 @@
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
+import { flagUrl } from "../data/teams.js"
 
-const FLAG = {
-  Argentina: "🇦🇷", Brazil: "🇧🇷", France: "🇫🇷", Germany: "🇩🇪",
-  England: "🏴󠁧󠁢󠁥󠁮󠁧󠁿", Spain: "🇪🇸", Portugal: "🇵🇹", Netherlands: "🇳🇱",
-  Italy: "🇮🇹", Uruguay: "🇺🇾", Mexico: "🇲🇽", USA: "🇺🇸",
-}
-
-function getFlag(team) {
-  return FLAG[team] || "🏳️"
+function TeamFlag({ name, size = 36 }) {
+  const url = flagUrl(name, 40)
+  if (!url) return <span style={{ fontSize: size }}>🏳️</span>
+  return (
+    <img
+      src={url}
+      alt={name}
+      width={size}
+      height={size * 0.67}
+      style={{ objectFit: "cover", borderRadius: 3, display: "block" }}
+      onError={(e) => { e.target.style.display = "none" }}
+    />
+  )
 }
 
 function formatKickoff(iso) {
@@ -52,8 +58,8 @@ export default function MatchCard({ match }) {
 
           {/* Teams + score row */}
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-            <div style={{ textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 28 }}>{getFlag(match.home_team)}</div>
+            <div style={{ textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <TeamFlag name={match.home_team} size={36} />
               <div style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginTop: 4 }}>{match.home_team}</div>
               {hasScore && (
                 <div className="gradient-text" style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>
@@ -66,8 +72,8 @@ export default function MatchCard({ match }) {
               {hasScore ? "—" : "vs"}
             </div>
 
-            <div style={{ textAlign: "center", flex: 1 }}>
-              <div style={{ fontSize: 28 }}>{getFlag(match.away_team)}</div>
+            <div style={{ textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <TeamFlag name={match.away_team} size={36} />
               <div style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginTop: 4 }}>{match.away_team}</div>
               {hasScore && (
                 <div className="gradient-text" style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>

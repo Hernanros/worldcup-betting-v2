@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { api } from "../api.js"
+import { GOLDEN_BOOT_PLAYERS } from "../data/teams.js"
 
 const MARKET_ICONS = {
   winner: "🏆",
@@ -198,18 +199,23 @@ export default function TournamentBetPanel({ onBetPlaced }) {
         </>
       )}
 
-      {/* Golden boot — free text */}
+      {/* Golden boot — player dropdown */}
       {isText && !locked && (
         <div style={{ marginBottom: 12 }}>
-          <input
-            placeholder={market.hint || "Enter player name"}
+          <select
             value={goldenBootText}
             onChange={(e) => setGoldenBootText(e.target.value)}
             style={{
               width: "100%", background: "#0c0c14", border: "1px solid #2d2b55",
-              borderRadius: 8, padding: "9px 12px", color: "#e2e8f0", fontSize: 13,
+              borderRadius: 8, padding: "9px 12px", color: goldenBootText ? "#e2e8f0" : "#6b7280",
+              fontSize: 13, appearance: "none", cursor: "pointer",
             }}
-          />
+          >
+            <option value="">Select a player...</option>
+            {GOLDEN_BOOT_PLAYERS.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
           <p style={{ color: "#6b7280", fontSize: 11, marginTop: 6 }}>
             Fixed odds: <strong style={{ color: "#a78bfa" }}>{market.default_odds}x</strong>
           </p>
