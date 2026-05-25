@@ -10,6 +10,7 @@ const DEFAULT_ODDS = { home_win: 2.5, draw: 3.2, away_win: 2.8 }
 /**
  * Pure payout calculator — exported for testing.
  * outcome: "home_win" | "draw" | "away_win"
+ * @param {number} minute - Match minute (context only; odds are static, no in-play adjustments yet)
  */
 export function computePreview(homeGoals, awayGoals, minute, stake, outcome, match) {
   const oddsArr = match?.odds?.["1x2"] ?? null
@@ -73,7 +74,7 @@ export default function SandboxPage() {
       setMatches(upcoming)
       if (upcoming.length > 0) setSelectedMatch(upcoming[0])
     }).catch(() => {})
-    api.get("/api/leaderboard").then(setLeaderboard).catch(() => {})
+    api.get("/api/leaderboard").then((d) => setLeaderboard(d || [])).catch(() => {})
   }, [])
 
   const preview = computePreview(homeGoals, awayGoals, minute, stake, outcome, selectedMatch)

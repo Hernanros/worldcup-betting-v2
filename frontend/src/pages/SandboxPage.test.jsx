@@ -1,6 +1,5 @@
 import { describe, it, expect, vi } from "vitest"
-import { render, screen, fireEvent } from "@testing-library/react"
-import { MemoryRouter } from "react-router-dom"
+// UI rendering not tested — computePreview is a pure function tested directly
 import { computePreview } from "./SandboxPage.jsx"
 
 const MATCH_WITH_ODDS = {
