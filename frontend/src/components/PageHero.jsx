@@ -24,7 +24,7 @@ export default function PageHero({ momentKey, height = "max(220px, 30vw)", overl
   const moment = MOMENTS[currentKey] ?? MOMENTS.maradona_1986
 
   return (
-    <div style={{ height, position: "relative", overflow: "hidden", flexShrink: 0 }}>
+    <div style={{ height, position: "relative", overflow: "hidden", flexShrink: 0, maxWidth: 480, margin: "0 auto", width: "100%" }}>
       <img
         src={moment.imageUrl}
         alt={`${moment.title} — ${moment.subtitle}`}
