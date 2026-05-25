@@ -9,13 +9,15 @@ export const MOMENTS = {
     subtitle: "Argentina vs France · Lusail, Qatar",
     year: 2022,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2e/Argentina_3-3_Francia_-_Copa_Mundial_2022_-_Celebraci%C3%B3n_de_victoria.jpg",
+    position: "center 40%",  // wide team celebration shot
   },
   maradona_1986: {
     key: "maradona_1986",
     title: "Goal of the Century",
     subtitle: "Argentina vs England · Azteca, México",
     year: 1986,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Maradona_celebrating_after_goal_of_century.jpg",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/03/Diego_Maradona_Argentina_1986_cup_Azteca_Stadium.jpg",
+    position: "center top",  // portrait — face at top
   },
   // Available for direct use as momentKey="hand_of_god"; not auto-routed through PAIR_MAP.
   hand_of_god: {
@@ -23,14 +25,16 @@ export const MOMENTS = {
     title: "The Hand of God",
     subtitle: "Argentina vs England · Azteca, México",
     year: 1986,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/1d/Maradona_celebrating_after_goal_of_century.jpg",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/03/Diego_Maradona_Argentina_1986_cup_Azteca_Stadium.jpg",
+    position: "center top",
   },
   germany_brazil_2014: {
     key: "germany_brazil_2014",
     title: "The Mineirazzo — 7–1",
     subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/5/56/Brazil_vs_Germany%2C_in_Belo_Horizonte_12.jpg",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/Brazil_vs_Germany%2C_in_Belo_Horizonte_03.jpg",
+    position: "center 30%",  // players in action, mid-frame
   },
   baggio_1994: {
     key: "baggio_1994",
@@ -38,6 +42,7 @@ export const MOMENTS = {
     subtitle: "Italy vs Brazil · Rose Bowl, Los Angeles",
     year: 1994,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/72/Roberto_Baggio_cropped.jpg",
+    position: "center top",  // portrait — face at top
   },
   zidane_2006: {
     key: "zidane_2006",
@@ -45,6 +50,7 @@ export const MOMENTS = {
     subtitle: "France vs Italy · Olympiastadion, Berlin",
     year: 2006,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/9/92/Zinedine_zidane_wcf_2006.jpg",
+    position: "center top",  // tall shot — face/number in upper half
   },
   iniesta_2010: {
     key: "iniesta_2010",
@@ -52,6 +58,7 @@ export const MOMENTS = {
     subtitle: "Spain vs Netherlands · Soccer City",
     year: 2010,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/0f/Spain-Holland_-_World_Champion_the_fine_art_of_diagonal_kissing.jpg",
+    position: "center 35%",  // celebration, players centre-frame
   },
   ronaldo_2002: {
     key: "ronaldo_2002",
@@ -59,13 +66,15 @@ export const MOMENTS = {
     subtitle: "Brazil vs Germany · Yokohama",
     year: 2002,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/d/d5/Ronaldo_2002_cropped.jpg",
+    position: "center top",  // portrait — face at top
   },
   klose_2014: {
     key: "klose_2014",
-    title: "Götze Wins the World Cup",
-    subtitle: "Germany vs Argentina · Final, Rio de Janeiro",
+    title: "Klose & Germany Destroy Brazil",
+    subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/5/56/Mario_G%C3%B6tze_GOL_-_The_2014_FIFA_World_Cup_Final_-_140713-9112-jikatu_%2814463413827%29.jpg",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Brazil_vs_Germany%2C_in_Belo_Horizonte_06.jpg",
+    position: "center 25%",  // Klose + Khedira in action
   },
   thuram_1998: {
     key: "thuram_1998",
@@ -73,6 +82,7 @@ export const MOMENTS = {
     subtitle: "France vs Brazil · Final, Saint-Denis",
     year: 1998,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/8/8e/Tribune_pr%C3%A9sidentielle_finale_France_Br%C3%A9sil_football_12_juillet_1998.jpg",
+    position: "center center",  // wide crowd/ceremony shot
   },
 }
 
