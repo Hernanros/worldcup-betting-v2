@@ -16,8 +16,8 @@ export const MOMENTS = {
     title: "Goal of the Century",
     subtitle: "Argentina vs England · Azteca, México",
     year: 1986,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/03/Diego_Maradona_Argentina_1986_cup_Azteca_Stadium.jpg",
-    position: "center top",  // portrait — face at top
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/5/54/Maradona_eludiendo_shilton.jpg",
+    position: "center 40%",  // action shot — Maradona evading Shilton, players spread across frame
   },
   // Available for direct use as momentKey="hand_of_god"; not auto-routed through PAIR_MAP.
   hand_of_god: {
@@ -25,8 +25,8 @@ export const MOMENTS = {
     title: "The Hand of God",
     subtitle: "Argentina vs England · Azteca, México",
     year: 1986,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/03/Diego_Maradona_Argentina_1986_cup_Azteca_Stadium.jpg",
-    position: "center top",
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/5/54/Maradona_eludiendo_shilton.jpg",
+    position: "center 40%",
   },
   germany_brazil_2014: {
     key: "germany_brazil_2014",
@@ -41,16 +41,16 @@ export const MOMENTS = {
     title: "Baggio's Miss",
     subtitle: "Italy vs Brazil · Rose Bowl, Los Angeles",
     year: 1994,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/72/Roberto_Baggio_cropped.jpg",
-    position: "center top",  // portrait — face at top
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Roberto_Baggio_-_Lanerossi_Vicenza.jpg",
+    position: "center 25%",  // action shot in Italy kit — closest free image to a match moment
   },
   zidane_2006: {
     key: "zidane_2006",
     title: "Zidane's Headbutt",
     subtitle: "France vs Italy · Olympiastadion, Berlin",
     year: 2006,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/9/92/Zinedine_zidane_wcf_2006.jpg",
-    position: "center top",  // tall shot — face/number in upper half
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/13/Italy_vs_France_-_FIFA_World_Cup_2006_final_-_Lilian_Thuram_and_Zinedine_Zidane.jpg",
+    position: "center 30%",  // Zidane + Thuram in the final — at least the right match
   },
   iniesta_2010: {
     key: "iniesta_2010",

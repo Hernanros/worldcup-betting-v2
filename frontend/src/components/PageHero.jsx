@@ -3,7 +3,7 @@ import { MOMENTS, ALL_MOMENT_KEYS } from "../data/moments.js"
 
 // height accepts a number (px) or a CSS string (e.g. "max(220px, 30vw)")
 // Default scales with viewport: ~220px on mobile, ~384px on 1280px desktop (≈3:1 ratio)
-export default function PageHero({ momentKey, height = "max(220px, 30vw)", overlayOpacity = 0.82 }) {
+export default function PageHero({ momentKey, height = "max(220px, 30vw)", overlayOpacity = 0.93 }) {
   const isRotating = momentKey === "rotating"
   const [currentKey, setCurrentKey] = useState(() =>
     isRotating
