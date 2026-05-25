@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest"
 import { getMomentForMatch, MOMENTS, ALL_MOMENT_KEYS } from "./moments.js"
 
-describe("getMomentForMatch", () => {
+describe("moments module", () => {
   it("returns maradona_1986 for Argentina vs England", () => {
     expect(getMomentForMatch("Argentina", "England").key).toBe("maradona_1986")
   })

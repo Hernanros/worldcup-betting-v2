@@ -17,6 +17,7 @@ export const MOMENTS = {
     year: 1986,
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/Maradona_Diego_gol_inglese_1986.jpg/1280px-Maradona_Diego_gol_inglese_1986.jpg",
   },
+  // Available for direct use as momentKey="hand_of_god"; not auto-routed through PAIR_MAP.
   hand_of_god: {
     key: "hand_of_god",
     title: "The Hand of God",
@@ -81,7 +82,6 @@ const PAIR_MAP = {
   "Brazil+Germany": "germany_brazil_2014",
   "France+Italy": "zidane_2006",
   "Argentina+France": "messi_2022",
-  "Germany+Brazil": "germany_brazil_2014",
 }
 
 // Single-team fallback map
@@ -106,7 +106,7 @@ export function getMomentForMatch(homeTeam, awayTeam) {
   return MOMENTS.maradona_1986
 }
 
-// Ordered list of moment keys used for the rotating Sandbox hero
+// Ordered list of moment keys used for the rotating Sandbox hero (curated subset)
 export const ALL_MOMENT_KEYS = [
   "messi_2022", "maradona_1986", "germany_brazil_2014",
   "baggio_1994", "zidane_2006", "iniesta_2010",
