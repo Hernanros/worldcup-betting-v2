@@ -9,6 +9,7 @@ import BetsPage from "./pages/BetsPage.jsx"
 import PredictionsPage from "./pages/PredictionsPage.jsx"
 import LeaderboardPage from "./pages/LeaderboardPage.jsx"
 import AIPage from "./pages/AIPage.jsx"
+import SandboxPage from "./pages/SandboxPage.jsx"
 import BottomNav from "./components/BottomNav.jsx"
 import TopBar from "./components/TopBar.jsx"
 
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/predict" element={<PredictionsPage />} />
           <Route path="/rankings" element={<LeaderboardPage />} />
           <Route path="/ai" element={<AIPage />} />
+          <Route path="/sandbox" element={<SandboxPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

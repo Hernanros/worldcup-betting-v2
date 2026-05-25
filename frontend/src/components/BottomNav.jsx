@@ -6,6 +6,7 @@ const tabs = [
   { to: "/predict", icon: "🎯", label: "Predict" },
   { to: "/rankings", icon: "📊", label: "Rankings" },
   { to: "/ai", icon: "🤖", label: "AI" },
+  { to: "/sandbox", icon: "🧪", label: "Sandbox" },
 ]
 
 export default function BottomNav() {
@@ -25,7 +26,7 @@ export default function BottomNav() {
       {tabs.map(({ to, icon, label }) => (
         <NavLink key={to} to={to} end={to === "/"} style={{ textDecoration: "none" }}>
           {({ isActive }) => (
-            <div style={{ textAlign: "center", minWidth: 56 }}>
+            <div style={{ textAlign: "center", minWidth: 44 }}>
               <div style={{ fontSize: 20 }}>{icon}</div>
               <div style={{
                 fontSize: 10,
