@@ -1,5 +1,5 @@
-// All image URLs are Wikimedia Commons (public domain / CC).
-// URLs verified 2026-05-25 — use direct original-file links (not /thumb/) for reliability.
+// Image sources: Wikimedia Commons (CC/public domain) + Flickr CC where noted.
+// Flickr images: CC BY-NC-SA 2.0 unless marked otherwise. Non-commercial use only.
 // To find alternatives: https://commons.wikimedia.org/w/index.php?search=<term>
 
 export const MOMENTS = {
@@ -8,16 +8,18 @@ export const MOMENTS = {
     title: "Argentina Win the World Cup",
     subtitle: "Argentina vs France · Lusail, Qatar",
     year: 2022,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2e/Argentina_3-3_Francia_-_Copa_Mundial_2022_-_Celebraci%C3%B3n_de_victoria.jpg",
-    position: "center 40%",  // wide team celebration shot
+    // Messi kissing the World Cup trophy + Golden Ball at the ceremony. Public Domain. (Flickr)
+    imageUrl: "https://live.staticflickr.com/65535/52572817590_2f1f06539b.jpg",
+    position: "center 35%",
   },
   maradona_1986: {
     key: "maradona_1986",
     title: "Goal of the Century",
     subtitle: "Argentina vs England · Azteca, México",
     year: 1986,
+    // Maradona evading Peter Shilton — the dribble that became the Goal of the Century. (Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/5/54/Maradona_eludiendo_shilton.jpg",
-    position: "center 40%",  // action shot — Maradona evading Shilton, players spread across frame
+    position: "center 40%",
   },
   // Available for direct use as momentKey="hand_of_god"; not auto-routed through PAIR_MAP.
   hand_of_god: {
@@ -33,56 +35,63 @@ export const MOMENTS = {
     title: "The Mineirazzo — 7–1",
     subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
+    // Match action from the 7-1 semifinal. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/Brazil_vs_Germany%2C_in_Belo_Horizonte_03.jpg",
-    position: "center 30%",  // players in action, mid-frame
+    position: "center 30%",
   },
   baggio_1994: {
     key: "baggio_1994",
     title: "Baggio's Miss",
     subtitle: "Italy vs Brazil · Rose Bowl, Los Angeles",
     year: 1994,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/3/3a/Roberto_Baggio_-_Lanerossi_Vicenza.jpg",
-    position: "center 25%",  // action shot in Italy kit — closest free image to a match moment
+    // "IL DIVIN CODINO" — digital artwork: Baggio head bowed after the miss, Italy #10. CC BY-NC-SA 2.0. (Flickr / teokon)
+    imageUrl: "https://live.staticflickr.com/686/22872324066_cfbf02d1ac.jpg",
+    position: "center 40%",
   },
   zidane_2006: {
     key: "zidane_2006",
     title: "Zidane's Headbutt",
     subtitle: "France vs Italy · Olympiastadion, Berlin",
     year: 2006,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/13/Italy_vs_France_-_FIFA_World_Cup_2006_final_-_Lilian_Thuram_and_Zinedine_Zidane.jpg",
-    position: "center 30%",  // Zidane + Thuram in the final — at least the right match
+    // The actual headbutt — photographed from a TV screen within 15 min of the incident. CC BY-NC-SA 2.0. (Flickr / kaptainkobold)
+    imageUrl: "https://live.staticflickr.com/71/185784735_78851a3d7b.jpg",
+    position: "center 40%",
   },
   iniesta_2010: {
     key: "iniesta_2010",
     title: "Spain Win the 2010 World Cup",
     subtitle: "Spain vs Netherlands · Soccer City",
     year: 2010,
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/0f/Spain-Holland_-_World_Champion_the_fine_art_of_diagonal_kissing.jpg",
-    position: "center 35%",  // celebration, players centre-frame
+    // Spain celebrating with the trophy at Soccer City, Johannesburg. CC BY-SA 3.0. (Wikimedia)
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/06/FIFA_World_Cup_2010_Spain_with_cup.jpg",
+    position: "center 35%",
   },
   ronaldo_2002: {
     key: "ronaldo_2002",
     title: "Ronaldo at Brazil 2002",
     subtitle: "Brazil vs Germany · Yokohama",
     year: 2002,
+    // Portrait taken the day before the 2002 WC Final — best freely available WC-context image. (Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/d/d5/Ronaldo_2002_cropped.jpg",
-    position: "center top",  // portrait — face at top
+    position: "center top",
   },
   klose_2014: {
     key: "klose_2014",
     title: "Klose & Germany Destroy Brazil",
     subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
+    // Klose + Khedira in action during the 7-1. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Brazil_vs_Germany%2C_in_Belo_Horizonte_06.jpg",
-    position: "center 25%",  // Klose + Khedira in action
+    position: "center 25%",
   },
   thuram_1998: {
     key: "thuram_1998",
     title: "France Win the 1998 World Cup",
     subtitle: "France vs Brazil · Final, Saint-Denis",
     year: 1998,
+    // Presidential tribune at the 1998 final — best freely available image for this moment. (Archives nationales / Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/8/8e/Tribune_pr%C3%A9sidentielle_finale_France_Br%C3%A9sil_football_12_juillet_1998.jpg",
-    position: "center center",  // wide crowd/ceremony shot
+    position: "center center",
   },
 }
 
