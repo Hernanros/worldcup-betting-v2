@@ -3,8 +3,10 @@ import { MOMENTS, ALL_MOMENT_KEYS } from "../data/moments.js"
 
 export default function PageHero({ momentKey, height = 180, overlayOpacity = 0.82 }) {
   const isRotating = momentKey === "rotating"
-  const [currentKey, setCurrentKey] = useState(
-    isRotating ? ALL_MOMENT_KEYS[0] : momentKey
+  const [currentKey, setCurrentKey] = useState(() =>
+    isRotating
+      ? ALL_MOMENT_KEYS[Math.floor(Math.random() * ALL_MOMENT_KEYS.length)]
+      : momentKey
   )
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export default function PageHero({ momentKey, height = 180, overlayOpacity = 0.8
     <div style={{ height, position: "relative", overflow: "hidden", flexShrink: 0 }}>
       <img
         src={moment.imageUrl}
-        alt={moment.title}
+        alt={`${moment.title} — ${moment.subtitle}`}
         style={{
           position: "absolute",
           inset: 0,

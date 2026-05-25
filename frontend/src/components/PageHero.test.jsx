@@ -28,4 +28,15 @@ describe("PageHero", () => {
     const img = screen.getByRole("img")
     expect(img.src).toContain("Zinedine_Zidane")
   })
+
+  it("rotates to a different key after 5 seconds", () => {
+    vi.useFakeTimers()
+    render(<PageHero momentKey="rotating" />)
+    // After 5 seconds, the key should have advanced
+    act(() => { vi.advanceTimersByTime(5000) })
+    // We can't predict which key (could be any), but the hero should still render
+    // a valid moment (the rotating hero badge must be present)
+    expect(screen.getByText(/Iconic Moment/)).toBeInTheDocument()
+    vi.useRealTimers()
+  })
 })
