@@ -34,7 +34,7 @@ export default function JoinPage() {
       justifyContent: "center",
       padding: 24,
       background: "#0c0c14",
-      backgroundImage: "url(https://upload.wikimedia.org/wikipedia/commons/thumb/b/b6/2022_FIFA_World_Cup_Final_-_trophy_ceremony_%28cropped%29.jpg/1280px-2022_FIFA_World_Cup_Final_-_trophy_ceremony_%28cropped%29.jpg)",
+      backgroundImage: "url(https://upload.wikimedia.org/wikipedia/commons/2/2e/Argentina_3-3_Francia_-_Copa_Mundial_2022_-_Celebraci%C3%B3n_de_victoria.jpg)",
       backgroundSize: "cover",
       backgroundPosition: "center 30%",
       position: "relative",

@@ -26,7 +26,7 @@ describe("PageHero", () => {
   it("renders an img with the moment imageUrl as src", () => {
     render(<PageHero momentKey="zidane_2006" />)
     const img = screen.getByRole("img")
-    expect(img.src).toContain("Zinedine_Zidane")
+    expect(img.src).toContain("Zinedine_zidane")
   })
 
   it("rotates to a different key after 5 seconds", () => {

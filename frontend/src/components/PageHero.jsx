@@ -26,6 +26,7 @@ export default function PageHero({ momentKey, height = 180, overlayOpacity = 0.8
       <img
         src={moment.imageUrl}
         alt={`${moment.title} — ${moment.subtitle}`}
+        referrerPolicy="no-referrer"
         style={{
           position: "absolute",
           inset: 0,
