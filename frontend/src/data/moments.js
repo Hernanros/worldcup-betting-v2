@@ -1,5 +1,5 @@
-// Image sources: Wikimedia Commons (CC/public domain) + Flickr CC where noted.
-// Flickr images: CC BY-NC-SA 2.0 unless marked otherwise. Non-commercial use only.
+// All images from Wikimedia Commons (CC / public domain) — upload.wikimedia.org is reliable for hotlinking.
+// Flickr and other CDNs often block hotlink referrers; avoid them.
 // To find alternatives: https://commons.wikimedia.org/w/index.php?search=<term>
 
 export const MOMENTS = {
@@ -8,16 +8,16 @@ export const MOMENTS = {
     title: "Argentina Win the World Cup",
     subtitle: "Argentina vs France · Lusail, Qatar",
     year: 2022,
-    // Messi kissing the World Cup trophy + Golden Ball at the ceremony. Public Domain. (Flickr)
-    imageUrl: "https://live.staticflickr.com/65535/52572817590_2f1f06539b.jpg",
-    position: "center 35%",
+    // Argentina players celebrating on the pitch after the final. CC BY-SA 4.0.
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2e/Argentina_3-3_Francia_-_Copa_Mundial_2022_-_Celebraci%C3%B3n_de_victoria.jpg",
+    position: "center 30%",
   },
   maradona_1986: {
     key: "maradona_1986",
     title: "Goal of the Century",
     subtitle: "Argentina vs England · Azteca, México",
     year: 1986,
-    // Maradona evading Peter Shilton — the dribble that became the Goal of the Century. (Wikimedia)
+    // Maradona evading Peter Shilton — the exact run that became the Goal of the Century. (El Gráfico / Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/5/54/Maradona_eludiendo_shilton.jpg",
     position: "center 40%",
   },
@@ -35,26 +35,28 @@ export const MOMENTS = {
     title: "The Mineirazzo — 7–1",
     subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
-    // Match action from the 7-1 semifinal. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
+    // Match action from the semifinal. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/Brazil_vs_Germany%2C_in_Belo_Horizonte_03.jpg",
     position: "center 30%",
   },
-  baggio_1994: {
-    key: "baggio_1994",
-    title: "Baggio's Miss",
-    subtitle: "Italy vs Brazil · Rose Bowl, Los Angeles",
-    year: 1994,
-    // "IL DIVIN CODINO" — digital artwork: Baggio head bowed after the miss, Italy #10. CC BY-NC-SA 2.0. (Flickr / teokon)
-    imageUrl: "https://live.staticflickr.com/686/22872324066_cfbf02d1ac.jpg",
-    position: "center 40%",
+  // Replaces baggio_1994 — no free photo of the actual penalty miss exists anywhere.
+  // Italy's 2006 WC win is the natural companion moment: same match as Zidane's headbutt.
+  italy_2006: {
+    key: "italy_2006",
+    title: "Italy Win the World Cup",
+    subtitle: "Italy vs France · Olympiastadion, Berlin",
+    year: 2006,
+    // Buffon facing camera in goal during the 2006 WC Final. CC BY-SA 2.0. (Wikimedia)
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/1/1e/Italy_vs_France_-_FIFA_World_Cup_2006_final_-_Gianluigi_Buffon.jpg",
+    position: "center 25%",
   },
   zidane_2006: {
     key: "zidane_2006",
     title: "Zidane's Headbutt",
     subtitle: "France vs Italy · Olympiastadion, Berlin",
     year: 2006,
-    // The actual headbutt — photographed from a TV screen within 15 min of the incident. CC BY-NC-SA 2.0. (Flickr / kaptainkobold)
-    imageUrl: "https://live.staticflickr.com/71/185784735_78851a3d7b.jpg",
+    // Zidane in France #10 on the pitch during the 2006 WC Final — fan photo from the stands. CC BY-SA 2.0.
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/9/92/Zinedine_zidane_wcf_2006.jpg",
     position: "center 40%",
   },
   iniesta_2010: {
@@ -62,7 +64,7 @@ export const MOMENTS = {
     title: "Spain Win the 2010 World Cup",
     subtitle: "Spain vs Netherlands · Soccer City",
     year: 2010,
-    // Spain celebrating with the trophy at Soccer City, Johannesburg. CC BY-SA 3.0. (Wikimedia)
+    // Spain squad celebrating with the trophy at Soccer City, Johannesburg. CC BY-SA 3.0. (Wikimedia)
     imageUrl: "https://upload.wikimedia.org/wikipedia/commons/0/06/FIFA_World_Cup_2010_Spain_with_cup.jpg",
     position: "center 35%",
   },
@@ -99,7 +101,7 @@ export const MOMENTS = {
 const PAIR_MAP = {
   "Argentina+England": "maradona_1986",
   "Brazil+Germany": "germany_brazil_2014",
-  "France+Italy": "zidane_2006",
+  "France+Italy": "zidane_2006",   // headbutt is the defining moment of that final
   "Argentina+France": "messi_2022",
 }
 
@@ -109,7 +111,7 @@ const TEAM_MAP = {
   Germany: "klose_2014",
   France: "thuram_1998",
   Argentina: "maradona_1986",
-  Italy: "baggio_1994",
+  Italy: "italy_2006",             // updated: Italy 2006 WC win replaces Baggio 1994
   Spain: "iniesta_2010",
 }
 
@@ -128,5 +130,5 @@ export function getMomentForMatch(homeTeam, awayTeam) {
 // Ordered list of moment keys used for the rotating Sandbox hero (curated subset)
 export const ALL_MOMENT_KEYS = [
   "messi_2022", "maradona_1986", "germany_brazil_2014",
-  "baggio_1994", "zidane_2006", "iniesta_2010",
+  "italy_2006", "zidane_2006", "iniesta_2010",
 ]
