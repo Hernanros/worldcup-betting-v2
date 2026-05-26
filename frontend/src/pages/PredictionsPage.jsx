@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import PredictionRow from "../components/PredictionRow.jsx"
 import TournamentBetPanel from "../components/TournamentBetPanel.jsx"
-import PageHeader from "../components/PageHeader.jsx"
+import PageBackground from "../components/PageBackground.jsx"
 
 const STATUS_COLOR = { pending: "#fbbf24", won: "#4ade80", lost: "#f87171" }
 
@@ -41,7 +41,11 @@ export default function PredictionsPage() {
 
   return (
     <div>
-      <PageHeader momentKey="italy_2006" icon="🎯" title="Predictions" />
+      <PageBackground momentKey="italy_2006" />
+      <div style={{ padding: "16px 16px 8px" }}>
+        <div style={{ fontSize: 24 }}>🎯</div>
+        <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>Predictions</div>
+      </div>
       <div style={{ padding: 16 }}>
         {/* Tab pills */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>

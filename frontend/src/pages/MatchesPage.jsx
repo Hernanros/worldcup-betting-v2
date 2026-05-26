@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import { subscribe } from "../ws.js"
 import MatchCard from "../components/MatchCard.jsx"
-import PageHeader from "../components/PageHeader.jsx"
+import PageBackground from "../components/PageBackground.jsx"
 
 const FILTERS = ["All", "Live", "Upcoming", "Finished"]
 
@@ -42,7 +42,11 @@ export default function MatchesPage() {
 
   return (
     <div>
-      <PageHeader momentKey="maradona_1986" icon="⚽" title="Matches" />
+      <PageBackground momentKey="maradona_1986" />
+      <div style={{ padding: "16px 16px 8px" }}>
+        <div style={{ fontSize: 24 }}>⚽</div>
+        <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>Matches</div>
+      </div>
       <div style={{ padding: 16 }}>
         {/* Filter pills */}
         <div style={{ display: "flex", gap: 8, marginBottom: 16, overflowX: "auto" }}>
