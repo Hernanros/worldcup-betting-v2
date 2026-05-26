@@ -3,7 +3,7 @@ import { MOMENTS, ALL_MOMENT_KEYS } from "../data/moments.js"
 
 // height accepts a number (px) or a CSS string (e.g. "max(220px, 30vw)")
 // Default scales with viewport: ~220px on mobile, ~384px on 1280px desktop (≈3:1 ratio)
-export default function PageHero({ momentKey, height = "max(220px, 30vw)", overlayOpacity = 0.93 }) {
+export default function PageHero({ momentKey, height = "max(220px, 30vw)", overlayOpacity = 0.82 }) {
   const isRotating = momentKey === "rotating"
   const [currentKey, setCurrentKey] = useState(() =>
     isRotating
@@ -13,13 +13,15 @@ export default function PageHero({ momentKey, height = "max(220px, 30vw)", overl
 
   useEffect(() => {
     if (!isRotating) return
-    let i = 0
+    // Sync counter with the random starting key so rotation never repeats early
+    let i = ALL_MOMENT_KEYS.indexOf(currentKey)
+    if (i === -1) i = 0
     const id = setInterval(() => {
       i = (i + 1) % ALL_MOMENT_KEYS.length
       setCurrentKey(ALL_MOMENT_KEYS[i])
     }, 5000)
     return () => clearInterval(id)
-  }, [isRotating])
+  }, [isRotating]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const moment = MOMENTS[currentKey] ?? MOMENTS.maradona_1986
 

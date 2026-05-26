@@ -35,9 +35,9 @@ export const MOMENTS = {
     title: "The Mineirazzo — 7–1",
     subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
-    // Match action from the semifinal. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/7/77/Brazil_vs_Germany%2C_in_Belo_Horizonte_03.jpg",
-    position: "center 30%",
+    // Germans celebrating while dejected Brazilians walk past — yellow crowd packed behind. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/4/4b/Brazil_vs_Germany%2C_in_Belo_Horizonte_04.jpg",
+    position: "center 40%",
   },
   // Replaces baggio_1994 — no free photo of the actual penalty miss exists anywhere.
   // Italy's 2006 WC win is the natural companion moment: same match as Zidane's headbutt.
@@ -82,9 +82,9 @@ export const MOMENTS = {
     title: "Klose & Germany Destroy Brazil",
     subtitle: "Germany vs Brazil · Estádio Mineirão",
     year: 2014,
-    // Klose + Khedira in action during the 7-1. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
-    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/c/c3/Brazil_vs_Germany%2C_in_Belo_Horizonte_06.jpg",
-    position: "center 25%",
+    // Klose raising one finger celebrating his record-breaking WC goal — Müller alongside. CC BY 3.0 Brazil. (Agência Brasil / Wikimedia)
+    imageUrl: "https://upload.wikimedia.org/wikipedia/commons/8/85/Brazil_vs_Germany%2C_in_Belo_Horizonte_11.jpg",
+    position: "center 30%",
   },
   thuram_1998: {
     key: "thuram_1998",
