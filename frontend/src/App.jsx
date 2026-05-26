@@ -3,9 +3,9 @@ import { useEffect, useState } from "react"
 import { isLoggedIn, getPlayer } from "./auth.js"
 import { connectWS, disconnectWS } from "./ws.js"
 import JoinPage from "./pages/JoinPage.jsx"
+import HomePage from "./pages/HomePage.jsx"
 import MatchesPage from "./pages/MatchesPage.jsx"
 import MatchDetailPage from "./pages/MatchDetailPage.jsx"
-import BetsPage from "./pages/BetsPage.jsx"
 import PredictionsPage from "./pages/PredictionsPage.jsx"
 import LeaderboardPage from "./pages/LeaderboardPage.jsx"
 import AIPage from "./pages/AIPage.jsx"
@@ -40,9 +40,9 @@ export default function App() {
       <Routes>
         <Route path="/join" element={<JoinPage />} />
         <Route element={<ProtectedLayout />}>
-          <Route path="/" element={<MatchesPage />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/matches" element={<MatchesPage />} />
           <Route path="/matches/:id" element={<MatchDetailPage />} />
-          <Route path="/bets" element={<BetsPage />} />
           <Route path="/predict" element={<PredictionsPage />} />
           <Route path="/rankings" element={<LeaderboardPage />} />
           <Route path="/ai" element={<AIPage />} />
