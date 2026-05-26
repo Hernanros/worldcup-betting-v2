@@ -51,8 +51,8 @@ export default function PageHeader({ momentKey, title, icon, subtitle }) {
 
       {/* Right: portrait image card */}
       <div style={{
-        width: 72,
-        height: 96,
+        width: 120,
+        height: 160,
         borderRadius: 10,
         overflow: "hidden",
         border: "1px solid #2d2b55",
