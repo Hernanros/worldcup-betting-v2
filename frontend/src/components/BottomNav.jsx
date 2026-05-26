@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom"
 
 const tabs = [
-  { to: "/",         icon: "🏠", label: "Home" },
-  { to: "/matches",  icon: "⚽", label: "Matches" },
-  { to: "/predict",  icon: "🎯", label: "Predict" },
-  { to: "/rankings", icon: "📊", label: "Rankings" },
-  { to: "/ai",       icon: "🤖", label: "AI" },
+  { to: "/",           icon: "🏠", label: "Home" },
+  { to: "/matches",    icon: "⚽", label: "Matches" },
+  { to: "/predict",    icon: "🎯", label: "Predict" },
+  { to: "/tournament", icon: "🏆", label: "Tournament" },
+  { to: "/rankings",   icon: "📊", label: "Rankings" },
+  { to: "/ai",         icon: "🤖", label: "AI" },
 ]
 
 export default function BottomNav() {
@@ -25,10 +26,10 @@ export default function BottomNav() {
       {tabs.map(({ to, icon, label }) => (
         <NavLink key={to} to={to} end={to === "/"} style={{ textDecoration: "none" }}>
           {({ isActive }) => (
-            <div style={{ textAlign: "center", minWidth: 44 }}>
+            <div style={{ textAlign: "center", minWidth: 36 }}>
               <div style={{ fontSize: 20 }}>{icon}</div>
               <div style={{
-                fontSize: 10,
+                fontSize: 9,
                 fontWeight: isActive ? 700 : 400,
                 background: isActive ? "linear-gradient(90deg, #a855f7, #3b82f6)" : undefined,
                 backgroundClip: isActive ? "text" : undefined,
