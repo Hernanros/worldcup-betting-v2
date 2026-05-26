@@ -75,7 +75,7 @@ export default function HomePage() {
       <div style={{ padding: 16 }}>
 
         {/* ── MY STATS with rotating image background ──── */}
-        <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 20 }}>
+        <div style={{ position: "relative", borderRadius: 14, overflow: "hidden", marginBottom: 20, minHeight: 200 }}>
           <img
             src={heroMoment.imageUrl}
             alt={heroMoment.title}
