@@ -23,7 +23,7 @@ export default function PredictionsPage() {
 
   return (
     <div>
-      <PageHero momentKey="baggio_1994" />
+      <PageHero momentKey="italy_2006" />
       <div style={{ padding: 16 }}>
         <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10,
           padding: "10px 16px", marginBottom: 16, display: "flex", justifyContent: "space-between" }}>
