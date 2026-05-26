@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { api, streamSuggestChallenge } from "../api.js"
-import PageHero from "../components/PageHero.jsx"
+import PageHeader from "../components/PageHeader.jsx"
 
 export default function AIPage() {
   const [matches, setMatches] = useState([])
@@ -45,7 +45,7 @@ export default function AIPage() {
 
   return (
     <div>
-      <PageHero momentKey="iniesta_2010" />
+      <PageHeader momentKey="iniesta_2010" icon="🤖" title="AI Assistant" />
       <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
         <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>
           🤖 AI Challenge Generator

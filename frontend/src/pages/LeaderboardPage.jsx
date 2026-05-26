@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import { subscribe } from "../ws.js"
 import LeaderboardRow from "../components/LeaderboardRow.jsx"
-import PageHero from "../components/PageHero.jsx"
+import PageHeader from "../components/PageHeader.jsx"
 
 export default function LeaderboardPage() {
   const [players, setPlayers] = useState([])
@@ -32,7 +32,7 @@ export default function LeaderboardPage() {
 
   return (
     <div>
-      <PageHero momentKey="zidane_2006" />
+      <PageHeader momentKey="zidane_2006" icon="📊" title="Rankings" />
       <div style={{ padding: 16 }}>
         <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
           {["tokens", "red-cards"].map((t) => (
