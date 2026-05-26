@@ -116,7 +116,7 @@ export default function SandboxPage() {
 
   return (
     <div>
-      <PageHero momentKey="rotating" />
+      <PageHero momentKey="rotating" height="max(220px, 30vw)" overlayOpacity={0.82} />
       <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
 
         <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 4 }}>
