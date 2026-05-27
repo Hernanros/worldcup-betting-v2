@@ -1,16 +1,15 @@
-import { useState, useEffect, useRef } from "react"
-import { motion, AnimatePresence } from "framer-motion"
-import { api, streamSuggestChallenge } from "../api.js"
+import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
+import { api } from "../api.js"
 import PageBackground from "../components/PageBackground.jsx"
 
 export default function AIPage() {
+  const navigate = useNavigate()
   const [matches, setMatches] = useState([])
   const [selectedMatch, setSelectedMatch] = useState(null)
-  const [streaming, setStreaming] = useState(false)
-  const [text, setText] = useState("")
-  const [done, setDone] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [suggestions, setSuggestions] = useState([])
   const [error, setError] = useState(null)
-  const outputRef = useRef(null)
 
   useEffect(() => {
     api.get("/api/matches")
@@ -18,29 +17,34 @@ export default function AIPage() {
       .catch(() => [])
   }, [])
 
-  useEffect(() => {
-    if (outputRef.current) {
-      outputRef.current.scrollTop = outputRef.current.scrollHeight
-    }
-  }, [text])
-
   async function generate() {
-    if (!selectedMatch || streaming) return
-    setText("")
-    setDone(false)
+    if (!selectedMatch || loading) return
+    setSuggestions([])
     setError(null)
-    setStreaming(true)
-
+    setLoading(true)
     try {
-      await streamSuggestChallenge(
-        selectedMatch.id,
-        (chunk) => setText((prev) => prev + chunk),
-        () => { setDone(true); setStreaming(false) },
-      )
+      const data = await api.post("/api/ai/suggest-challenge", { match_id: selectedMatch.id })
+      setSuggestions(data.suggestions || [])
+      if ((data.suggestions || []).length === 0) setError("No suggestions returned — try another match.")
     } catch (err) {
       setError(err.message || "Failed to generate suggestions")
-      setStreaming(false)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  function useThis(suggestion) {
+    navigate(`/matches/${selectedMatch.id}`, {
+      state: {
+        prefill: {
+          my_pick: suggestion.my_pick,
+          their_pick: suggestion.their_pick,
+          my_odds: suggestion.my_odds,
+          their_odds: suggestion.their_odds,
+          stake: suggestion.stake,
+        },
+      },
+    })
   }
 
   return (
@@ -51,30 +55,30 @@ export default function AIPage() {
         <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>AI Assistant</div>
       </div>
       <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
-        <h2 className="gradient-text" style={{ fontSize: 20, fontWeight: 800, marginBottom: 6 }}>
-          🤖 AI Challenge Generator
-        </h2>
         <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 20 }}>
-          Pick a match and Claude will suggest spicy challenge ideas based on the current odds.
+          Pick a match and Claude will suggest challenge ideas based on the current odds.
         </p>
 
         {/* Match picker */}
         <div style={{ marginBottom: 16 }}>
-          <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-            letterSpacing: 1, marginBottom: 8 }}>Select a match</p>
+          <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700,
+            textTransform: "uppercase", letterSpacing: 1, marginBottom: 8 }}>
+            Select a match
+          </p>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {matches.length === 0 && (
               <p style={{ color: "#6b7280", fontSize: 13 }}>No upcoming matches.</p>
             )}
             {matches.map((m) => (
-              <button key={m.id} onClick={() => setSelectedMatch(m)}
+              <button key={m.id} onClick={() => { setSelectedMatch(m); setSuggestions([]) }}
                 style={{
                   background: selectedMatch?.id === m.id
                     ? "linear-gradient(135deg, rgba(168,85,247,0.2), rgba(59,130,246,0.2))"
                     : "#13131f",
                   border: `1px solid ${selectedMatch?.id === m.id ? "#a855f7" : "#2d2b55"}`,
                   borderRadius: 10, padding: "10px 14px",
-                  color: "#e2e8f0", fontSize: 13, fontWeight: 600, textAlign: "left", cursor: "pointer",
+                  color: "#e2e8f0", fontSize: 13, fontWeight: 600,
+                  textAlign: "left", cursor: "pointer",
                 }}>
                 {m.home_team} vs {m.away_team}
                 <span style={{ color: "#6b7280", fontSize: 11, marginLeft: 8 }}>{m.round}</span>
@@ -84,54 +88,63 @@ export default function AIPage() {
         </div>
 
         {/* Generate button */}
-        <motion.button
-          whileTap={{ scale: 0.97 }}
+        <button
           onClick={generate}
-          disabled={!selectedMatch || streaming}
+          disabled={!selectedMatch || loading}
           style={{
             width: "100%",
-            background: !selectedMatch || streaming ? "#1e1b3a" : "linear-gradient(135deg, #a855f7, #3b82f6)",
-            color: !selectedMatch || streaming ? "#6b7280" : "#fff",
+            background: !selectedMatch || loading ? "#1e1b3a" : "linear-gradient(135deg, #a855f7, #3b82f6)",
+            color: !selectedMatch || loading ? "#6b7280" : "#fff",
             border: "none", borderRadius: 10, padding: "13px",
-            fontSize: 15, fontWeight: 700, cursor: !selectedMatch || streaming ? "not-allowed" : "pointer",
+            fontSize: 15, fontWeight: 700,
+            cursor: !selectedMatch || loading ? "not-allowed" : "pointer",
             marginBottom: 20,
           }}
         >
-          {streaming ? "✨ Generating..." : "✨ Generate Challenge Ideas"}
-        </motion.button>
+          {loading ? "✨ Thinking..." : "✨ Generate Challenge Ideas"}
+        </button>
 
         {error && <p style={{ color: "#f87171", fontSize: 13, marginBottom: 12 }}>⚠ {error}</p>}
 
-        {/* Output */}
-        <AnimatePresence>
-          {(text || streaming) && (
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              ref={outputRef}
-              style={{
-                background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12, padding: 16,
-                maxHeight: 400, overflowY: "auto", whiteSpace: "pre-wrap",
-                color: "#e2e8f0", fontSize: 14, lineHeight: 1.7,
-              }}
-            >
-              {text}
-              {streaming && (
-                <span style={{
-                  display: "inline-block", width: 8, height: 14,
-                  background: "linear-gradient(135deg,#a855f7,#3b82f6)", borderRadius: 2,
-                  marginLeft: 2, animation: "pulse 1s infinite", verticalAlign: "middle",
-                }} />
-              )}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {done && text && (
-          <p style={{ color: "#4ade80", fontSize: 12, textAlign: "center", marginTop: 12 }}>
-            ✓ Done — go to the match page to issue one of these challenges!
-          </p>
-        )}
+        {/* Suggestion cards */}
+        {suggestions.map((s, i) => (
+          <div key={i} style={{
+            background: "#13131f", border: "1px solid #2d2b55",
+            borderRadius: 12, padding: 16, marginBottom: 12,
+          }}>
+            <div style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700,
+              textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              {s.title}
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>Your pick</div>
+                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14 }}>{s.my_pick}</div>
+                <div style={{ color: "#4ade80", fontSize: 11 }}>{s.my_odds}x</div>
+              </div>
+              <div style={{ color: "#2d2b55", fontSize: 16, alignSelf: "center" }}>vs</div>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>Their pick</div>
+                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14 }}>{s.their_pick}</div>
+                <div style={{ color: "#f87171", fontSize: 11 }}>{s.their_odds}x</div>
+              </div>
+              <div style={{ textAlign: "center", flex: 1 }}>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>Stake</div>
+                <div style={{ color: "#fbbf24", fontWeight: 700, fontSize: 14 }}>{s.stake}</div>
+                <div style={{ color: "#6b7280", fontSize: 11 }}>tokens</div>
+              </div>
+            </div>
+            <p style={{ color: "#6b7280", fontSize: 12, marginBottom: 12, lineHeight: 1.5 }}>{s.reason}</p>
+            <button onClick={() => useThis(s)} style={{
+              width: "100%",
+              background: "linear-gradient(135deg, #a855f7, #3b82f6)",
+              color: "#fff", border: "none", borderRadius: 8,
+              padding: "9px", fontSize: 13, fontWeight: 700, cursor: "pointer",
+            }}>
+              Issue This Challenge →
+            </button>
+          </div>
+        ))}
       </div>
     </div>
   )
