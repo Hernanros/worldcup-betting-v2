@@ -31,9 +31,9 @@ async def get_current_player(
 
 
 async def get_admin(
-    authorization: str = Header(...),
+    authorization: str = Header(default=None),
 ) -> bool:
-    if not authorization.startswith("Bearer "):
+    if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(401, "missing token")
     try:
         payload = decode_token(authorization[7:])

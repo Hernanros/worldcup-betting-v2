@@ -45,11 +45,11 @@ def create_app(database_url: str = None, testing: bool = False) -> FastAPI:
         allow_headers=["*"],
     )
 
-    from app.routers import auth, matches, bets, challenges, predictions, leaderboard, tournament, ai
+    from app.routers import auth, matches, bets, challenges, predictions, leaderboard, tournament, ai, leagues
     from app.ws import router as ws_router
 
     for router in [auth.router, matches.router, bets.router, challenges.router,
-                   predictions.router, leaderboard.router, tournament.router, ai.router, ws_router]:
+                   predictions.router, leaderboard.router, tournament.router, ai.router, leagues.router, ws_router]:
         app.include_router(router)
 
     return app
