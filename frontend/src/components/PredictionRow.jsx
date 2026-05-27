@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { api } from "../api.js"
 
 export default function PredictionRow({ entry, onSaved }) {
@@ -6,6 +6,16 @@ export default function PredictionRow({ entry, onSaved }) {
   const [away, setAway] = useState(entry.my_prediction?.away_score_pred ?? "")
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState("")
+  const awayRef = useRef(null)
+
+  function handleHomeChange(e) {
+    const v = e.target.value
+    setHome(v)
+    if (v !== "") {
+      awayRef.current?.focus()
+      awayRef.current?.select()
+    }
+  }
 
   const locked = entry.status === "finished" || entry.status === "locked"
   const pred = entry.my_prediction
@@ -52,13 +62,13 @@ export default function PredictionRow({ entry, onSaved }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 8 }}>
-        <input type="number" min={0} step={1} value={home} onChange={(e) => setHome(e.target.value)}
+        <input type="number" min={0} step={1} value={home} onChange={handleHomeChange}
           disabled={locked}
           style={{ width: 52, background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 6,
             padding: "5px 8px", color: "#e2e8f0", fontSize: 14, textAlign: "center",
             cursor: locked ? "not-allowed" : "auto", opacity: locked ? 0.5 : 1 }} />
         <span style={{ color: "#6b7280", fontSize: 12 }}>—</span>
-        <input type="number" min={0} step={1} value={away} onChange={(e) => setAway(e.target.value)}
+        <input ref={awayRef} type="number" min={0} step={1} value={away} onChange={(e) => setAway(e.target.value)}
           disabled={locked}
           style={{ width: 52, background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 6,
             padding: "5px 8px", color: "#e2e8f0", fontSize: 14, textAlign: "center",
