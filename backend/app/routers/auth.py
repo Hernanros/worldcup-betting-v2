@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.models import Player, League
@@ -46,11 +47,16 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
     player = result.scalar_one_or_none()
 
     if not player:
-        player = Player(name=name, token_balance=1000,
-                        league_id=league.id if league else None)
-        db.add(player)
-        await db.commit()
-        await db.refresh(player)
+        try:
+            player = Player(name=name, token_balance=1000,
+                            league_id=league.id if league else None)
+            db.add(player)
+            await db.commit()
+            await db.refresh(player)
+        except IntegrityError:
+            await db.rollback()
+            result = await db.execute(query)
+            player = result.scalar_one_or_none()
 
     token = make_token(player.id, is_admin)
     player.session_token = token
