@@ -8,6 +8,7 @@ export default function JoinPage() {
   const [name, setName] = useState("")
   const [code, setCode] = useState("")
   const [error, setError] = useState("")
+  const [msg, setMsg] = useState("")
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -18,7 +19,12 @@ export default function JoinPage() {
     try {
       const data = await api.post("/api/auth/join", { name: name.trim(), code: code.trim() })
       setAuth(data.token, data.player)
-      navigate("/")
+      if (data.league) {
+        setMsg(`✓ Welcome to ${data.league.name}!`)
+        setTimeout(() => navigate("/"), 1200)
+      } else {
+        navigate("/")
+      }
     } catch (err) {
       setError(err.message)
     } finally {
@@ -84,7 +90,7 @@ export default function JoinPage() {
           <input
             value={code}
             onChange={(e) => setCode(e.target.value)}
-            placeholder="Invite code"
+            placeholder="Enter the invite code from your group"
             type="password"
             required
             maxLength={30}
@@ -101,6 +107,7 @@ export default function JoinPage() {
             }}
           />
           {error && <p style={{ color: "#f87171", fontSize: 13, margin: 0 }}>{error}</p>}
+          {msg && <p style={{ color: "#4ade80", fontSize: 13, margin: 0 }}>{msg}</p>}
           <button
             type="submit"
             disabled={loading}
