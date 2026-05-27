@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate, useLocation } from "react-router-dom"
 import { api } from "../api.js"
 import BetPanel from "../components/BetPanel.jsx"
 import ChallengePanel from "../components/ChallengePanel.jsx"
@@ -9,15 +9,31 @@ import { getMomentForMatch } from "../data/moments.js"
 export default function MatchDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
+  const location = useLocation()
+  const prefill = location.state?.prefill ?? null
+
   const [match, setMatch] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [myBet, setMyBet] = useState(null)
+  const [playerStreak, setPlayerStreak] = useState(0)
+  const [totalChallenges, setTotalChallenges] = useState(0)
 
   async function load() {
     setError(null)
     try {
-      const data = await api.get(`/api/matches/${id}`)
+      const [data, bets, me] = await Promise.all([
+        api.get(`/api/matches/${id}`),
+        api.get("/api/bets").catch(() => []),
+        api.get("/api/me").catch(() => null),
+      ])
       setMatch(data)
+      const existing = (bets || []).find((b) => b.match_id === Number(id))
+      setMyBet(existing ?? null)
+      if (me) {
+        setPlayerStreak(me.challenge_streak)
+        setTotalChallenges(me.total_challenges_issued)
+      }
     } catch (err) {
       setError(err.message || "Match not found")
     } finally {
@@ -78,8 +94,39 @@ export default function MatchDetailPage() {
 
         {isUpcoming && (
           <>
+            {myBet && (
+              <div style={{
+                background: "#13131f", border: "1px solid #2d2b55",
+                borderRadius: 10, padding: "12px 16px", marginBottom: 12,
+              }}>
+                <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+                  Your Bet
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 14 }}>{myBet.selection}</div>
+                    <div style={{ color: "#6b7280", fontSize: 11 }}>
+                      {myBet.stake} tokens @ {myBet.odds}x →{" "}
+                      <span style={{ color: "#4ade80" }}>win {Math.floor(myBet.stake * myBet.odds).toLocaleString()}</span>
+                    </div>
+                  </div>
+                  <span style={{
+                    color: "#fbbf24", fontSize: 10, fontWeight: 700,
+                    background: "#0c0c14", padding: "3px 8px", borderRadius: 999, border: "1px solid #2d2b55",
+                  }}>PENDING</span>
+                </div>
+              </div>
+            )}
             <BetPanel match={match} odds={match.odds} onBetPlaced={() => {}} />
-            <ChallengePanel match={match} challenges={match.open_challenges} onUpdate={load} />
+            <ChallengePanel
+              match={match}
+              challenges={match.open_challenges}
+              onUpdate={load}
+              prefill={prefill}
+              playerStreak={playerStreak}
+              totalChallenges={totalChallenges}
+            />
           </>
         )}
 

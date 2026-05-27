@@ -1,12 +1,12 @@
 import { useState } from "react"
 import { api } from "../api.js"
 
-export default function ChallengePanel({ match, challenges, onUpdate }) {
-  const [issuerStake, setIssuerStake] = useState(100)
-  const [issuerOdds, setIssuerOdds] = useState(3.0)
-  const [acceptorOdds, setAcceptorOdds] = useState(1.5)
-  const [selection, setSelection] = useState("")
-  const [acceptorSelection, setAcceptorSelection] = useState("")
+export default function ChallengePanel({ match, challenges, onUpdate, prefill, playerStreak = 0, totalChallenges = 0 }) {
+  const [issuerStake, setIssuerStake] = useState(prefill?.stake ?? 100)
+  const [issuerOdds, setIssuerOdds] = useState(prefill?.my_odds ?? 3.0)
+  const [acceptorOdds, setAcceptorOdds] = useState(prefill?.their_odds ?? 1.5)
+  const [selection, setSelection] = useState(prefill?.my_pick ?? "")
+  const [acceptorSelection, setAcceptorSelection] = useState(prefill?.their_pick ?? "")
   const [loading, setLoading] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
@@ -40,9 +40,37 @@ export default function ChallengePanel({ match, challenges, onUpdate }) {
     finally { setAcceptingId(null) }
   }
 
+  const streakBonus = playerStreak >= 5 ? "+35%" : playerStreak === 4 ? "+20%" : playerStreak === 3 ? "+10%" : null
+  const MILESTONES = [[5, 50], [10, 150], [20, 400]]
+  const nextMilestone = MILESTONES.find(([t]) => totalChallenges < t)
+  const milestoneText = nextMilestone
+    ? `${nextMilestone[0] - totalChallenges} more challenge${nextMilestone[0] - totalChallenges === 1 ? "" : "s"} → ${nextMilestone[1]} token bonus`
+    : null
+
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12, padding: 16, marginBottom: 12 }}>
       <h3 style={{ color: "#a78bfa", fontWeight: 700, marginBottom: 12, fontSize: 14 }}>Challenges</h3>
+
+      {(playerStreak > 0 || milestoneText) && (
+        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
+          {playerStreak > 0 && (
+            <div style={{
+              background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
+              borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#c4b5fd", fontWeight: 700,
+            }}>
+              🔥 {playerStreak} streak{streakBonus ? ` — ${streakBonus} win bonus` : ""}
+            </div>
+          )}
+          {milestoneText && (
+            <div style={{
+              background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
+              borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#4ade80", fontWeight: 700,
+            }}>
+              🎯 {milestoneText}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Issue form */}
       <div style={{ background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 12 }}>
