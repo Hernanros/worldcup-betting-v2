@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 """
-simulate_leg.py — Simulate a World Cup group-stage leg with 3 players.
+simulate_leg.py — Simulate a World Cup group-stage leg across 3 isolated leagues.
 
 Uses a completely ISOLATED in-memory SQLite database.
 Never touches worldcup.db or any real data.
+
+3 leagues, 2 players each — challenges only within the same league.
 
 WC 2022 group-stage results (6 matches, approximate card/corner data):
   Argentina 1–2 Saudi Arabia  — 6🟨 0🟥  7 corners
@@ -12,9 +14,6 @@ WC 2022 group-stage results (6 matches, approximate card/corner data):
   Spain     7–0 Costa Rica    — 3🟨 1🟥  6 corners
   England   6–2 Iran          — 5🟨 0🟥  8 corners
   Belgium   1–0 Canada        — 4🟨 0🟥  5 corners
-
-Challenge types covered:
-  1x2 · btts · totals · correct_score · corners · yellow_cards · red_cards · handicap
 
 Run:
     cd /Users/hernanrosenblum/Documents/worldcup-betting-v2/backend
@@ -32,7 +31,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import select
 
 from app.database import Base
-from app.models import Player, Match, Bet, Challenge, Prediction
+from app.models import League, Player, Match, Bet, Challenge, Prediction
 from app.poller import settle_match, _evaluate_bet
 from app.bravery import check_volume_milestone, streak_bonus_pct
 
@@ -43,7 +42,12 @@ G = "\033[92m"; R = "\033[91m"; Y = "\033[93m"; B = "\033[94m"
 M = "\033[95m"; C = "\033[96m"; W = "\033[97m"; D = "\033[2m"; Z = "\033[0m"
 
 def header(text):
-    print(f"\n{B}{'─'*66}{Z}\n{W}  {text}{Z}\n{B}{'─'*66}{Z}")
+    print(f"\n{B}{'─'*72}{Z}\n{W}  {text}{Z}\n{B}{'─'*72}{Z}")
+
+def league_header(league_name, color):
+    print(f"\n{color}  ┌─────────────────────────────────────────────────┐")
+    print(f"  │  🏆  {league_name:<44}│")
+    print(f"  └─────────────────────────────────────────────────┘{Z}")
 
 def subheader(text):
     print(f"\n{C}  ▸ {text}{Z}")
@@ -52,21 +56,32 @@ def subheader(text):
 # FIXTURES
 # ─────────────────────────────────────────────────────────────────────────────
 
-STARTING_BALANCE = 1000
+STARTING_BALANCE = 1_000
 _BASE_KO = datetime(2022, 11, 21, 10, 0, tzinfo=timezone.utc)
 
+# 3 leagues, 2 players each
+LEAGUES_SEED = [
+    ("Familia",  "fam26",  G),   # green
+    ("Trabajo",  "work26", Y),   # yellow
+    ("Amigos",   "pals26", M),   # magenta
+]
+
+# (name, league_name)
 PLAYERS_SEED = [
-    ("Alice",  STARTING_BALANCE),
-    ("Bob",    STARTING_BALANCE),
-    ("Carlos", STARTING_BALANCE),
+    ("Alice",  "Familia"),
+    ("Bob",    "Familia"),
+    ("Carlos", "Trabajo"),
+    ("Diana",  "Trabajo"),
+    ("Eve",    "Amigos"),
+    ("Frank",  "Amigos"),
 ]
 
 # (home, away, home_score, away_score, home_red, away_red, corners, yellow_cards, round_label)
 MATCHES_SEED = [
     ("Argentina", "Saudi Arabia", 1, 2, 0, 0, 7, 6, "Group A"),
     ("France",    "Australia",    4, 1, 0, 0, 8, 2, "Group D"),
-    ("Germany",   "Japan",        1, 2, 0, 1, 9, 4, "Group E"),  # 1 red (Japan)
-    ("Spain",     "Costa Rica",   7, 0, 0, 1, 6, 3, "Group E"),  # 1 red (Costa Rica)
+    ("Germany",   "Japan",        1, 2, 0, 1, 9, 4, "Group E"),
+    ("Spain",     "Costa Rica",   7, 0, 0, 1, 6, 3, "Group E"),
     ("England",   "Iran",         6, 2, 0, 0, 8, 5, "Group B"),
     ("Belgium",   "Canada",       1, 0, 0, 0, 5, 4, "Group F"),
 ]
@@ -81,120 +96,120 @@ RESULTS = [
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# BETS
+# BETS — each player bets independently on the global matches
 # (player, match_idx, bet_type, selection, stake, odds)
-# Note: 1x2 away wins use "Away" (system canonical), displayed as team name
 # ─────────────────────────────────────────────────────────────────────────────
 BETS_SEED = [
-    # Alice — backs favourites, takes value on cards
+    # ── Familia: Alice (backs favourites) ────────────────────────────────────
     ("Alice",  0, "1x2",         "Argentina",  200, 1.40),   # LOST
     ("Alice",  1, "1x2",         "France",     150, 1.30),   # WON
-    ("Alice",  2, "1x2",         "Germany",    200, 1.50),   # LOST
-    ("Alice",  3, "totals",      "Over 4.5",   100, 1.80),   # WON  (7 goals)
-    ("Alice",  4, "btts",        "Yes",         80, 1.60),   # WON  (6-2)
+    ("Alice",  4, "btts",        "Yes",         80, 1.60),   # WON  (6–2)
     ("Alice",  5, "1x2",         "Belgium",    100, 1.55),   # WON
 
-    # Bob — contrarian value hunter
+    # ── Familia: Bob (contrarian value hunter) ────────────────────────────────
     ("Bob",    0, "1x2",         "Away",        80, 7.00),   # WON  (Saudi = away)
-    ("Bob",    1, "btts",        "Yes",        100, 1.80),   # WON  (4-1)
     ("Bob",    2, "1x2",         "Away",        80, 5.50),   # WON  (Japan = away)
-    ("Bob",    3, "btts",        "No",         100, 3.50),   # WON  (7-0)
-    ("Bob",    4, "totals",      "Over 5.5",    80, 2.00),   # WON  (8 goals)
+    ("Bob",    3, "btts",        "No",         100, 3.50),   # WON  (7–0)
     ("Bob",    5, "1x2",         "Draw",        60, 3.80),   # LOST
 
-    # Carlos — gut feelings + lucky correct score
+    # ── Trabajo: Carlos (gut feelings) ───────────────────────────────────────
     ("Carlos", 0, "1x2",         "Draw",       100, 3.50),   # LOST
-    ("Carlos", 1, "1x2",         "Australia",  100, 6.00),   # LOST
-    ("Carlos", 2, "1x2",         "Draw",       100, 3.20),   # LOST
-    ("Carlos", 3, "correct_score","7-0",         50, 90.0),  # WON! (exactly right)
+    ("Carlos", 3, "correct_score","7-0",         50, 90.0),  # WON! 🎉
     ("Carlos", 4, "1x2",         "England",    150, 1.35),   # WON
-    ("Carlos", 5, "1x2",         "Belgium",    150, 1.55),   # WON
+    ("Carlos", 2, "totals",      "Over 3.5",   100, 1.70),   # WON  (3 goals)
+
+    # ── Trabajo: Diana (steady picks) ────────────────────────────────────────
+    ("Diana",  1, "1x2",         "France",     150, 1.30),   # WON
+    ("Diana",  2, "1x2",         "Germany",    100, 1.50),   # LOST
+    ("Diana",  4, "totals",      "Over 5.5",    80, 2.00),   # WON  (8 goals)
+    ("Diana",  5, "1x2",         "Belgium",    100, 1.55),   # WON
+
+    # ── Amigos: Eve (corners & cards specialist) ──────────────────────────────
+    ("Eve",    0, "corners",     "Over 6.5",    80, 1.90),   # WON  (7 corners)
+    ("Eve",    2, "yellow_cards","Under 5.5",   80, 2.10),   # WON  (4 yellows)
+    ("Eve",    3, "1x2",         "Spain",      150, 1.20),   # WON
+    ("Eve",    4, "btts",        "Yes",         80, 1.60),   # WON
+
+    # ── Amigos: Frank (handicap specialist) ──────────────────────────────────
+    ("Frank",  0, "handicap",    "Saudi Arabia +1.5", 100, 1.70),  # WON
+    ("Frank",  4, "handicap",    "England -2.5",      120, 1.75),  # WON
+    ("Frank",  1, "1x2",         "Australia",          80, 6.00),  # LOST
+    ("Frank",  5, "1x2",         "Belgium",           100, 1.55),  # WON
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
-# CHALLENGES  (issuer, acceptor, match_idx, type, issuer_sel, acceptor_sel, stake, i_odds, a_odds)
+# CHALLENGES — only WITHIN the same league (cross-league is blocked by design)
+# (issuer, acceptor, match_idx, type, issuer_sel, acceptor_sel, stake, i_odds, a_odds)
 # ─────────────────────────────────────────────────────────────────────────────
 CHALLENGES_SEED = [
-    # ── classic ──────────────────────────────────────────────────────────────
-    ("Alice",  "Bob",    0, "1x2",
-        "Argentina",      "Saudi Arabia",       150, 1.40, 6.50),  # Bob wins (upsets)
+    # ── Familia: Alice vs Bob ─────────────────────────────────────────────────
+    ("Alice", "Bob",   0, "1x2",
+        "Argentina",     "Saudi Arabia",      150, 1.40, 6.50),   # Bob wins
 
-    ("Bob",    "Carlos", 1, "btts",
-        "Yes",            "No",                 100, 1.80, 2.00),  # Bob wins (4-1 both scored)
+    ("Alice", "Bob",   4, "1x2",
+        "England",       "Iran",              100, 1.30, 9.00),   # Alice wins
 
-    ("Alice",  "Carlos", 2, "1x2",
-        "Germany",        "Japan",              120, 1.50, 5.00),  # Carlos wins (Japan upsets)
+    ("Bob",   "Alice", 2, "yellow_cards",
+        "Under 5.5",     "Over 5.5",           80, 2.10, 1.75),   # Bob wins (4 < 5.5)
 
-    ("Bob",    "Alice",  3, "totals",
-        "Over 3.5",       "Under 3.5",          100, 1.60, 2.30),  # Bob wins (7 goals)
+    ("Alice", "Bob",   0, "yellow_cards",
+        "Over 4.5",      "Under 4.5",          80, 1.85, 1.95),   # Alice wins (6 > 4.5)
 
-    ("Alice",  "Bob",    4, "1x2",
-        "England",        "Iran",               100, 1.30, 9.00),  # Alice wins
+    # ── Trabajo: Carlos vs Diana ──────────────────────────────────────────────
+    ("Carlos", "Diana", 3, "correct_score",
+        "7-0",           "1-0",               50, 90.0, 1.80),   # Carlos wins 🎉
 
-    ("Carlos", "Bob",    5, "1x2",
-        "Draw",           "Belgium",             80, 3.80, 1.55),  # Bob wins (Belgium wins)
+    ("Diana",  "Carlos", 1, "1x2",
+        "France",        "Australia",         120, 1.30, 8.00),   # Diana wins
 
-    # ── yellow cards ─────────────────────────────────────────────────────────
-    # M0: 6 yellows — Over 4.5 wins
-    ("Alice",  "Bob",    0, "yellow_cards",
-        "Over 4.5",       "Under 4.5",           80, 1.85, 1.95),  # Alice wins (6 > 4.5)
+    ("Carlos", "Diana", 2, "red_cards",
+        "Over 0.5",      "Under 0.5",          60, 2.40, 1.55),   # Carlos wins (1 red)
 
-    # M2: 4 yellows — Under 5.5 wins
-    ("Bob",    "Carlos", 2, "yellow_cards",
-        "Under 5.5",      "Over 5.5",            80, 2.10, 1.75),  # Bob wins (4 < 5.5)
+    ("Diana",  "Carlos", 4, "totals",
+        "Over 5.5",      "Under 5.5",          80, 2.00, 1.80),   # Diana wins (8 goals)
 
-    # ── red cards ────────────────────────────────────────────────────────────
-    # M2: 1 red card total — Over 0.5 wins
-    ("Carlos", "Alice",  2, "red_cards",
-        "Over 0.5",       "Under 0.5",           60, 2.40, 1.55),  # Carlos wins (1 > 0.5)
+    # ── Amigos: Eve vs Frank ──────────────────────────────────────────────────
+    ("Eve",   "Frank", 0, "corners",
+        "Over 6.5",      "Under 6.5",          80, 1.90, 1.90),   # Eve wins (7 > 6.5)
 
-    # M3: 1 red card total — Over 0.5 wins
-    ("Alice",  "Bob",    3, "red_cards",
-        "Over 0.5",       "Under 0.5",           60, 2.40, 1.55),  # Alice wins (1 > 0.5)
+    ("Frank", "Eve",   4, "handicap",
+        "England -2.5",  "Iran +2.5",         120, 1.75, 2.10),   # Frank wins
 
-    # ── corners ──────────────────────────────────────────────────────────────
-    # M0: 7 corners — Over 6.5 wins
-    ("Bob",    "Carlos", 0, "corners",
-        "Over 6.5",       "Under 6.5",           80, 1.90, 1.90),  # Bob wins (7 > 6.5)
+    ("Eve",   "Frank", 2, "yellow_cards",
+        "Under 5.5",     "Over 5.5",           80, 2.10, 1.75),   # Eve wins (4 < 5.5)
 
-    # M4: 8 corners — Carlos picked Under 7.5, Alice picked Over 7.5 — Alice wins
-    ("Carlos", "Alice",  4, "corners",
-        "Under 7.5",      "Over 7.5",            70, 2.20, 1.70),  # Alice wins (8 > 7.5)
-
-    # ── handicap ─────────────────────────────────────────────────────────────
-    # M0: Saudi Arabia is away (score 2), +1.5 → adjusted 3.5 > 1 → Saudi handicap wins
-    ("Carlos", "Bob",    0, "handicap",
-        "Saudi Arabia +1.5", "Argentina -1.5",  100, 1.70, 2.20),  # Carlos wins
-
-    # M4: England is home (score 6), -2.5 → adjusted 3.5 > 2 → England handicap wins
-    ("Alice",  "Carlos", 4, "handicap",
-        "England -2.5",   "Iran +2.5",          120, 1.75, 2.10),  # Alice wins
+    ("Frank", "Eve",   3, "1x2",
+        "Spain",         "Costa Rica",        150, 1.20, 8.00),   # Frank wins
 ]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # PREDICTIONS  (player, match_idx, home_pred, away_pred)
 # ─────────────────────────────────────────────────────────────────────────────
 PREDICTIONS_SEED = [
-    ("Alice",  0, 2, 0),   # 2-0 Argentina — WRONG (0 pts)
-    ("Alice",  1, 3, 0),   # 3-0 France — correct outcome (1 pt)
-    ("Alice",  4, 4, 1),   # 4-1 England — correct outcome (1 pt)
+    # Familia
+    ("Alice",  0, 2, 0),   # 2–0 Argentina — WRONG (0 pts)
+    ("Alice",  1, 3, 0),   # 3–0 France — correct outcome (1 pt)
+    ("Bob",    0, 1, 2),   # 1–2 Saudi — CORRECT SCORE (3 pts)
+    ("Bob",    2, 1, 2),   # 1–2 Japan — CORRECT SCORE (3 pts)
 
-    ("Bob",    0, 1, 2),   # 1-2 Saudi — CORRECT SCORE (3 pts)
-    ("Bob",    2, 1, 2),   # 1-2 Japan — CORRECT SCORE (3 pts)
-    ("Bob",    5, 1, 0),   # 1-0 Belgium — CORRECT SCORE (3 pts)
+    # Trabajo
+    ("Carlos", 3, 7, 0),   # 7–0 Spain — CORRECT SCORE (3 pts) 🎉
+    ("Carlos", 4, 5, 1),   # 5–1 England — correct outcome (1 pt)
+    ("Diana",  1, 4, 1),   # 4–1 France — CORRECT SCORE (3 pts)
+    ("Diana",  5, 1, 0),   # 1–0 Belgium — CORRECT SCORE (3 pts)
 
-    ("Carlos", 3, 7, 0),   # 7-0 Spain — CORRECT SCORE (3 pts)
-    ("Carlos", 4, 5, 1),   # 5-1 England — correct outcome (1 pt)
-    ("Carlos", 1, 2, 0),   # 2-0 France — correct outcome (1 pt)
+    # Amigos
+    ("Eve",    3, 5, 0),   # 5–0 Spain — correct outcome (1 pt)
+    ("Eve",    4, 4, 1),   # 4–1 England — correct outcome (1 pt)
+    ("Frank",  0, 1, 2),   # 1–2 Saudi — CORRECT SCORE (3 pts)
+    ("Frank",  4, 3, 0),   # 3–0 England — correct outcome (1 pt)
 ]
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # HELPERS
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _actual_stat_label(btype: str, midx: int) -> str:
-    """Human-readable 'actual value' line for a challenge type."""
     r  = RESULTS[midx]
     ms = MATCHES_SEED[midx]
     if btype == "yellow_cards":
@@ -206,9 +221,7 @@ def _actual_stat_label(btype: str, midx: int) -> str:
         return f"{C}⚑  {r['corners']} corners{Z}"
     if btype == "handicap":
         return f"{D}score: {ms[2]}–{ms[3]}{Z}"
-    if btype in ("1x2", "btts", "totals", "correct_score"):
-        return f"{D}score: {ms[2]}–{ms[3]}{Z}"
-    return ""
+    return f"{D}score: {ms[2]}–{ms[3]}{Z}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -222,9 +235,22 @@ async def run():
     Session = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
 
     async with Session() as db:
-        # ── seed players ─────────────────────────────────────────────────────
-        for name, balance in PLAYERS_SEED:
-            db.add(Player(name=name, token_balance=balance, session_token=f"tok-{name.lower()}"))
+
+        # ── seed leagues ──────────────────────────────────────────────────────
+        for lname, lcode, _ in LEAGUES_SEED:
+            db.add(League(name=lname, invite_code=lcode))
+        await db.commit()
+        res = await db.execute(select(League))
+        leagues = {lg.name: lg for lg in res.scalars().all()}
+
+        # ── seed players ──────────────────────────────────────────────────────
+        for pname, lname in PLAYERS_SEED:
+            db.add(Player(
+                name=pname,
+                token_balance=STARTING_BALANCE,
+                session_token=f"tok-{pname.lower()}",
+                league_id=leagues[lname].id,
+            ))
         await db.commit()
         res = await db.execute(select(Player))
         players = {p.name: p for p in res.scalars().all()}
@@ -250,10 +276,16 @@ async def run():
         await db.commit()
 
         # ── issue + accept challenges ─────────────────────────────────────────
+        challenge_defs = []
         for (iname, aname, midx, btype, isel, asel, istake, iodds, aodds) in CHALLENGES_SEED:
             issuer   = players[iname]
             acceptor = players[aname]
-            astake   = max(1, round(istake * (iodds / aodds)))
+
+            # league isolation check (simulation enforces it manually)
+            assert issuer.league_id == acceptor.league_id, \
+                f"Cross-league challenge blocked: {iname} ({issuer.league_id}) vs {aname} ({acceptor.league_id})"
+
+            astake = max(1, round(istake * (iodds / aodds)))
 
             issuer.total_challenges_issued += 1
             issuer.challenge_streak += 1
@@ -266,7 +298,7 @@ async def run():
             issuer.token_balance   -= istake
             acceptor.token_balance -= astake
 
-            db.add(Challenge(
+            ch = Challenge(
                 issuer_id=issuer.id, acceptor_id=acceptor.id,
                 match_id=matches[midx].id,
                 bet_type=btype, selection=isel, acceptor_selection=asel,
@@ -274,7 +306,9 @@ async def run():
                 issuer_odds=iodds, acceptor_odds=aodds,
                 status="accepted",
                 bravery_streak_bonus_pct=streak_bonus_pct(issuer.challenge_streak),
-            ))
+            )
+            db.add(ch)
+            challenge_defs.append((ch, iname, aname, midx, btype, isel, asel, istake, iodds, aodds))
         await db.commit()
 
         # ── place predictions ─────────────────────────────────────────────────
@@ -297,8 +331,13 @@ async def run():
             await db.refresh(p)
         res = await db.execute(select(Bet))
         all_bets = list(res.scalars().all())
-        res = await db.execute(select(Challenge).order_by(Challenge.id))
-        all_challenges = list(res.scalars().all())
+
+        # refresh challenge objects
+        refreshed_challenges = []
+        for (ch, *rest) in challenge_defs:
+            await db.refresh(ch)
+            refreshed_challenges.append((ch, *rest))
+
         res = await db.execute(select(Prediction))
         preds_map = {(p.player_id, p.match_id): p for p in res.scalars().all()}
 
@@ -306,7 +345,7 @@ async def run():
         # REPORT
         # ─────────────────────────────────────────────────────────────────────
 
-        header("🏆  WC 2022 GROUP-STAGE  —  MATCH RESULTS")
+        header("⚽  WC 2022 GROUP-STAGE  —  MATCH RESULTS  (shared across all leagues)")
         for i, m in enumerate(matches):
             ms = MATCHES_SEED[i]
             r  = RESULTS[i]
@@ -314,117 +353,144 @@ async def run():
             icon  = "🟡" if hs == as_ else ("🏠" if hs > as_ else "✈️ ")
             reds  = r["home_red_cards"] + r["away_red_cards"]
             red_s = f"  {R}🟥×{reds}{Z}" if reds else ""
-            print(f"  {icon}  {m.home_team:<12} {hs}–{as_}  {m.away_team:<12}"
-                  f"  {D}({m.round})  🟨×{ms[7]}  ⚑{ms[6]}{red_s}{Z}")
+            print(f"  {icon}  {m.home_team:<13} {hs}–{as_}  {m.away_team:<13}"
+                  f"  {D}({m.round})  🟨×{ms[7]}  ⚑×{ms[6]}{red_s}{Z}")
 
-        header("💰  BETS  (per player)")
-        for pname in ("Alice", "Bob", "Carlos"):
-            subheader(pname)
-            res2 = await db.execute(
-                select(Bet).where(Bet.player_id == players[pname].id).order_by(Bet.id))
-            pbet_rows = list(res2.scalars().all())
-            defs = bet_defs_by_player[pname]
-            for row, (btype, sel, stake, odds, midx) in zip(pbet_rows, defs):
-                ms = MATCHES_SEED[midx]
-                won = row.status == "won"
-                net = int(stake * odds) - stake if won else -stake
-                status_s = f"{G}WON  +{net:>4}{Z}" if won else f"{R}LOST −{stake:>4}{Z}"
-                display_sel = ms[1] if sel == "Away" else sel
-                print(f"    {ms[0]+' vs '+ms[1]:<28} {btype:<14} "
-                      f"{display_sel:<22} {stake:>3}t @ {odds}x  →  {status_s}")
-
-        header("⚔️   CHALLENGES  (P2P)")
-
-        # group by type for display
-        TYPE_ORDER = ["1x2", "btts", "totals", "correct_score",
-                      "corners", "yellow_cards", "red_cards", "handicap"]
-        TYPE_LABEL = {
-            "1x2": "MATCH RESULT (1×2)",
-            "btts": "BOTH TEAMS TO SCORE",
-            "totals": "GOALS OVER/UNDER",
-            "correct_score": "CORRECT SCORE",
-            "corners": "CORNERS",
-            "yellow_cards": "🟨  YELLOW CARDS",
-            "red_cards": "🟥  RED CARDS",
-            "handicap": "HANDICAP",
+        # ── Per-league report ─────────────────────────────────────────────────
+        league_members = {
+            "Familia": ["Alice", "Bob"],
+            "Trabajo": ["Carlos", "Diana"],
+            "Amigos":  ["Eve",   "Frank"],
         }
-        grouped = {t: [] for t in TYPE_ORDER}
-        for ch_row, ch_def in zip(all_challenges, CHALLENGES_SEED):
-            grouped[ch_def[3]].append((ch_row, ch_def))
 
-        for btype in TYPE_ORDER:
-            entries = grouped[btype]
-            if not entries:
-                continue
-            print(f"\n  {Y}{TYPE_LABEL[btype]}{Z}")
-            for ch_row, (iname, aname, midx, btype_, isel, asel, istake, iodds, aodds) in entries:
+        for (lname, lcode, lcolor) in LEAGUES_SEED:
+            members = league_members[lname]
+
+            league_header(f"{lname}  (code: {lcode})", lcolor)
+
+            # ── Bets ──────────────────────────────────────────────────────────
+            print(f"\n  {lcolor}💰  BETS{Z}")
+            for pname in members:
+                subheader(pname)
+                res2 = await db.execute(
+                    select(Bet).where(Bet.player_id == players[pname].id).order_by(Bet.id))
+                pbet_rows = list(res2.scalars().all())
+                defs = bet_defs_by_player[pname]
+                for row, (btype, sel, stake, odds, midx) in zip(pbet_rows, defs):
+                    ms  = MATCHES_SEED[midx]
+                    won = row.status == "won"
+                    net = int(stake * odds) - stake if won else -stake
+                    status_s = f"{G}WON  +{net:>4}{Z}" if won else f"{R}LOST −{stake:>4}{Z}"
+                    display_sel = ms[1] if sel == "Away" else sel
+                    print(f"    {ms[0]+' vs '+ms[1]:<28} {btype:<14} "
+                          f"{display_sel:<24} {stake:>3}t @ {odds}x  →  {status_s}")
+
+            # ── Challenges ────────────────────────────────────────────────────
+            print(f"\n  {lcolor}⚔️   CHALLENGES (within {lname}){Z}")
+            league_chs = [
+                (ch, iname, aname, midx, btype, isel, asel, istake, iodds, aodds)
+                for (ch, iname, aname, midx, btype, isel, asel, istake, iodds, aodds)
+                in refreshed_challenges
+                if iname in members
+            ]
+            if not league_chs:
+                print("    (none)")
+            for (ch, iname, aname, midx, btype, isel, asel, istake, iodds, aodds) in league_chs:
                 ms      = MATCHES_SEED[midx]
-                astake  = ch_row.acceptor_stake
+                astake  = ch.acceptor_stake
                 res_d   = RESULTS[midx]
                 match_obj = matches[midx]
 
                 issuer_won = _evaluate_bet(btype, isel, match_obj, res_d)
                 i_payout   = int(istake * iodds) if issuer_won else 0
                 a_payout   = int(astake * aodds) if not issuer_won else 0
-                bonus      = int(i_payout * ch_row.bravery_streak_bonus_pct) \
-                             if issuer_won and ch_row.bravery_streak_bonus_pct else 0
+                bonus_tok  = int(i_payout * ch.bravery_streak_bonus_pct) \
+                             if issuer_won and ch.bravery_streak_bonus_pct else 0
 
-                winner  = iname if issuer_won else aname
-                loser   = aname if issuer_won else iname
-                w_net   = (i_payout + bonus if issuer_won else a_payout) - \
-                          (istake if issuer_won else astake)
-                l_net   = -(astake if issuer_won else istake)
+                winner = iname if issuer_won else aname
+                loser  = aname if issuer_won else iname
+                w_net  = (i_payout + bonus_tok if issuer_won else a_payout) - \
+                         (istake if issuer_won else astake)
+                l_net  = -(astake if issuer_won else istake)
 
                 stat_label = _actual_stat_label(btype, midx)
-                print(f"    {ms[0]} vs {ms[1]}  {D}[{stat_label}{D}]{Z}")
-                print(f"      {iname:<8} {isel:<26} {istake:>3}t @ {iodds}x")
-                print(f"      {aname:<8} {asel:<26} {astake:>3}t @ {aodds}x")
-                if bonus:
-                    pct = int(ch_row.bravery_streak_bonus_pct * 100)
-                    print(f"      {M}🔥 streak bonus on {iname}: +{bonus}t ({pct}%){Z}")
+                print(f"\n    {ms[0]} vs {ms[1]}  {D}[{btype}  {stat_label}{D}]{Z}")
+                print(f"      {iname:<8} {isel:<28} {istake:>3}t @ {iodds}x")
+                print(f"      {aname:<8} {asel:<28} {astake:>3}t @ {aodds}x")
+                if bonus_tok:
+                    pct = int(ch.bravery_streak_bonus_pct * 100)
+                    print(f"      {M}🔥 streak bonus on {iname}: +{bonus_tok}t ({pct}%){Z}")
                 print(f"      → {G}{winner} wins  +{w_net}t{Z}   {R}{loser} loses  {l_net}t{Z}")
 
-        header("🎯  PREDICTIONS")
-        print(f"  {'Player':<9} {'Match':<32} {'Pred':>5} {'Actual':>7} {'Pts':>5}  Status")
-        print(f"  {'─'*7}  {'─'*30}  {'─'*5}  {'─'*5}  {'─'*4}  {'─'*14}")
-        for (pname, midx, hp, ap) in PREDICTIONS_SEED:
-            ms   = MATCHES_SEED[midx]
-            pred = preds_map.get((players[pname].id, matches[midx].id))
-            pts  = pred.points_awarded if pred else 0
-            st   = pred.status if pred else "?"
-            pts_s = f"{G}+{pts}{Z}" if pts > 0 else f"{R} 0{Z}"
-            print(f"  {pname:<9} {ms[0]+' vs '+ms[1]:<32} "
-                  f"{hp}–{ap:>1}  {ms[2]}–{ms[3]:>1}  {pts_s}  {D}{st}{Z}")
+            # ── Predictions ───────────────────────────────────────────────────
+            print(f"\n  {lcolor}🎯  PREDICTIONS{Z}")
+            print(f"    {'Player':<8} {'Match':<28} {'Pred':>5} {'Actual':>6} {'Pts':>5}  Status")
+            print(f"    {'─'*7}  {'─'*26}  {'─'*5}  {'─'*5}  {'─'*4}  {'─'*14}")
+            for (pname, midx, hp, ap) in PREDICTIONS_SEED:
+                if pname not in members:
+                    continue
+                ms   = MATCHES_SEED[midx]
+                pred = preds_map.get((players[pname].id, matches[midx].id))
+                pts  = pred.points_awarded if pred else 0
+                st   = pred.status if pred else "?"
+                pts_s = f"{G}+{pts}{Z}" if pts > 0 else f"{R} 0{Z}"
+                print(f"    {pname:<8} {ms[0]+' vs '+ms[1]:<28} "
+                      f"{hp}–{ap}  {ms[2]}–{ms[3]}  {pts_s}  {D}{st}{Z}")
 
-        header("🏅  FINAL STANDINGS")
-        pred_pts = {}
-        for pname in players:
-            res5 = await db.execute(
-                select(Prediction).where(Prediction.player_id == players[pname].id))
-            pred_pts[pname] = sum(r.points_awarded for r in res5.scalars().all())
+            # ── League leaderboard ────────────────────────────────────────────
+            print(f"\n  {lcolor}🏅  {lname.upper()} LEADERBOARD{Z}")
+            pred_pts = {}
+            for pname in members:
+                res5 = await db.execute(
+                    select(Prediction).where(Prediction.player_id == players[pname].id))
+                pred_pts[pname] = sum(r.points_awarded for r in res5.scalars().all())
 
-        standings = []
-        for pname in players:
-            await db.refresh(players[pname])
-            standings.append((
-                pname,
-                initial_balances[pname],
-                pre_settlement[pname],
-                players[pname].token_balance,
-                players[pname].token_balance - initial_balances[pname],
-                pred_pts[pname],
-            ))
-        standings.sort(key=lambda x: x[3], reverse=True)
+            lb = []
+            for pname in members:
+                await db.refresh(players[pname])
+                lb.append((
+                    pname,
+                    initial_balances[pname],
+                    pre_settlement[pname],
+                    players[pname].token_balance,
+                    players[pname].token_balance - initial_balances[pname],
+                    pred_pts[pname],
+                ))
+            lb.sort(key=lambda x: (x[3], x[5]), reverse=True)
 
-        print(f"\n  {'':2} {'Player':<9} {'Start':>6} {'Pre-settle':>11} {'Final':>7} {'Net':>7}  {'Pred pts':>9}")
-        print(f"  {'─'*2}  {'─'*7}  {'─'*6}  {'─'*9}  {'─'*7}  {'─'*7}  {'─'*8}")
-        for idx, (pname, start, pre, final, change, ppts) in enumerate(standings):
+            print(f"    {'':2} {'Player':<8} {'Start':>6} {'Pre-settle':>11} {'Final':>7} {'Net':>7}  {'Pred pts':>9}")
+            print(f"    {'─'*2}  {'─'*6}  {'─'*6}  {'─'*9}  {'─'*7}  {'─'*7}  {'─'*8}")
+            medals = ["🥇", "🥈"]
+            for idx, (pname, start, pre, final, change, ppts) in enumerate(lb):
+                sign = "+" if change >= 0 else ""
+                c_s  = f"{G}{sign}{change}{Z}" if change >= 0 else f"{R}{change}{Z}"
+                print(f"    {medals[idx]}  {pname:<8} {start:>6} {pre:>11} {final:>7} {c_s:>13}  {ppts:>9}")
+
+        # ── Overall cross-league summary ──────────────────────────────────────
+        header("🌍  OVERALL SUMMARY  (all leagues combined)")
+        print(f"  {'League':<10} {'Player':<8} {'Final':>7} {'Net':>8}  {'Pred pts':>9}")
+        print(f"  {'─'*8}  {'─'*6}  {'─'*7}  {'─'*7}  {'─'*8}")
+        all_standings = []
+        for lname, _, lcolor in LEAGUES_SEED:
+            for pname in league_members[lname]:
+                await db.refresh(players[pname])
+                res5 = await db.execute(
+                    select(Prediction).where(Prediction.player_id == players[pname].id))
+                ppts = sum(r.points_awarded for r in res5.scalars().all())
+                all_standings.append((
+                    lname, lcolor, pname,
+                    players[pname].token_balance,
+                    players[pname].token_balance - initial_balances[pname],
+                    ppts,
+                ))
+        all_standings.sort(key=lambda x: (x[3], x[5]), reverse=True)
+        for lname, lcolor, pname, final, change, ppts in all_standings:
             sign = "+" if change >= 0 else ""
             c_s  = f"{G}{sign}{change}{Z}" if change >= 0 else f"{R}{change}{Z}"
-            print(f"  {'🥇🥈🥉'[idx*2:idx*2+2]}  {pname:<9} {start:>6} {pre:>11} {final:>7} {c_s:>13}  {ppts:>9}")
+            print(f"  {lcolor}{lname:<10}{Z}  {pname:<8} {final:>7} {c_s:>13}  {ppts:>9}")
 
-        print(f"\n{B}{'─'*66}{Z}")
-        print(f"  {D}In-memory DB — nothing written to disk.{Z}\n")
+        print(f"\n{B}{'─'*72}{Z}")
+        print(f"  {D}In-memory DB — nothing written to disk.  3 leagues, {len(players)} players.{Z}\n")
 
 
 if __name__ == "__main__":
