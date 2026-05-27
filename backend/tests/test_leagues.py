@@ -68,3 +68,34 @@ async def test_list_leagues_returns_all(client, db):
     names = [league["name"] for league in resp.json()]
     assert "L1" in names
     assert "L2" in names
+
+
+async def test_leaderboard_scoped_to_league(client, db):
+    """Players in different leagues must not appear in each other's leaderboard."""
+    # Create a second league
+    headers = await _admin_headers(client)
+    await client.post("/api/leagues",
+                      json={"name": "Office", "invite_code": "office26"},
+                      headers=headers)
+
+    alice = await join_player(client, "Alice", "friends2026")
+    bob_resp = await client.post("/api/auth/join",
+                                 json={"name": "Bob", "code": "office26"})
+    bob_token = bob_resp.json()["token"]
+
+    alice_lb = (await client.get(
+        "/api/leaderboard",
+        headers={"Authorization": f"Bearer {alice['token']}"}
+    )).json()
+    bob_lb = (await client.get(
+        "/api/leaderboard",
+        headers={"Authorization": f"Bearer {bob_token}"}
+    )).json()
+
+    alice_names = [p["name"] for p in alice_lb]
+    bob_names   = [p["name"] for p in bob_lb]
+
+    assert "Alice" in alice_names
+    assert "Bob"   not in alice_names
+    assert "Bob"   in bob_names
+    assert "Alice" not in bob_names

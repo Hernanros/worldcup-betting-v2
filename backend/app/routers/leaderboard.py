@@ -10,7 +10,11 @@ router = APIRouter()
 
 @router.get("/api/leaderboard")
 async def leaderboard(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
-    players = (await db.execute(select(Player).order_by(desc(Player.token_balance)))).scalars().all()
+    player, _ = auth
+    query = select(Player).order_by(desc(Player.token_balance))
+    if player.league_id is not None:
+        query = query.where(Player.league_id == player.league_id)
+    players = (await db.execute(query)).scalars().all()
     result = []
     for i, p in enumerate(players):
         rank = result[i - 1]["rank"] if i > 0 and players[i - 1].token_balance == p.token_balance else i + 1
@@ -27,4 +31,5 @@ async def red_cards_leaderboard(auth=Depends(get_current_player), db: AsyncSessi
         tally[m.home_team] = tally.get(m.home_team, 0) + (m.home_red_cards or 0)
         tally[m.away_team] = tally.get(m.away_team, 0) + (m.away_red_cards or 0)
     ranked = sorted(tally.items(), key=lambda x: x[1], reverse=True)
-    return [{"team": team, "red_cards": count, "rank": i + 1} for i, (team, count) in enumerate(ranked)]
+    return [{"team": team, "red_cards": count, "rank": i + 1}
+            for i, (team, count) in enumerate(ranked)]
