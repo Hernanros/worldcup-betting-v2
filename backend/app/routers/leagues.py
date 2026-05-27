@@ -8,7 +8,7 @@ from app.models import League
 router = APIRouter()
 
 
-@router.post("/api/leagues")
+@router.post("/api/leagues", status_code=201)
 async def create_league(data: dict, _=Depends(get_admin), db: AsyncSession = Depends(get_db)):
     name = (data.get("name") or "").strip()
     code = (data.get("invite_code") or "").strip()
@@ -29,4 +29,4 @@ async def create_league(data: dict, _=Depends(get_admin), db: AsyncSession = Dep
 @router.get("/api/leagues")
 async def list_leagues(_=Depends(get_admin), db: AsyncSession = Depends(get_db)):
     leagues = (await db.execute(select(League))).scalars().all()
-    return [{"id": l.id, "name": l.name, "invite_code": l.invite_code} for l in leagues]
+    return [{"id": league.id, "name": league.name, "invite_code": league.invite_code} for league in leagues]
