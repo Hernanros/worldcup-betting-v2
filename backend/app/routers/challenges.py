@@ -76,6 +76,11 @@ async def accept_challenge(challenge_id: int, auth=Depends(get_current_player), 
     if challenge.issuer_id == player.id:
         raise HTTPException(400, "cannot accept your own challenge")
 
+    # Enforce same-league rule
+    issuer = await db.get(Player, challenge.issuer_id)
+    if issuer.league_id != player.league_id:
+        raise HTTPException(403, "challenge belongs to a different league")
+
     player = await db.get(Player, player.id)
     if player.token_balance < challenge.acceptor_stake:
         raise HTTPException(400, "insufficient balance")

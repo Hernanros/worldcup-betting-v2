@@ -74,10 +74,21 @@ async def get_match(match_id: int, auth=Depends(get_current_player), db: AsyncSe
     except (json.JSONDecodeError, ValueError):
         odds = {}
 
-    result = await db.execute(
-        select(Challenge).where(Challenge.match_id == match_id, Challenge.status == "open")
-    )
-    open_challenges = result.scalars().all()
+    current_player = auth[0] if auth else None
+    if current_player is not None and current_player.league_id is not None:
+        league_player_ids = (await db.execute(
+            select(Player.id).where(Player.league_id == current_player.league_id)
+        )).scalars().all()
+        ch_query = select(Challenge).where(
+            Challenge.match_id == match_id,
+            Challenge.status == "open",
+            Challenge.issuer_id.in_(league_player_ids),
+        )
+    else:
+        ch_query = select(Challenge).where(
+            Challenge.match_id == match_id, Challenge.status == "open"
+        )
+    open_challenges = (await db.execute(ch_query)).scalars().all()
 
     return {
         **_match_dict(match),

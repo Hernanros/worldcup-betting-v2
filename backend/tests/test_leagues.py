@@ -99,3 +99,62 @@ async def test_leaderboard_scoped_to_league(client, db):
     assert "Bob"   not in alice_names
     assert "Bob"   in bob_names
     assert "Alice" not in bob_names
+
+
+async def test_open_challenges_scoped_to_league(client, db):
+    """A player must not see open challenges issued by a different league."""
+    from tests.conftest import make_match
+    headers = await _admin_headers(client)
+    await client.post("/api/leagues",
+                      json={"name": "Office", "invite_code": "office26"},
+                      headers=headers)
+
+    m = await make_match(db)
+    alice = await join_player(client, "Alice", "friends2026")
+    bob_resp = await client.post("/api/auth/join",
+                                 json={"name": "Bob", "code": "office26"})
+    bob_token = bob_resp.json()["token"]
+
+    # Bob issues a challenge in the office league
+    await client.post(f"/api/matches/{m.id}/challenges",
+                      json={"bet_type": "1x2", "selection": "Argentina",
+                            "acceptor_selection": "Away",
+                            "issuer_stake": 100, "issuer_odds": 2.0,
+                            "acceptor_odds": 2.0},
+                      headers={"Authorization": f"Bearer {bob_token}"})
+
+    # Alice fetches the match — should see no open challenges
+    resp = await client.get(f"/api/matches/{m.id}",
+                            headers={"Authorization": f"Bearer {alice['token']}"})
+    assert resp.status_code == 200
+    assert resp.json()["open_challenges"] == []
+
+
+async def test_cannot_accept_cross_league_challenge(client, db):
+    """Accepting a challenge from a different league must return 403."""
+    from tests.conftest import make_match
+    headers = await _admin_headers(client)
+    await client.post("/api/leagues",
+                      json={"name": "Office", "invite_code": "office26"},
+                      headers=headers)
+
+    m = await make_match(db)
+    alice = await join_player(client, "Alice", "friends2026")
+    bob_resp = await client.post("/api/auth/join",
+                                 json={"name": "Bob", "code": "office26"})
+    bob_token = bob_resp.json()["token"]
+
+    # Alice issues a challenge
+    ch_resp = await client.post(
+        f"/api/matches/{m.id}/challenges",
+        json={"bet_type": "1x2", "selection": "Argentina",
+              "acceptor_selection": "Away",
+              "issuer_stake": 100, "issuer_odds": 2.0, "acceptor_odds": 2.0},
+        headers={"Authorization": f"Bearer {alice['token']}"}
+    )
+    ch_id = ch_resp.json()["id"]
+
+    # Bob (different league) tries to accept — must fail
+    resp = await client.post(f"/api/challenges/{ch_id}/accept",
+                             headers={"Authorization": f"Bearer {bob_token}"})
+    assert resp.status_code == 403
