@@ -5,6 +5,17 @@ import BetPanel from "../components/BetPanel.jsx"
 import ChallengePanel from "../components/ChallengePanel.jsx"
 import PageHero from "../components/PageHero.jsx"
 import { getMomentForMatch } from "../data/moments.js"
+import { flagUrl } from "../data/teams.js"
+
+function TeamFlag({ name, size = 48 }) {
+  const url = flagUrl(name, 64)
+  if (!url) return <span style={{ fontSize: size }}>🏳️</span>
+  return (
+    <img src={url} alt={name} width={size} height={size * 0.67}
+      style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
+      onError={(e) => { e.target.style.display = "none" }} />
+  )
+}
 
 export default function MatchDetailPage() {
   const { id } = useParams()
@@ -70,9 +81,9 @@ export default function MatchDetailPage() {
         <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12,
           padding: 20, marginBottom: 16, textAlign: "center" }}>
           <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
-            <div>
-              <div style={{ fontSize: 40 }}>🏳️</div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", marginTop: 4 }}>{match.home_team}</div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <TeamFlag name={match.home_team} />
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", marginTop: 6 }}>{match.home_team}</div>
               {match.home_score !== null && (
                 <div className="gradient-text" style={{ fontSize: 32, fontWeight: 800, marginTop: 6 }}>{match.home_score}</div>
               )}
@@ -82,9 +93,9 @@ export default function MatchDetailPage() {
                 {match.status === "locked" && match.home_score !== null ? "LIVE" : match.status}
               </div>
             </div>
-            <div>
-              <div style={{ fontSize: 40 }}>🏳️</div>
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", marginTop: 4 }}>{match.away_team}</div>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+              <TeamFlag name={match.away_team} />
+              <div style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", marginTop: 6 }}>{match.away_team}</div>
               {match.away_score !== null && (
                 <div className="gradient-text" style={{ fontSize: 32, fontWeight: 800, marginTop: 6 }}>{match.away_score}</div>
               )}

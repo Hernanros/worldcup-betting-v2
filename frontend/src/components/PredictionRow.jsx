@@ -1,5 +1,16 @@
 import { useState, useRef } from "react"
 import { api } from "../api.js"
+import { flagUrl } from "../data/teams.js"
+
+function Flag({ name }) {
+  const url = flagUrl(name, 40)
+  if (!url) return null
+  return (
+    <img src={url} alt={name} width={20} height={14}
+      style={{ objectFit: "cover", borderRadius: 2, verticalAlign: "middle", marginRight: 5 }}
+      onError={(e) => { e.target.style.display = "none" }} />
+  )
+}
 
 export default function PredictionRow({ entry, onSaved }) {
   const [home, setHome] = useState(entry.my_prediction?.home_score_pred ?? "")
@@ -45,7 +56,9 @@ export default function PredictionRow({ entry, onSaved }) {
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 8 }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <span style={{ fontWeight: 600, fontSize: 13, color: "#e2e8f0" }}>
-          {entry.home_team} vs {entry.away_team}
+          <Flag name={entry.home_team} />{entry.home_team}
+          <span style={{ color: "#6b7280", margin: "0 4px" }}>vs</span>
+          <Flag name={entry.away_team} />{entry.away_team}
         </span>
         {pred && (
           <span style={{
