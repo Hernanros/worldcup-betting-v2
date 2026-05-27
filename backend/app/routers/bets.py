@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
@@ -50,3 +51,32 @@ async def place_bet(match_id: int, data: dict, auth=Depends(get_current_player),
     await db.refresh(bet)
 
     return {"id": bet.id, "new_balance": player.token_balance}
+
+
+@router.get("/api/bets")
+async def get_my_bets(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    player, _ = auth
+    rows = (await db.execute(
+        select(Bet, Match)
+        .join(Match, Bet.match_id == Match.id)
+        .where(Bet.player_id == player.id)
+        .order_by(Match.kickoff_time.desc())
+    )).all()
+    return [
+        {
+            "id": b.id,
+            "match_id": b.match_id,
+            "home_team": m.home_team,
+            "away_team": m.away_team,
+            "kickoff_time": m.kickoff_time.isoformat(),
+            "match_status": m.status,
+            "home_score": m.home_score,
+            "away_score": m.away_score,
+            "bet_type": b.bet_type,
+            "selection": b.selection,
+            "stake": b.stake,
+            "odds": b.odds_at_placement,
+            "status": b.status,
+        }
+        for b, m in rows
+    ]
