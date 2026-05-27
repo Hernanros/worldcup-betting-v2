@@ -33,3 +33,21 @@ async def test_me_returns_player(client):
 async def test_me_rejects_bad_token(client):
     resp = await client.get("/api/players/me", headers={"Authorization": "Bearer garbage"})
     assert resp.status_code == 401
+
+
+async def test_get_me_returns_player_fields(client, db):
+    data = await join_player(client)
+    headers = {"Authorization": f"Bearer {data['token']}"}
+    resp = await client.get("/api/me", headers=headers)
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["name"] == "Alice"
+    assert body["token_balance"] == 1000
+    assert body["challenge_streak"] == 0
+    assert body["total_challenges_issued"] == 0
+    assert body["volume_milestone_reached"] == 0
+
+
+async def test_get_me_requires_auth(client, db):
+    resp = await client.get("/api/me", headers={"Authorization": "Bearer garbage"})
+    assert resp.status_code == 401

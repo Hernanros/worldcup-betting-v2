@@ -48,6 +48,20 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
     return {"token": token, "player": _player_dict(player, is_admin)}
 
 
+@router.get("/api/me")
+async def get_me(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    player, _ = auth
+    p = await db.get(Player, player.id)
+    return {
+        "id": p.id,
+        "name": p.name,
+        "token_balance": p.token_balance,
+        "challenge_streak": p.challenge_streak,
+        "total_challenges_issued": p.total_challenges_issued,
+        "volume_milestone_reached": p.volume_milestone_reached,
+    }
+
+
 @router.get("/api/players/me")
 async def me(auth=Depends(get_current_player)):
     player, is_admin = auth
