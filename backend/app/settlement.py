@@ -48,3 +48,19 @@ def determine_totals_winner(selection: str, actual_value: int) -> bool:
 def determine_btts_winner(selection: str, home_score: int, away_score: int) -> bool:
     both_scored = home_score > 0 and away_score > 0
     return (selection == "Yes") == both_scored
+
+
+def determine_handicap_winner(selection: str, home_team: str, home_score: int, away_score: int) -> bool:
+    """Asian handicap.  Format: "{team} {+/-N}"  e.g. 'England -2.5' or 'Japan +0.5'.
+    The handicap adjusts that team's score; they win if their adjusted score
+    exceeds the opponent's score (no draw possible with .5 lines)."""
+    try:
+        *team_parts, hdcp_str = selection.split()
+        team = " ".join(team_parts)
+        handicap = float(hdcp_str)
+    except (ValueError, IndexError):
+        return False
+    if team == home_team:
+        return (home_score + handicap) > away_score
+    else:
+        return (away_score + handicap) > home_score

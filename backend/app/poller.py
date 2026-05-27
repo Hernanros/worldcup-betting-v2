@@ -5,7 +5,7 @@ from app.models import Match, Bet, Challenge, Prediction, Player, TournamentBet
 from app.settlement import (
     settle_bet, settle_challenge_issuer, settle_challenge_acceptor,
     determine_h2h_winner, determine_correct_score_winner,
-    determine_totals_winner, determine_btts_winner,
+    determine_totals_winner, determine_btts_winner, determine_handicap_winner,
 )
 
 logger = logging.getLogger(__name__)
@@ -48,6 +48,13 @@ def _evaluate_bet(bet_type, selection, match, result):
         return determine_btts_winner(selection, hs, as_)
     if bet_type == "corners":
         return determine_totals_winner(selection, result.get("corners", 0))
+    if bet_type == "yellow_cards":
+        return determine_totals_winner(selection, result.get("yellow_cards", 0))
+    if bet_type == "red_cards":
+        total_reds = result.get("home_red_cards", 0) + result.get("away_red_cards", 0)
+        return determine_totals_winner(selection, total_reds)
+    if bet_type == "handicap":
+        return determine_handicap_winner(selection, match.home_team, hs, as_)
     return False
 
 
