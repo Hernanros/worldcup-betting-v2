@@ -4,6 +4,7 @@ from app.settlement import (
     determine_correct_score_winner,
     determine_totals_winner,
     determine_btts_winner,
+    determine_handicap_winner,
     settle_challenge_issuer,
     settle_challenge_acceptor,
 )
@@ -75,3 +76,30 @@ def test_settle_challenge_acceptor_win():
 
 def test_settle_challenge_acceptor_loss():
     assert settle_challenge_acceptor(stake=150, odds=1.5, won=False) == 0
+
+
+# ── handicap ──────────────────────────────────────────────────────────────────
+
+def test_handicap_home_negative_wins():
+    # England -2.5: 6 - 2.5 = 3.5 > 2 → True
+    assert determine_handicap_winner("England -2.5", "England", 6, 2) is True
+
+
+def test_handicap_home_negative_loses():
+    # England -2.5: 2 - 2.5 = -0.5 < 1 → False
+    assert determine_handicap_winner("England -2.5", "England", 2, 1) is False
+
+
+def test_handicap_away_positive_wins():
+    # Saudi Arabia +1.5 (away): 2 + 1.5 = 3.5 > 1 → True
+    assert determine_handicap_winner("Saudi Arabia +1.5", "Argentina", 1, 2) is True
+
+
+def test_handicap_away_positive_loses():
+    # Japan +0.5 (away): 0 + 0.5 = 0.5, not > 2 → False
+    assert determine_handicap_winner("Japan +0.5", "Germany", 2, 0) is False
+
+
+def test_handicap_bad_format_returns_false():
+    assert determine_handicap_winner("NoHandicap", "Argentina", 1, 0) is False
+    assert determine_handicap_winner("", "Argentina", 1, 0) is False
