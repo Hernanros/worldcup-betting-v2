@@ -17,16 +17,22 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
+import re
 from sqlalchemy import text
 from app.config import settings
 from app.database import init_db, Base
+
+
+def _normalize_db_url(url: str) -> str:
+    """Convert postgres:// or postgresql:// → postgresql+asyncpg:// for async driver."""
+    return re.sub(r"^postgres(?:ql)?://", "postgresql+asyncpg://", url)
 
 # Import models so Base.metadata knows about League and Player
 import app.models  # noqa: F401
 
 
 async def run(league_name: str, league_code: str):
-    init_db(settings.database_url)
+    init_db(_normalize_db_url(settings.database_url))
     from app.database import engine, AsyncSessionLocal
 
     # Step 1: create new tables (leagues) + ensure schema is up to date

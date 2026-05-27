@@ -14,6 +14,33 @@ def _normalize_db_url(url: str) -> str:
     return re.sub(r"^postgres(?:ql)?://", "postgresql+asyncpg://", url)
 
 
+async def _run_migrations():
+    """Idempotent schema migrations — safe to run on every startup."""
+    from sqlalchemy import text
+    from app.database import AsyncSessionLocal
+
+    async with AsyncSessionLocal() as db:
+        # Add league_id column to players if it doesn't exist yet
+        await db.execute(text(
+            "ALTER TABLE players ADD COLUMN IF NOT EXISTS "
+            "league_id INTEGER REFERENCES leagues(id)"
+        ))
+        # Drop the old single-column unique constraint on name if present
+        for cname in ("players_name_key", "ix_players_name", "uq_player_name"):
+            await db.execute(text(
+                f"ALTER TABLE players DROP CONSTRAINT IF EXISTS {cname}"
+            ))
+        # Add composite unique constraint (name, league_id) — ignore if already exists
+        try:
+            await db.execute(text(
+                "ALTER TABLE players ADD CONSTRAINT uq_player_name_league "
+                "UNIQUE (name, league_id)"
+            ))
+        except Exception:
+            await db.rollback()
+        await db.commit()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     url = _normalize_db_url(app.state.database_url)
@@ -22,6 +49,9 @@ async def lifespan(app: FastAPI):
     try:
         await create_tables()
         logger.info("Database tables ready")
+        if not getattr(app.state, "testing", False):
+            await _run_migrations()
+            logger.info("Migrations applied")
     except Exception:
         logger.exception("DB init failed — check DATABASE_URL and connectivity")
         raise
