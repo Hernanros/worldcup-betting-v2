@@ -19,8 +19,9 @@ class League(Base):
 
 class Player(Base):
     __tablename__ = "players"
+    __table_args__ = (UniqueConstraint("name", "league_id", name="uq_player_name_league"),)
     id = Column(Integer, primary_key=True)
-    name = Column(String(50), nullable=False, unique=True)
+    name = Column(String(50), nullable=False)
     session_token = Column(String(200), unique=True)
     token_balance = Column(Integer, nullable=False, default=1000)
     challenge_streak = Column(Integer, nullable=False, default=0)

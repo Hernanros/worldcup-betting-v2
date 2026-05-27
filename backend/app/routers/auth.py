@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models import Player
+from app.models import Player, League
 from app.deps import make_token, get_current_player
 from app.config import settings
 
@@ -28,15 +28,26 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
         raise HTTPException(400, "name required")
 
     is_admin = code == settings.admin_code
-    is_player = code == settings.invite_code
 
-    if not is_admin and not is_player:
-        raise HTTPException(403, "invalid code")
+    league = None
+    if not is_admin:
+        result = await db.execute(select(League).where(League.invite_code == code))
+        league = result.scalar_one_or_none()
+        if not league:
+            raise HTTPException(403, "invalid invite code")
 
-    result = await db.execute(select(Player).where(Player.name == name))
+    # Find or create player, scoped to league
+    query = select(Player).where(Player.name == name)
+    if league:
+        query = query.where(Player.league_id == league.id)
+    else:
+        query = query.where(Player.league_id.is_(None))
+    result = await db.execute(query)
     player = result.scalar_one_or_none()
+
     if not player:
-        player = Player(name=name, token_balance=1000)
+        player = Player(name=name, token_balance=1000,
+                        league_id=league.id if league else None)
         db.add(player)
         await db.commit()
         await db.refresh(player)
@@ -45,7 +56,11 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
     player.session_token = token
     await db.commit()
 
-    return {"token": token, "player": _player_dict(player, is_admin)}
+    return {
+        "token": token,
+        "player": _player_dict(player, is_admin),
+        "league": {"id": league.id, "name": league.name} if league else None,
+    }
 
 
 @router.get("/api/me")

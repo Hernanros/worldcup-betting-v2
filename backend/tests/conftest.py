@@ -4,7 +4,7 @@ from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from app.main import create_app
 from app.database import Base, get_db
-from app.models import Player, Match
+from app.models import Player, Match, League
 from datetime import datetime, timezone
 
 TEST_DB_URL = "sqlite+aiosqlite:///:memory:"
@@ -15,6 +15,11 @@ async def db_engine():
     engine = create_async_engine(TEST_DB_URL)
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+    # Seed default league once per engine so all fixtures share it
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with session_factory() as session:
+        session.add(League(name="Test League", invite_code="friends2026"))
+        await session.commit()
     yield engine
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.drop_all)
@@ -65,6 +70,14 @@ async def make_match(db, status="upcoming", home="Argentina", away="Brazil") -> 
     await db.commit()
     await db.refresh(m)
     return m
+
+
+async def make_league(db, name="Test League", code="friends2026"):
+    league = League(name=name, invite_code=code)
+    db.add(league)
+    await db.commit()
+    await db.refresh(league)
+    return league
 
 
 async def join_player(client, name="Alice", code="friends2026") -> dict:
