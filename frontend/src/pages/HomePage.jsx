@@ -20,11 +20,12 @@ export default function HomePage() {
   useEffect(() => {
     async function load() {
       try {
-        const [matches, predictions, tournamentData, lb] = await Promise.all([
+        const [matches, predictions, tournamentData, lb, matchBetsData] = await Promise.all([
           api.get("/api/matches"),
           api.get("/api/predictions"),
           api.get("/api/tournament/bets").catch(() => ({ my_bets: [] })),
           api.get("/api/leaderboard"),
+          api.get("/api/bets").catch(() => []),
         ])
 
         // Upcoming matches — sort by date, take first 3
@@ -37,9 +38,10 @@ export default function HomePage() {
         const pts = predictions.reduce((acc, e) => acc + (e.my_prediction?.points_awarded || 0), 0)
         setPredictionPts(pts)
 
-        // Active (pending) bets
+        // Active (pending) bets — merge match bets + tournament bets
         const pending = (tournamentData.my_bets || []).filter((b) => b.status === "pending")
-        setActiveBets(pending)
+        const pendingMatchBets = (matchBetsData || []).filter((b) => b.status === "pending")
+        setActiveBets([...pendingMatchBets.map(b => ({ ...b, _kind: "match" })), ...pending.map(b => ({ ...b, _kind: "tournament" }))])
 
         // Leaderboard — top 3 + me
         setLeaderboard(lb)
@@ -115,7 +117,7 @@ export default function HomePage() {
               Active Bets
             </h2>
             {activeBets.map((b) => (
-              <div key={b.id} style={{
+              <div key={`${b._kind}-${b.id}`} style={{
                 background: "#13131f", border: "1px solid #2d2b55",
                 borderRadius: 10, padding: "10px 14px", marginBottom: 8,
                 display: "flex", justifyContent: "space-between", alignItems: "center",
@@ -123,7 +125,9 @@ export default function HomePage() {
                 <div>
                   <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700,
                     textTransform: "uppercase", letterSpacing: 1 }}>
-                    {b.bet_type.replaceAll("_", " ")}
+                    {b._kind === "match"
+                      ? `${b.home_team} vs ${b.away_team}`
+                      : b.bet_type.replaceAll("_", " ")}
                   </div>
                   <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 13 }}>{b.selection}</div>
                 </div>
