@@ -1,9 +1,20 @@
+from datetime import datetime
 from sqlalchemy import (
     Column, Integer, String, Float, DateTime, Boolean,
     ForeignKey, Text, UniqueConstraint,
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+class League(Base):
+    __tablename__ = "leagues"
+    id          = Column(Integer, primary_key=True)
+    name        = Column(String(100), nullable=False)
+    invite_code = Column(String(50), unique=True, nullable=False)
+    created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
+
+    players = relationship("Player", back_populates="league")
 
 
 class Player(Base):
@@ -15,6 +26,8 @@ class Player(Base):
     challenge_streak = Column(Integer, nullable=False, default=0)
     total_challenges_issued = Column(Integer, nullable=False, default=0)
     volume_milestone_reached = Column(Integer, nullable=False, default=0)
+    league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)
+    league    = relationship("League", back_populates="players")
 
     bets = relationship("Bet", back_populates="player")
     tournament_bets = relationship("TournamentBet", back_populates="player")
