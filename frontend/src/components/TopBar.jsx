@@ -1,8 +1,11 @@
 import { useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { subscribe } from "../ws.js"
 import { api } from "../api.js"
+import { getPlayer, getLeague, clearAuth } from "../auth.js"
 
 export default function TopBar({ balance, onBalanceChange }) {
+  const navigate = useNavigate()
   const onBalanceChangeRef = useRef(onBalanceChange)
   useEffect(() => { onBalanceChangeRef.current = onBalanceChange })
 
@@ -16,31 +19,77 @@ export default function TopBar({ balance, onBalanceChange }) {
     return unsub
   }, [])
 
+  const player = getPlayer()
+  const league = getLeague()
+
+  function handleLogout() {
+    clearAuth()
+    navigate("/join", { replace: true })
+  }
+
   return (
     <header style={{
       background: "#13131f",
       borderBottom: "1px solid #2d2b55",
-      padding: "10px 16px",
+      padding: "8px 16px",
       display: "flex",
       justifyContent: "space-between",
       alignItems: "center",
       position: "sticky",
       top: 0,
       zIndex: 50,
+      gap: 8,
     }}>
-      <span className="gradient-text" style={{ fontWeight: 800, fontSize: 16 }}>
-        ⚡ WC Bets 2026
-      </span>
-      <span style={{
-        background: "linear-gradient(135deg, #a855f7, #3b82f6)",
-        color: "#fff",
-        fontSize: 12,
-        padding: "3px 10px",
-        borderRadius: 999,
-        fontWeight: 700,
-      }}>
-        {balance.toLocaleString()} tokens
-      </span>
+      {/* Left: app name + league */}
+      <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+        <span className="gradient-text" style={{ fontWeight: 800, fontSize: 15, lineHeight: 1.2 }}>
+          ⚡ WC Bets 2026
+        </span>
+        {league && (
+          <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 600, letterSpacing: 0.3, marginTop: 1 }}>
+            🏆 {league.name}
+          </span>
+        )}
+      </div>
+
+      {/* Right: balance + player name + logout */}
+      <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+        <span style={{
+          background: "linear-gradient(135deg, #a855f7, #3b82f6)",
+          color: "#fff",
+          fontSize: 12,
+          padding: "3px 10px",
+          borderRadius: 999,
+          fontWeight: 700,
+        }}>
+          {balance.toLocaleString()} tokens
+        </span>
+
+        {player && (
+          <span style={{ fontSize: 11, color: "#9ca3af", fontWeight: 600, maxWidth: 72,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {player.name}
+          </span>
+        )}
+
+        <button
+          onClick={handleLogout}
+          title="Switch group / log out"
+          style={{
+            background: "none",
+            border: "1px solid #374151",
+            borderRadius: 6,
+            color: "#6b7280",
+            fontSize: 11,
+            padding: "3px 8px",
+            cursor: "pointer",
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          ⇄ Switch
+        </button>
+      </div>
     </header>
   )
 }

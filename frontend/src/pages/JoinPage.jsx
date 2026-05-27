@@ -18,7 +18,7 @@ export default function JoinPage() {
     setLoading(true)
     try {
       const data = await api.post("/api/auth/join", { name: name.trim(), code: code.trim() })
-      setAuth(data.token, data.player)
+      setAuth(data.token, data.player, data.league ?? null)
       if (data.league) {
         setMsg(`✓ Welcome to ${data.league.name}!`)
         setTimeout(() => navigate("/"), 1200)
