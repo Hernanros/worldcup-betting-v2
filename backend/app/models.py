@@ -13,6 +13,7 @@ class League(Base):
     name        = Column(String(100), nullable=False)
     invite_code = Column(String(50), unique=True, nullable=False)
     created_at  = Column(DateTime, nullable=False, default=datetime.utcnow)
+    ai_enabled  = Column(Boolean, nullable=False, default=True)
 
     players = relationship("Player", back_populates="league")
 

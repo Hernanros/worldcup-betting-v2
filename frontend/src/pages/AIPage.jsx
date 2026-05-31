@@ -1,10 +1,30 @@
 import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { api } from "../api.js"
+import { getLeague } from "../auth.js"
 import PageBackground from "../components/PageBackground.jsx"
 
 export default function AIPage() {
   const navigate = useNavigate()
+  const league = getLeague()
+  if (league != null && league.ai_enabled === false) {
+    return (
+      <div>
+        <PageBackground momentKey="iniesta_2010" />
+        <div style={{ padding: "16px 16px 8px" }}>
+          <div style={{ fontSize: 24 }}>🤖</div>
+          <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>AI Assistant</div>
+        </div>
+        <div style={{ padding: 32, maxWidth: 480, margin: "0 auto", textAlign: "center" }}>
+          <div style={{ fontSize: 48, marginBottom: 16 }}>🚫</div>
+          <p style={{ color: "#6b7280", fontSize: 15, lineHeight: 1.6 }}>
+            AI suggestions are not enabled for your group.<br />
+            Contact your group admin to turn them on.
+          </p>
+        </div>
+      </div>
+    )
+  }
   const [matches, setMatches] = useState([])
   const [selectedMatch, setSelectedMatch] = useState(null)
   const [loading, setLoading] = useState(false)

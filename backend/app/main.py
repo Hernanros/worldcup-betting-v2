@@ -45,6 +45,12 @@ async def _run_migrations():
         except Exception:
             await db.rollback()
 
+        # 3b. Add ai_enabled column to leagues if missing (backfill True)
+        await db.execute(text(
+            "ALTER TABLE leagues ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN NOT NULL DEFAULT TRUE"
+        ))
+        await db.commit()
+
         # 4. Ensure a default league exists (uses settings.invite_code so existing
         #    players can continue joining with their old code)
         default_code = settings.invite_code

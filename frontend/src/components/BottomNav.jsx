@@ -1,15 +1,19 @@
 import { NavLink } from "react-router-dom"
+import { getLeague } from "../auth.js"
 
-const tabs = [
+const BASE_TABS = [
   { to: "/",           icon: "🏠", label: "Home" },
   { to: "/matches",    icon: "⚽", label: "Matches" },
   { to: "/predict",    icon: "🎯", label: "Predict" },
   { to: "/tournament", icon: "🏆", label: "Tournament" },
   { to: "/rankings",   icon: "📊", label: "Rankings" },
-  { to: "/ai",         icon: "🤖", label: "AI" },
+  { to: "/ai",         icon: "🤖", label: "AI", requiresAI: true },
 ]
 
 export default function BottomNav() {
+  const league = getLeague()
+  const aiEnabled = league == null || league.ai_enabled !== false
+  const tabs = BASE_TABS.filter(t => !t.requiresAI || aiEnabled)
   return (
     <nav style={{
       position: "fixed",

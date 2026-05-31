@@ -50,6 +50,12 @@ async def suggest_challenge(
     db: AsyncSession = Depends(get_db),
 ):
     player, _ = auth
+    # Check AI is enabled for this player's league
+    if player.league_id is not None:
+        from app.models import League
+        league = await db.get(League, player.league_id)
+        if league and not league.ai_enabled:
+            raise HTTPException(403, "AI suggestions are not enabled for your group")
     match = await db.get(Match, data.get("match_id"))
     if not match:
         raise HTTPException(404, "match not found")

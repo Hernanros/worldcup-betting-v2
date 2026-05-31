@@ -3,9 +3,18 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_admin
-from app.models import League
+from app.models import League, Player
 
 router = APIRouter()
+
+
+def _league_dict(league: League) -> dict:
+    return {
+        "id": league.id,
+        "name": league.name,
+        "invite_code": league.invite_code,
+        "ai_enabled": league.ai_enabled,
+    }
 
 
 @router.post("/api/leagues", status_code=201)
@@ -19,17 +28,51 @@ async def create_league(data: dict, _=Depends(get_admin), db: AsyncSession = Dep
     )).scalar_one_or_none()
     if existing:
         raise HTTPException(400, "invite_code already in use")
-    league = League(name=name, invite_code=code)
+    ai_enabled = bool(data.get("ai_enabled", True))
+    league = League(name=name, invite_code=code, ai_enabled=ai_enabled)
     db.add(league)
     await db.commit()
     await db.refresh(league)
-    return {"id": league.id, "name": league.name, "invite_code": league.invite_code}
+    return _league_dict(league)
 
 
 @router.get("/api/leagues")
 async def list_leagues(_=Depends(get_admin), db: AsyncSession = Depends(get_db)):
     leagues = (await db.execute(select(League))).scalars().all()
-    return [{"id": league.id, "name": league.name, "invite_code": league.invite_code} for league in leagues]
+    return [_league_dict(lg) for lg in leagues]
+
+
+@router.delete("/api/leagues/{league_id}", status_code=200)
+async def delete_league(league_id: int, _=Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    league = await db.get(League, league_id)
+    if not league:
+        raise HTTPException(404, "league not found")
+    # Safety: refuse if the league has players
+    players = (await db.execute(
+        select(Player).where(Player.league_id == league_id).limit(1)
+    )).scalar_one_or_none()
+    if players:
+        raise HTTPException(400, "cannot delete a league that still has players — remove players first or use force=true")
+    await db.delete(league)
+    await db.commit()
+    return {"deleted": league_id}
+
+
+@router.delete("/api/leagues/{league_id}/force", status_code=200)
+async def force_delete_league(league_id: int, _=Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    """Delete league AND all its players (use for test/mock groups)."""
+    league = await db.get(League, league_id)
+    if not league:
+        raise HTTPException(404, "league not found")
+    players = (await db.execute(
+        select(Player).where(Player.league_id == league_id)
+    )).scalars().all()
+    player_count = len(players)
+    for p in players:
+        await db.delete(p)
+    await db.delete(league)
+    await db.commit()
+    return {"deleted": league_id, "players_removed": player_count}
 
 
 @router.post("/api/admin/seed-matches", status_code=200)
@@ -39,8 +82,7 @@ async def seed_matches(_=Depends(get_admin), db: AsyncSession = Depends(get_db))
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../../.."))
     from scripts.seed_wc2026 import MATCHES
     from app.models import Match
-    from sqlalchemy import select
-    from datetime import datetime, timezone
+    from datetime import datetime
 
     added = 0
     for home, away, kickoff_str, round_label in MATCHES:
