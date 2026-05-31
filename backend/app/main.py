@@ -69,14 +69,28 @@ async def _run_migrations():
             league = existing
 
         # 5. Adopt any players with league_id=NULL into the default league
+        #    Skip (delete) orphans whose name already exists in target league
         orphans = (await db.execute(
             select(Player).where(Player.league_id.is_(None))
         )).scalars().all()
-        if orphans:
-            for p in orphans:
+        adopted = deleted = 0
+        for p in orphans:
+            collision = (await db.execute(
+                select(Player).where(
+                    Player.name == p.name,
+                    Player.league_id == league.id,
+                )
+            )).scalar_one_or_none()
+            if collision:
+                await db.delete(p)
+                deleted += 1
+            else:
                 p.league_id = league.id
+                adopted += 1
+        if orphans:
             await db.commit()
-            logger.info("Adopted %d existing player(s) into league %d", len(orphans), league.id)
+            logger.info("Adopted %d player(s) into league %d, removed %d duplicates",
+                        adopted, league.id, deleted)
 
 
 @asynccontextmanager
