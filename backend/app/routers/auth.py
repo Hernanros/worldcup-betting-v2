@@ -25,6 +25,8 @@ def _player_dict(player: Player, is_admin: bool = False) -> dict:
 async def join(data: dict, db: AsyncSession = Depends(get_db)):
     name = (data.get("name") or "").strip()
     code = (data.get("code") or "").strip()
+    # mode: "login" = existing only, "register" = new only, "join" = find-or-create (default)
+    mode = (data.get("mode") or "join").strip()
     if not name:
         raise HTTPException(400, "name required")
 
@@ -37,7 +39,7 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
         if not league:
             raise HTTPException(403, "invalid invite code")
 
-    # Find or create player, scoped to league
+    # Find existing player, scoped to league
     query = select(Player).where(Player.name == name)
     if league:
         query = query.where(Player.league_id == league.id)
@@ -46,7 +48,14 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
     result = await db.execute(query)
     player = result.scalar_one_or_none()
 
-    if not player:
+    if player:
+        # Player exists
+        if mode == "register" and not is_admin:
+            raise HTTPException(400, "Name already taken in this group — sign in instead")
+    else:
+        # Player doesn't exist
+        if mode == "login":
+            raise HTTPException(404, "Player not found in this group — check your name or register")
         try:
             player = Player(name=name, token_balance=1000,
                             league_id=league.id if league else None)
