@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_admin
@@ -8,12 +8,13 @@ from app.models import League, Player
 router = APIRouter()
 
 
-def _league_dict(league: League) -> dict:
+def _league_dict(league: League, player_count: int = 0) -> dict:
     return {
         "id": league.id,
         "name": league.name,
         "invite_code": league.invite_code,
         "ai_enabled": league.ai_enabled,
+        "player_count": player_count,
     }
 
 
@@ -39,7 +40,14 @@ async def create_league(data: dict, _=Depends(get_admin), db: AsyncSession = Dep
 @router.get("/api/leagues")
 async def list_leagues(_=Depends(get_admin), db: AsyncSession = Depends(get_db)):
     leagues = (await db.execute(select(League))).scalars().all()
-    return [_league_dict(lg) for lg in leagues]
+    # Count players per league in one query
+    counts_rows = (await db.execute(
+        select(Player.league_id, func.count(Player.id).label("cnt"))
+        .where(Player.league_id.isnot(None))
+        .group_by(Player.league_id)
+    )).all()
+    counts = {row.league_id: row.cnt for row in counts_rows}
+    return [_league_dict(lg, counts.get(lg.id, 0)) for lg in leagues]
 
 
 @router.delete("/api/leagues/{league_id}", status_code=200)
