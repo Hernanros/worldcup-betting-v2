@@ -72,6 +72,14 @@ export default function TopBar({ balance, onBalanceChange }) {
           </span>
         )}
 
+        {player?.is_admin && (
+          <button onClick={() => navigate("/admin")} title="Admin — manage groups"
+            style={{ background: "none", border: "1px solid #374151", borderRadius: 6,
+              color: "#a78bfa", fontSize: 13, padding: "3px 7px", cursor: "pointer" }}>
+            ⚙️
+          </button>
+        )}
+
         <button
           onClick={handleLogout}
           title="Switch group / log out"
