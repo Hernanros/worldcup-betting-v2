@@ -31,6 +31,7 @@ async function request(method, path, body) {
 export const api = {
   get: (path) => request("GET", path),
   post: (path, body) => request("POST", path, body),
+  delete: (path) => request("DELETE", path),
 }
 
 export async function streamSuggestChallenge(matchId, onChunk, onDone) {
