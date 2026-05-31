@@ -54,7 +54,7 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
             raise HTTPException(400, "Name already taken in this group — sign in instead")
     else:
         # Player doesn't exist
-        if mode == "login":
+        if mode == "login" and not is_admin:
             raise HTTPException(404, "Player not found in this group — check your name or register")
         try:
             player = Player(name=name, token_balance=1000,
