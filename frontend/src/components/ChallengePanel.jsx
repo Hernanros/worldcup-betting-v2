@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { api } from "../api.js"
 
-export default function ChallengePanel({ match, challenges, onUpdate, prefill, playerStreak = 0, totalChallenges = 0 }) {
+export default function ChallengePanel({ match, challenges, onUpdate, onBalanceChange, prefill, playerStreak = 0, totalChallenges = 0 }) {
   const [issuerStake, setIssuerStake] = useState(prefill?.stake ?? 100)
   const [issuerOdds, setIssuerOdds] = useState(prefill?.my_odds ?? 3.0)
   const [acceptorOdds, setAcceptorOdds] = useState(prefill?.their_odds ?? 1.5)
@@ -25,6 +25,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, prefill, p
         issuer_stake: issuerStake, issuer_odds: issuerOdds, acceptor_odds: acceptorOdds,
       })
       setMsg(`✓ Challenge issued! Balance: ${r.new_balance}`)
+      onBalanceChange?.(r.new_balance)
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
     finally { setLoading(false) }
@@ -35,6 +36,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, prefill, p
     try {
       const r = await api.post(`/api/challenges/${challengeId}/accept`, {})
       setMsg(`✓ Challenge accepted! Balance: ${r.new_balance}`)
+      onBalanceChange?.(r.new_balance)
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
     finally { setAcceptingId(null) }
@@ -115,6 +117,11 @@ export default function ChallengePanel({ match, challenges, onUpdate, prefill, p
             <div key={c.id} style={{ background: "#0c0c14", border: "1px solid #2d2b55",
               borderRadius: 8, padding: 10, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
+                {c.issuer_name && (
+                  <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 2 }}>
+                    {c.issuer_name} challenges you
+                  </div>
+                )}
                 <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600 }}>{c.selection}</span>
                 <span style={{ color: "#6b7280", fontSize: 11 }}> vs </span>
                 <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600 }}>{c.acceptor_selection}</span>

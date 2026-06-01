@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useOutletContext } from "react-router-dom"
+export { useOutletContext }
 import { useEffect, useState } from "react"
 import { isLoggedIn, getPlayer } from "./auth.js"
 import { connectWS, disconnectWS } from "./ws.js"
@@ -29,7 +30,7 @@ function ProtectedLayout() {
     <div style={{ display: "flex", flexDirection: "column", minHeight: "100dvh" }}>
       <TopBar balance={balance} onBalanceChange={setBalance} />
       <main style={{ flex: 1, overflowY: "auto", paddingBottom: "72px" }}>
-        <Outlet />
+        <Outlet context={{ onBalanceChange: setBalance }} />
       </main>
       <BottomNav />
     </div>

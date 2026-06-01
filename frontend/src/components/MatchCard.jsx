@@ -83,8 +83,8 @@ export default function MatchCard({ match }) {
             </div>
           </div>
 
-          {/* Round badge */}
-          <div style={{ textAlign: "center", marginTop: 10 }}>
+          {/* Round badge + challenge count */}
+          <div style={{ textAlign: "center", marginTop: 10, display: "flex", gap: 6, justifyContent: "center" }}>
             <span style={{
               background: "#1e1b3a", border: "1px solid #2d2b55",
               color: "#a78bfa", fontSize: 9, fontWeight: 700,
@@ -92,6 +92,15 @@ export default function MatchCard({ match }) {
             }}>
               {match.round}
             </span>
+            {match.challenge_count > 0 && (
+              <span style={{
+                background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
+                color: "#c4b5fd", fontSize: 9, fontWeight: 700,
+                padding: "2px 8px", borderRadius: 999,
+              }}>
+                ⚔️ {match.challenge_count} open
+              </span>
+            )}
           </div>
         </div>
       </Link>

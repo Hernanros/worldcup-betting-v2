@@ -1,0 +1,128 @@
+<style>
+  .screen-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+  .screen-row {
+    background: #13131f;
+    border: 1px solid #2d2b55;
+    border-radius: 10px;
+    padding: 12px 14px;
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+  .screen-row.confirmed { border-color: rgba(74,222,128,0.3); background: rgba(74,222,128,0.04); }
+  .screen-row.updated { border-color: rgba(168,85,247,0.5); background: rgba(168,85,247,0.06); }
+  .screen-row.new { border-color: rgba(59,130,246,0.4); background: rgba(59,130,246,0.05); }
+  .screen-icon { font-size: 20px; flex-shrink: 0; width: 32px; text-align: center; margin-top: 1px; }
+  .screen-info h4 { margin: 0 0 2px; font-size: 12px; font-weight: 700; color: #e2e8f0; }
+  .screen-info .moment { font-size: 11px; color: #a78bfa; margin-top: 4px; font-weight: 600; }
+  .screen-info .detail { font-size: 10px; color: #6b7280; margin-top: 2px; }
+  .badge {
+    font-size: 8px; font-weight: 700; padding: 2px 7px; border-radius: 999px;
+    text-transform: uppercase; letter-spacing: 0.5px; margin-left: 6px;
+    vertical-align: middle;
+  }
+  .badge.ok { background: rgba(74,222,128,0.15); color: #4ade80; }
+  .badge.changed { background: rgba(168,85,247,0.2); color: #c4b5fd; }
+  .badge.dynamic { background: rgba(251,191,36,0.15); color: #fbbf24; }
+  .badge.new { background: rgba(59,130,246,0.2); color: #60a5fa; }
+
+  .image-credit { font-size: 9px; color: #374151; margin-top: 3px; font-style: italic; }
+
+  h2 { margin-bottom: 4px; }
+  .subtitle { margin-bottom: 0; }
+  .confirm-bar {
+    margin-top: 20px;
+    background: linear-gradient(135deg, rgba(168,85,247,0.1), rgba(59,130,246,0.1));
+    border: 1px solid rgba(168,85,247,0.3);
+    border-radius: 10px;
+    padding: 12px 16px;
+    font-size: 11px;
+    color: #c4b5fd;
+    text-align: center;
+  }
+  .confirm-bar strong { color: #e2e8f0; }
+</style>
+
+<h2>Final Screen → Moment Map</h2>
+<p class="subtitle">Locked in — your changes applied</p>
+
+<div class="screen-list">
+
+  <div class="screen-row updated">
+    <div class="screen-icon">🔑</div>
+    <div class="screen-info">
+      <h4>Join Page <span class="badge changed">Updated</span></h4>
+      <div class="moment">⭐ Messi lifting the trophy in the bisht · 2022 Qatar Final</div>
+      <div class="detail">Argentina beat France on penalties · the most iconic image of the modern era · gold cloak, pure disbelief</div>
+      <div class="image-credit">Source: Unsplash / Getty — free editorial use</div>
+    </div>
+  </div>
+
+  <div class="screen-row confirmed">
+    <div class="screen-icon">⚽</div>
+    <div class="screen-info">
+      <h4>Matches <span class="badge ok">Confirmed</span></h4>
+      <div class="moment">⭐ Maradona's Goal of the Century · 1986 Quarter-Final</div>
+      <div class="detail">Argentina vs England · Azteca Stadium · the run from his own half</div>
+    </div>
+  </div>
+
+  <div class="screen-row confirmed">
+    <div class="screen-icon">🔍</div>
+    <div class="screen-info">
+      <h4>Match Detail <span class="badge dynamic">Dynamic</span></h4>
+      <div class="moment">⭐ Rotates based on teams — shows a famous moment involving them</div>
+      <div class="detail">e.g. BRA vs GER → Mineirazzo 7–1 · ARG vs ENG → Hand of God · FRA vs ITA → Zidane headbutt</div>
+    </div>
+  </div>
+
+  <div class="screen-row confirmed">
+    <div class="screen-icon">🏆</div>
+    <div class="screen-info">
+      <h4>Bets <span class="badge ok">Confirmed</span></h4>
+      <div class="moment">⭐ Germany 7–1 Brazil · 2014 Semi-Final</div>
+      <div class="detail">The Mineirazzo · Estádio Mineirão · Brazil's worst home defeat · pure chaos</div>
+    </div>
+  </div>
+
+  <div class="screen-row updated">
+    <div class="screen-icon">🎯</div>
+    <div class="screen-info">
+      <h4>Predictions <span class="badge changed">Updated</span></h4>
+      <div class="moment">⭐ Roberto Baggio after missing the 1994 Final penalty</div>
+      <div class="detail">Brazil vs Italy · Rose Bowl, LA · Baggio's head down, hands on knees · Italy lose on shootout · heartbreak</div>
+    </div>
+  </div>
+
+  <div class="screen-row confirmed">
+    <div class="screen-icon">📊</div>
+    <div class="screen-info">
+      <h4>Leaderboard <span class="badge ok">Confirmed</span></h4>
+      <div class="moment">⭐ Zidane's headbutt on Materazzi · 2006 Final</div>
+      <div class="detail">France vs Italy · Olympiastadion Berlin · extra time · red card that changed everything</div>
+    </div>
+  </div>
+
+  <div class="screen-row confirmed">
+    <div class="screen-icon">🤖</div>
+    <div class="screen-info">
+      <h4>AI Page <span class="badge ok">Confirmed</span></h4>
+      <div class="moment">⭐ Iniesta's extra-time winner · 2010 Final</div>
+      <div class="detail">Spain vs Netherlands · Soccer City · 116th minute · pure instinct</div>
+    </div>
+  </div>
+
+  <div class="screen-row new">
+    <div class="screen-icon">🧪</div>
+    <div class="screen-info">
+      <h4>Sandbox <span class="badge new">New Tab</span></h4>
+      <div class="moment">⭐ Rotating collage — all moments cycling as header</div>
+      <div class="detail">Scenario builder: pick match, set score + minute + stake → instant payout / leaderboard preview</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="confirm-bar">
+  All good? Reply <strong>"yes"</strong> to lock this in and start the implementation plan, or tell me anything you'd change.
+</div>

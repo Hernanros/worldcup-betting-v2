@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react"
-import { useParams, useNavigate, useLocation } from "react-router-dom"
+import { useParams, useNavigate, useLocation, useOutletContext } from "react-router-dom"
 import { api } from "../api.js"
 import BetPanel from "../components/BetPanel.jsx"
 import ChallengePanel from "../components/ChallengePanel.jsx"
@@ -21,6 +21,7 @@ export default function MatchDetailPage() {
   const { id } = useParams()
   const navigate = useNavigate()
   const location = useLocation()
+  const { onBalanceChange } = useOutletContext() ?? {}
   const prefill = location.state?.prefill ?? null
 
   const [match, setMatch] = useState(null)
@@ -129,11 +130,12 @@ export default function MatchDetailPage() {
                 </div>
               </div>
             )}
-            <BetPanel match={match} odds={match.odds} onBetPlaced={() => {}} />
+            <BetPanel match={match} odds={match.odds} onBetPlaced={(bal) => { load(); onBalanceChange?.(bal) }} />
             <ChallengePanel
               match={match}
               challenges={match.open_challenges}
               onUpdate={load}
+              onBalanceChange={onBalanceChange}
               prefill={prefill}
               playerStreak={playerStreak}
               totalChallenges={totalChallenges}

@@ -1,0 +1,265 @@
+<style>
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 16px; }
+  .screen-list { display: flex; flex-direction: column; gap: 8px; }
+  .screen-row {
+    background: #13131f;
+    border: 1px solid #2d2b55;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .screen-icon { font-size: 18px; flex-shrink: 0; width: 28px; text-align: center; }
+  .screen-info h4 { margin: 0 0 2px; font-size: 11px; font-weight: 700; color: #e2e8f0; }
+  .screen-info p { margin: 0; font-size: 9px; color: #6b7280; }
+  .screen-info .moment { font-size: 9px; color: #a78bfa; margin-top: 3px; font-weight: 600; }
+
+  /* Sandbox phone */
+  .phone {
+    background: #0c0c14;
+    border: 1.5px solid #2d2b55;
+    border-radius: 20px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 11px;
+    color: #e2e8f0;
+    height: 480px;
+    display: flex;
+    flex-direction: column;
+  }
+  .phone-topbar {
+    background: #13131f;
+    border-bottom: 1px solid #2d2b55;
+    padding: 8px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .phone-topbar .brand { font-weight: 800; font-size: 10px; background: linear-gradient(90deg,#a855f7,#3b82f6); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .phone-topbar .bal { background: linear-gradient(135deg,#a855f7,#3b82f6); color:#fff; font-size:8px; padding:2px 7px; border-radius:999px; font-weight:700; }
+
+  .sandbox-hero {
+    height: 80px;
+    background: linear-gradient(180deg, rgba(0,0,0,0) 0%, rgba(12,12,20,0.9) 100%),
+                linear-gradient(135deg, #1a0a2e, #0a1a3e);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: 8px 10px;
+    flex-shrink: 0;
+  }
+  .sandbox-hero::before {
+    content: '🧪';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -60%);
+    font-size: 28px;
+    opacity: 0.3;
+  }
+  .sandbox-tag { font-size: 8px; color: #a78bfa; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .sandbox-title { font-size: 12px; font-weight: 800; color: #fff; }
+
+  .sb-body { flex: 1; overflow: hidden; padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+  .sb-section-label { font-size: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: #6b7280; }
+
+  .sb-match-picker {
+    background: #13131f;
+    border: 1px solid #2d2b55;
+    border-radius: 8px;
+    padding: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sb-match-picker .teams { font-size: 10px; font-weight: 700; }
+  .sb-match-picker .change { font-size: 8px; color: #a78bfa; }
+
+  .sb-scenario {
+    background: #13131f;
+    border: 1px solid #2d2b55;
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .sb-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; }
+  .sb-row:last-child { margin-bottom: 0; }
+  .sb-row label { font-size: 8px; color: #6b7280; }
+  .sb-stepper { display: flex; gap: 4px; align-items: center; }
+  .sb-btn { background: #1e1b3a; border: 1px solid #2d2b55; color: #a78bfa; width: 16px; height: 16px; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 9px; }
+  .sb-val { font-size: 10px; font-weight: 700; color: #e2e8f0; min-width: 20px; text-align: center; }
+  .sb-slider { height: 3px; background: linear-gradient(90deg, #a855f7 65%, #2d2b55 65%); border-radius: 2px; margin: 2px 0; }
+
+  .sb-bet-preview {
+    background: linear-gradient(135deg, rgba(168,85,247,0.08), rgba(59,130,246,0.08));
+    border: 1px solid rgba(168,85,247,0.25);
+    border-radius: 8px;
+    padding: 8px;
+  }
+  .sb-bet-row { display: flex; justify-content: space-between; font-size: 9px; margin-bottom: 3px; }
+  .sb-bet-key { color: #6b7280; }
+  .sb-bet-val { color: #a78bfa; font-weight: 700; }
+
+  .sb-run-btn {
+    background: linear-gradient(135deg, #a855f7, #3b82f6);
+    color: #fff; border: none; border-radius: 8px;
+    padding: 8px; font-size: 10px; font-weight: 800;
+    text-align: center; letter-spacing: 0.5px;
+  }
+
+  .phone-nav {
+    background: #13131f;
+    border-top: 1px solid #2d2b55;
+    display: flex;
+    justify-content: space-around;
+    padding: 5px 0 3px;
+    flex-shrink: 0;
+  }
+  .nav-item { text-align: center; font-size: 7px; color: #6b7280; }
+  .nav-item.active { color: #a855f7; }
+  .nav-icon { font-size: 13px; display: block; }
+
+  .section-heading { font-size: 13px; font-weight: 800; color: #e2e8f0; margin-bottom: 6px; }
+  .note { font-size: 10px; color: #6b7280; margin-bottom: 10px; }
+</style>
+
+<h2>Screen Map + Sandbox Preview</h2>
+<p class="subtitle">One famous moment per screen · a dedicated Sandbox tab to feel it live</p>
+
+<div class="two-col">
+
+  <!-- Left: Screen→Moment map -->
+  <div>
+    <div class="section-heading">📺 WC Moments by Screen</div>
+    <p class="note">Each page gets a different era and iconic match</p>
+    <div class="screen-list">
+      <div class="screen-row">
+        <div class="screen-icon">🔑</div>
+        <div class="screen-info">
+          <h4>Join Page</h4>
+          <p>Already done — 2018 WC Final stadium photo</p>
+          <div class="moment">✅ Luzhniki Stadium · France vs Croatia</div>
+        </div>
+      </div>
+      <div class="screen-row">
+        <div class="screen-icon">⚽</div>
+        <div class="screen-info">
+          <h4>Matches</h4>
+          <p>Main feed — something electrifying</p>
+          <div class="moment">⭐ Maradona's Goal of the Century · 1986</div>
+        </div>
+      </div>
+      <div class="screen-row">
+        <div class="screen-icon">🔍</div>
+        <div class="screen-info">
+          <h4>Match Detail</h4>
+          <p>Per-match — rotates based on teams playing</p>
+          <div class="moment">⭐ Dynamic: shows a moment involving those teams</div>
+        </div>
+      </div>
+      <div class="screen-row">
+        <div class="screen-icon">🏆</div>
+        <div class="screen-info">
+          <h4>Bets</h4>
+          <p>Stakes and tension</p>
+          <div class="moment">⭐ Germany 7–1 Brazil · 2014 Semi-Final</div>
+        </div>
+      </div>
+      <div class="screen-row">
+        <div class="screen-icon">🎯</div>
+        <div class="screen-info">
+          <h4>Predictions</h4>
+          <p>Forecasting — the underdog angle</p>
+          <div class="moment">⭐ Greece wins EURO / Senegal 2002 — giant killers</div>
+        </div>
+      </div>
+      <div class="screen-row">
+        <div class="screen-icon">📊</div>
+        <div class="screen-info">
+          <h4>Leaderboard</h4>
+          <p>Competition + glory</p>
+          <div class="moment">⭐ Zidane's headbutt · Italy vs France 2006</div>
+        </div>
+      </div>
+      <div class="screen-row">
+        <div class="screen-icon">🤖</div>
+        <div class="screen-info">
+          <h4>AI Page</h4>
+          <p>The unexpected / tactical</p>
+          <div class="moment">⭐ Iniesta's extra-time winner · 2010 Final</div>
+        </div>
+      </div>
+      <div class="screen-row" style="border-color:#a855f722;background:rgba(168,85,247,0.04)">
+        <div class="screen-icon">🧪</div>
+        <div class="screen-info">
+          <h4>Sandbox (new)</h4>
+          <p>Simulation energy</p>
+          <div class="moment">⭐ Custom — rotating collage of moments</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: Sandbox mockup -->
+  <div>
+    <div class="section-heading">🧪 Sandbox Tab Mockup</div>
+    <p class="note">Set the scenario · preview your screen live</p>
+    <div class="phone">
+      <div class="phone-topbar">
+        <span class="brand">⚡ WC Bets</span>
+        <span class="bal">1,240 tokens</span>
+      </div>
+      <div class="sandbox-hero">
+        <div class="sandbox-tag">🧪 Sandbox Mode</div>
+        <div class="sandbox-title">Simulate any match scenario</div>
+      </div>
+      <div class="sb-body">
+        <div class="sb-section-label">Pick a match</div>
+        <div class="sb-match-picker">
+          <span class="teams">🇦🇷 Argentina vs Brazil 🇧🇷</span>
+          <span class="change">change ›</span>
+        </div>
+
+        <div class="sb-section-label">Set the scenario</div>
+        <div class="sb-scenario">
+          <div class="sb-row">
+            <label>Home goals</label>
+            <div class="sb-stepper"><div class="sb-btn">−</div><div class="sb-val">2</div><div class="sb-btn">+</div></div>
+          </div>
+          <div class="sb-row">
+            <label>Away goals</label>
+            <div class="sb-stepper"><div class="sb-btn">−</div><div class="sb-val">1</div><div class="sb-btn">+</div></div>
+          </div>
+          <div class="sb-row">
+            <label>Minute</label>
+            <div class="sb-stepper"><div class="sb-btn">−</div><div class="sb-val">67'</div><div class="sb-btn">+</div></div>
+          </div>
+          <div class="sb-slider"></div>
+          <div class="sb-row" style="margin-top:4px">
+            <label>My stake on ARG Win</label>
+            <div class="sb-stepper"><div class="sb-btn">−</div><div class="sb-val">300</div><div class="sb-btn">+</div></div>
+          </div>
+        </div>
+
+        <div class="sb-section-label">Live preview</div>
+        <div class="sb-bet-preview">
+          <div class="sb-bet-row"><span class="sb-bet-key">Current payout</span><span class="sb-bet-val" style="color:#4ade80">+540 tokens</span></div>
+          <div class="sb-bet-row"><span class="sb-bet-key">If ARG concedes now</span><span class="sb-bet-val" style="color:#f87171">−300 tokens</span></div>
+          <div class="sb-bet-row"><span class="sb-bet-key">Leaderboard position</span><span class="sb-bet-val">#2 → #1</span></div>
+        </div>
+
+        <div class="sb-run-btn">▶ Run Live Simulation</div>
+      </div>
+      <div class="phone-nav">
+        <div class="nav-item"><span class="nav-icon">⚽</span>Matches</div>
+        <div class="nav-item"><span class="nav-icon">🏆</span>Bets</div>
+        <div class="nav-item"><span class="nav-icon">🎯</span>Predict</div>
+        <div class="nav-item"><span class="nav-icon">📊</span>Rankings</div>
+        <div class="nav-item active"><span class="nav-icon">🧪</span>Sandbox</div>
+      </div>
+    </div>
+  </div>
+
+</div>

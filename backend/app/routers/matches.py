@@ -1,7 +1,7 @@
 import json
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
@@ -10,7 +10,7 @@ from app.models import Match, Challenge, Player
 router = APIRouter()
 
 
-def _match_dict(m: Match) -> dict:
+def _match_dict(m: Match, challenge_count: int = 0) -> dict:
     return {
         "id": m.id,
         "home_team": m.home_team,
@@ -22,13 +22,15 @@ def _match_dict(m: Match) -> dict:
         "round": m.round,
         "home_team_confirmed": m.home_team_confirmed,
         "away_team_confirmed": m.away_team_confirmed,
+        "challenge_count": challenge_count,
     }
 
 
-def _challenge_dict(c: Challenge) -> dict:
+def _challenge_dict(c: Challenge, issuer_name: str = "") -> dict:
     return {
         "id": c.id,
         "issuer_id": c.issuer_id,
+        "issuer_name": issuer_name,
         "bet_type": c.bet_type,
         "selection": c.selection,
         "acceptor_selection": c.acceptor_selection,
@@ -59,7 +61,14 @@ async def list_matches(auth=Depends(get_current_player), db: AsyncSession = Depe
     matches = result.scalars().all()
     for m in matches:
         await _auto_lock(m, db)
-    return [_match_dict(m) for m in matches]
+    # Count open challenges per match in one query
+    counts_rows = (await db.execute(
+        select(Challenge.match_id, func.count(Challenge.id).label("cnt"))
+        .where(Challenge.status == "open")
+        .group_by(Challenge.match_id)
+    )).all()
+    counts = {row.match_id: row.cnt for row in counts_rows}
+    return [_match_dict(m, counts.get(m.id, 0)) for m in matches]
 
 
 @router.get("/api/matches/{match_id}")
@@ -89,9 +98,15 @@ async def get_match(match_id: int, auth=Depends(get_current_player), db: AsyncSe
             Challenge.match_id == match_id, Challenge.status == "open"
         )
     open_challenges = (await db.execute(ch_query)).scalars().all()
+    # Resolve issuer names in one batch
+    issuer_ids = list({c.issuer_id for c in open_challenges})
+    issuer_map: dict[int, str] = {}
+    if issuer_ids:
+        players = (await db.execute(select(Player).where(Player.id.in_(issuer_ids)))).scalars().all()
+        issuer_map = {p.id: p.name for p in players}
 
     return {
-        **_match_dict(match),
+        **_match_dict(match, len(open_challenges)),
         "odds": odds,
-        "open_challenges": [_challenge_dict(c) for c in open_challenges],
+        "open_challenges": [_challenge_dict(c, issuer_map.get(c.issuer_id, "")) for c in open_challenges],
     }

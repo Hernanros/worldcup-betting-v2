@@ -27,14 +27,21 @@ Each item in the array must have exactly these fields:
 Stakes should be between 50 and 300. Odds must be positive floats."""
 
 
-def _build_prompt(match: Match, player: Player, odds: dict) -> str:
+def _build_prompt(match: Match, player: Player, odds: dict,
+                  existing_bet=None, existing_prediction=None, open_challenges=None) -> str:
     lines = [
         f"Match: {match.home_team} vs {match.away_team}",
         f"Round: {match.round}",
         f"Player balance: {player.token_balance} tokens",
         f"Player challenge streak: {player.challenge_streak}",
-        "", "Available odds:",
     ]
+    if existing_bet:
+        lines.append(f"Player already bet: {existing_bet.selection} ({existing_bet.bet_type}), stake {existing_bet.stake} — avoid suggesting the same position")
+    if existing_prediction:
+        lines.append(f"Player predicted score: {existing_prediction.home_score_pred}-{existing_prediction.away_score_pred} — use this as context for their view on the match")
+    if open_challenges:
+        lines.append(f"Open challenges already posted: {len(open_challenges)} — suggest something different")
+    lines += ["", "Available odds:"]
     for market, outcomes in odds.items():
         lines.append(f"  {market}:")
         for o in outcomes:
@@ -65,7 +72,19 @@ async def suggest_challenge(
         odds = {}
     player = await db.get(Player, player.id)
 
-    prompt = _build_prompt(match, player, odds)
+    from sqlalchemy import select as sa_select
+    from app.models import Bet, Prediction, Challenge
+    existing_bet = (await db.execute(
+        sa_select(Bet).where(Bet.player_id == player.id, Bet.match_id == match.id)
+    )).scalars().first()
+    existing_prediction = (await db.execute(
+        sa_select(Prediction).where(Prediction.player_id == player.id, Prediction.match_id == match.id)
+    )).scalars().first()
+    open_challenges = (await db.execute(
+        sa_select(Challenge).where(Challenge.match_id == match.id, Challenge.status == "open")
+    )).scalars().all()
+
+    prompt = _build_prompt(match, player, odds, existing_bet, existing_prediction, open_challenges)
     try:
         message = anthropic_client.messages.create(
             model="claude-haiku-4-5-20251001",
