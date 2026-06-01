@@ -3,7 +3,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_admin
-from app.models import League, Player
+from app.models import League, Player, Match
 
 router = APIRouter()
 
@@ -104,3 +104,38 @@ async def seed_matches(_=Depends(get_admin), db: AsyncSession = Depends(get_db))
             added += 1
     await db.commit()
     return {"seeded": added, "message": f"Added {added} matches (skipped duplicates)"}
+
+
+@router.post("/api/admin/settle-match", status_code=200)
+async def settle_match_manual(data: dict, _=Depends(get_admin), db: AsyncSession = Depends(get_db)):
+    """Manually settle a match with scores. Triggers full payout logic."""
+    from app.poller import settle_match
+    from app.ws import manager
+
+    match_id = data.get("match_id")
+    home_score = data.get("home_score")
+    away_score = data.get("away_score")
+    if match_id is None or home_score is None or away_score is None:
+        raise HTTPException(400, "match_id, home_score, and away_score required")
+
+    match = await db.get(Match, match_id)
+    if not match:
+        raise HTTPException(404, "match not found")
+    if match.status == "finished":
+        raise HTTPException(400, f"already settled: {match.home_score}-{match.away_score}")
+    if match.status == "upcoming":
+        # Force-lock it first so settlement logic works
+        match.status = "locked"
+        await db.commit()
+
+    result = {
+        "home_score": int(home_score),
+        "away_score": int(away_score),
+        "home_red_cards": int(data.get("home_red_cards", 0)),
+        "away_red_cards": int(data.get("away_red_cards", 0)),
+        "corners": int(data.get("corners", 0)),
+    }
+    await settle_match(db, match, result)
+    await manager.broadcast({"type": "match_settled", "match_id": match.id})
+    await manager.broadcast({"type": "leaderboard_updated"})
+    return {"settled": match_id, "home_score": int(home_score), "away_score": int(away_score)}

@@ -120,7 +120,7 @@ def start_poller(app) -> None:
 
     async def _poll():
         try:
-            results = fetch_live_scores(settings.football_api_key)
+            results = fetch_live_scores(settings.football_api_key, settings.odds_api_key)
         except Exception as e:
             logger.warning(f"Poll failed: {e}")
             return

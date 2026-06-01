@@ -13,6 +13,10 @@ export default function AdminPage() {
   const [msg, setMsg] = useState("")
   const [err, setErr] = useState("")
   const [loading, setLoading] = useState(false)
+  // Settle
+  const [unsettled, setUnsettled] = useState([])
+  const [scores, setScores] = useState({})   // { matchId: { home: "", away: "" } }
+  const [settleMsg, setSettleMsg] = useState("")
 
   useEffect(() => { if (!player?.is_admin) navigate("/", { replace: true }) }, [])
 
@@ -20,7 +24,26 @@ export default function AdminPage() {
     try { setLeagues(await api.get("/api/leagues")) }
     catch (e) { setErr("Failed to load: " + e.message) }
   }
-  useEffect(() => { load() }, [])
+  async function loadMatches() {
+    try {
+      const all = await api.get("/api/matches")
+      setUnsettled(all.filter(m => m.status === "locked" || m.status === "upcoming"))
+    } catch (_) {}
+  }
+  useEffect(() => { load(); loadMatches() }, [])
+
+  async function handleSettle(match) {
+    const s = scores[match.id] || {}
+    const home = parseInt(s.home ?? "")
+    const away = parseInt(s.away ?? "")
+    if (isNaN(home) || isNaN(away)) return setSettleMsg("✗ Enter both scores")
+    setSettleMsg("")
+    try {
+      await api.post("/api/admin/settle-match", { match_id: match.id, home_score: home, away_score: away })
+      setSettleMsg(`✓ Settled: ${match.home_team} ${home}–${away} ${match.away_team}`)
+      await loadMatches()
+    } catch (e) { setSettleMsg("✗ " + e.message) }
+  }
 
   async function handleCreate(e) {
     e.preventDefault(); setMsg(""); setErr(""); setLoading(true)
@@ -99,6 +122,47 @@ export default function AdminPage() {
             {loading ? "Creating..." : "Create group"}
           </button>
         </form>
+      </div>
+
+      {/* Manual settle */}
+      <div style={card}>
+        <h3 style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>⚽ Settle a match</h3>
+        <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>
+          Use only if auto-settlement missed a result. Locked = match started, Upcoming = force-settle.
+        </p>
+        {settleMsg && (
+          <p style={{ color: settleMsg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 12, marginBottom: 8 }}>
+            {settleMsg}
+          </p>
+        )}
+        {unsettled.length === 0 && <p style={{ color: "#6b7280", fontSize: 13 }}>No unsettled matches.</p>}
+        {unsettled.map(m => (
+          <div key={m.id} style={{ borderBottom: "1px solid #1e1e2e", padding: "10px 0", display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <span style={{ color: "#e2e8f0", fontSize: 12, flex: "1 1 140px", fontWeight: 600 }}>
+              {m.home_team} vs {m.away_team}
+            </span>
+            <span style={{ fontSize: 10, color: m.status === "locked" ? "#fbbf24" : "#6b7280", fontWeight: 700 }}>
+              {m.status.toUpperCase()}
+            </span>
+            <input
+              type="number" min={0} max={20} placeholder="H"
+              value={scores[m.id]?.home ?? ""}
+              onChange={e => setScores(s => ({ ...s, [m.id]: { ...s[m.id], home: e.target.value } }))}
+              style={{ width: 44, ...inputStyle, padding: "5px 8px", fontSize: 13 }}
+            />
+            <span style={{ color: "#6b7280" }}>–</span>
+            <input
+              type="number" min={0} max={20} placeholder="A"
+              value={scores[m.id]?.away ?? ""}
+              onChange={e => setScores(s => ({ ...s, [m.id]: { ...s[m.id], away: e.target.value } }))}
+              style={{ width: 44, ...inputStyle, padding: "5px 8px", fontSize: 13 }}
+            />
+            <button onClick={() => handleSettle(m)} style={{
+              background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff", border: "none",
+              borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer",
+            }}>Settle</button>
+          </div>
+        ))}
       </div>
 
       <div style={card}>
