@@ -20,6 +20,13 @@ Deep Cuts lives in a dedicated **🔪 Deep Cuts** tab in the navigation.
 
 Markets are unique per stage — no market repeats across stages.
 
+### Tournament (1 market) — Lock: Jun 11, 18:00 UTC · Settles: after the Final
+| Market | Type | Settlement |
+|---|---|---|
+| 😴 Most Exhausted Player | Text pick (player name) | API-Football `GET /players?league=1&season=2026` → player with highest `games.minutes` across all matches. Paginated; run once after the Final. |
+
+Input is free-text, same pattern as Golden Boot. Default odds ~50.0 (800+ players; favorites are starting GKs and deep-run midfielders).
+
 ### Group Stage (5 markets) — Lock: Jun 11, 18:00 UTC
 | Market | Type | Settlement |
 |---|---|---|
@@ -72,6 +79,10 @@ Markets are unique per stage — no market repeats across stages.
 
 ### New Match columns (Alembic migration)
 ```python
+# IDs for external APIs — populated lazily, poller stores ESPN ID on first tick
+espn_event_id      = Column(String(20))          # from ESPN scoreboard response
+api_fixture_id     = Column(Integer)             # from API-Football; set via sync-fixture-ids admin endpoint
+
 # All default 0 / False — backward compatible, poller fills them in
 home_yellow_cards  = Column(Integer, default=0)
 away_yellow_cards  = Column(Integer, default=0)
@@ -257,6 +268,57 @@ if all matches in that round are finished:
 
 ---
 
+## Data Sources
+
+Tested against real API responses (Euro 2024, WC 2022, Jun 2026 fixtures). Both sources confirmed working.
+
+### ESPN Summary (`site.api.espn.com`) — free, no key
+Already the primary score source. The summary endpoint (`/summary?event={espn_event_id}`) returns full team stats for completed matches:
+- `yellowCards`, `redCards`, `wonCorners`, `offsides` — per team ✅
+- ET detection: `status.type.name = "STATUS_FINAL_AET"` ✅
+- Pens detection: `status.type.name = "STATUS_FINAL_PEN"` ✅
+- Goal events with `ownGoal` / `penaltyKick` flags — available but `details[]` is empty for some matches ⚠️
+- Substitution data — **not available** ❌
+
+The ESPN event ID is present in the scoreboard response (already fetched each tick). Store it as `espn_event_id` on Match.
+
+### API-Football (`v3.football.api-sports.io`) — keyed, 100 req/day free
+Already configured (`FOOTBALL_API_KEY`). Only used for top-scorer lookup today; extend to:
+- `GET /fixtures/statistics?fixture={id}` → corners, yellow/red cards, offsides per team ✅
+- `GET /fixtures/events?fixture={id}` → goals (`Normal Goal` / `Own Goal` / `Penalty`), cards, subs (`type=subst`) with player names and minutes ✅
+- `GET /players?league=1&season=2026&page={n}` → cumulative `games.minutes` per player ✅
+
+**Rate limit:** 100 req/day free. ~4 group stage matches/day × 3 calls = 12/day. Well within limits across the full tournament.
+
+Requires `api_fixture_id` on Match. Populated at tournament start via a one-time admin endpoint: `POST /api/admin/sync-fixture-ids` → `GET /fixtures?league=1&season=2026` → match by team names + date → store IDs.
+
+### Settlement enrichment flow (per match)
+1. ESPN scoreboard tick detects match finished → run existing score settlement (unchanged)
+2. Fetch ESPN summary for `espn_event_id` → store yellow/red cards, corners, offsides, ET/pens flags
+3. Fetch API-Football events for `api_fixture_id` → store own goals, sub goals (goal scorer ∈ substitution events for that match)
+4. Trigger `settle_stage()` if all matches in the stage are now finished
+
+### Most Exhausted Player settlement
+Called once after the Final:
+```python
+# Paginate through all players, find max minutes
+page = 1
+max_minutes, winner_name = 0, ""
+while True:
+    resp = GET /players?league=1&season=2026&page={page}
+    if not resp: break
+    for player in resp:
+        mins = player["statistics"][0]["games"]["minutes"]
+        if mins > max_minutes:
+            max_minutes, winner_name = mins, player["player"]["name"]
+    page += 1
+# Settle all SpicyBets with market_key="most_exhausted" where selection fuzzy-matches winner_name
+```
+
+Fuzzy matching (same approach as golden boot): lowercase + strip accents before comparing.
+
+---
+
 ## Poller Extension
 
 `poller.py`'s `_fetch_match_stats()` (or equivalent) already pulls corners and red cards from the football API. Extend it to also pull and store:
@@ -288,7 +350,8 @@ On every page load (React Router `useEffect` on auth), the frontend calls `GET /
 Add **🔪 Deep Cuts** as a tab in `TopBar.jsx` alongside the existing navigation. Route: `/deep-cuts`.
 
 `DeepCutsPage.jsx` structure:
-- Stage tabs (Group Stage / R32 / R16 / QF / SF / Final) with open/locked/settled badges
+- Stage tabs (**Tournament** / Group Stage / R32 / R16 / QF / SF / Final) with open/locked/settled badges
+- Tournament tab: text-input markets (Most Exhausted Player), same UX as golden boot
 - Per-stage market list — each market renders as a card with its type-specific input:
   - `TeamPickMarket` — searchable team dropdown
   - `OverUnderMarket` — two-option selector with line label
