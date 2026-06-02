@@ -1,3 +1,5 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -5,6 +7,8 @@ from app.database import get_db
 from app.deps import get_admin
 from app.models import League, Player, Match, TournamentBet
 from app.settlement import determine_totals_winner
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -185,11 +189,17 @@ async def settle_tournament_bets(
             won = determine_totals_winner(bet.selection, total_goals)
         else:
             won = False
+            logger.warning(
+                "Unknown tournament bet_type %r for bet id=%d — marking lost",
+                bet.bet_type,
+                bet.id,
+            )
 
         bet.status = "won" if won else "lost"
         if won:
             player = await db.get(Player, bet.player_id)
-            player.token_balance += int(bet.stake * bet.odds_at_placement)
+            if player:
+                player.token_balance += int(bet.stake * bet.odds_at_placement)
         settled_count += 1
 
     await db.commit()

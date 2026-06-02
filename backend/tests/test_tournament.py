@@ -106,3 +106,35 @@ async def test_settle_tournament_requires_admin(client, db):
         headers={"Authorization": f"Bearer {alice['token']}"},
     )
     assert resp.status_code == 403
+
+
+async def test_settle_tournament_bets_total_goals(client, db):
+    """total_goals bets settle based on sum of all finished match scores."""
+    from tests.conftest import make_match
+    from sqlalchemy import select as sa_select
+    from app.models import Player as PlayerModel
+
+    # Create a finished match with 3 goals total
+    m = await make_match(db, status="finished")
+    m.home_score = 2
+    m.away_score = 1
+    await db.commit()
+
+    alice = await join_player(client)
+    headers = {"Authorization": f"Bearer {alice['token']}"}
+    # Bet "Over 2.5" total goals — should win since total is 3
+    await client.post("/api/tournament/bets",
+                      json={"bet_type": "total_goals", "selection": "Over 2.5", "stake": 100, "odds": 2.0},
+                      headers=headers)
+
+    admin = await _admin_headers(client)
+    resp = await client.post(
+        "/api/admin/tournament/settle",
+        json={"winner": "Spain", "golden_boot": "Mbappé"},
+        headers=admin,
+    )
+    assert resp.status_code == 200
+    assert resp.json()["total_goals"] == 3
+
+    p = (await db.execute(sa_select(PlayerModel).where(PlayerModel.name == "Alice"))).scalar_one()
+    assert p.token_balance == 1100  # 1000 - 100 stake + 200 payout (100 * 2.0)
