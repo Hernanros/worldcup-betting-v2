@@ -7,6 +7,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const [acceptorOdds, setAcceptorOdds] = useState(prefill?.their_odds ?? 1.5)
   const [selection, setSelection] = useState(prefill?.my_pick ?? "")
   const [acceptorSelection, setAcceptorSelection] = useState(prefill?.their_pick ?? "")
+  const [betType, setBetType] = useState(prefill?.bet_type ?? "1x2")
   const [loading, setLoading] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
@@ -21,7 +22,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
     setLoading(true); setMsg("")
     try {
       const r = await api.post(`/api/matches/${match.id}/challenges`, {
-        bet_type: "1x2", selection, acceptor_selection: acceptorSelection,
+        bet_type: betType, selection, acceptor_selection: acceptorSelection,
         issuer_stake: issuerStake, issuer_odds: issuerOdds, acceptor_odds: acceptorOdds,
       })
       setMsg(`✓ Challenge issued! Balance: ${r.new_balance}`)
@@ -77,6 +78,16 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
       {/* Issue form */}
       <div style={{ background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>Issue a new challenge</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+          <span style={{ color: "#6b7280", fontSize: 11 }}>Bet type:</span>
+          <span style={{
+            background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
+            borderRadius: 999, padding: "2px 8px", fontSize: 10, color: "#c4b5fd", fontWeight: 700,
+            textTransform: "uppercase",
+          }}>
+            {betType.replace(/_/g, " ")}
+          </span>
+        </div>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input placeholder="Your pick" value={selection} onChange={(e) => setSelection(e.target.value)}
             style={{ flex: 1, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,

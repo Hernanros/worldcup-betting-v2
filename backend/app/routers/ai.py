@@ -17,8 +17,9 @@ Respond ONLY with a valid JSON array — no markdown, no explanation, just the a
 Each item in the array must have exactly these fields:
 {
   "title": "short label for the bet type, e.g. 'Home Win' or 'Correct Score'",
-  "my_pick": "the issuer's selection, e.g. 'Argentina' or '2-1'",
-  "their_pick": "the acceptor's opposing selection, e.g. 'Brazil' or '1-2'",
+  "bet_type": "one of: 1x2, correct_score, btts, totals",
+  "my_pick": "issuer selection matching bet_type: team name for 1x2, 'H-A' for correct_score (e.g. '2-1'), 'Yes'/'No' for btts, 'Over N.5'/'Under N.5' for totals",
+  "their_pick": "acceptor's opposing selection in the same format",
   "my_odds": 2.5,
   "their_odds": 1.6,
   "stake": 100,

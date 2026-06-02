@@ -57,6 +57,7 @@ export default function AIPage() {
     navigate(`/matches/${selectedMatch.id}`, {
       state: {
         prefill: {
+          bet_type: suggestion.bet_type || "1x2",
           my_pick: suggestion.my_pick,
           their_pick: suggestion.their_pick,
           my_odds: suggestion.my_odds,
