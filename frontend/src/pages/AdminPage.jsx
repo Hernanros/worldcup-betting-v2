@@ -17,6 +17,11 @@ export default function AdminPage() {
   const [unsettled, setUnsettled] = useState([])
   const [scores, setScores] = useState({})   // { matchId: { home: "", away: "" } }
   const [settleMsg, setSettleMsg] = useState("")
+  // Tournament settlement
+  const [tournamentWinner, setTournamentWinner] = useState("")
+  const [goldenBoot, setGoldenBoot] = useState("")
+  const [tournamentSettleMsg, setTournamentSettleMsg] = useState("")
+  const [tournamentLoading, setTournamentLoading] = useState(false)
 
   useEffect(() => { if (!player?.is_admin) navigate("/", { replace: true }) }, [])
 
@@ -66,6 +71,30 @@ export default function AdminPage() {
       await api.delete(force ? `/api/leagues/${lg.id}/force` : `/api/leagues/${lg.id}`)
       await load()
     } catch (e) { setErr("✗ " + e.message) }
+  }
+
+  async function handleTournamentSettle(e) {
+    e.preventDefault()
+    setTournamentSettleMsg("")
+    if (!tournamentWinner.trim() || !goldenBoot.trim()) {
+      setTournamentSettleMsg("✗ Both fields are required")
+      return
+    }
+    if (!confirm(`Settle all tournament bets?\nWinner: ${tournamentWinner}\nGolden Boot: ${goldenBoot}\n\nThis cannot be undone.`)) return
+    setTournamentLoading(true)
+    try {
+      const result = await api.post("/api/admin/tournament/settle", {
+        winner: tournamentWinner.trim(),
+        golden_boot: goldenBoot.trim(),
+      })
+      setTournamentSettleMsg(
+        `✓ Settled ${result.settled} bet(s). Winner: ${result.winner}, Golden Boot: ${result.golden_boot}, Total Goals: ${result.total_goals}`
+      )
+    } catch (e) {
+      setTournamentSettleMsg("✗ " + e.message)
+    } finally {
+      setTournamentLoading(false)
+    }
   }
 
   const inputStyle = {
@@ -163,6 +192,44 @@ export default function AdminPage() {
             }}>Settle</button>
           </div>
         ))}
+      </div>
+
+      {/* Tournament settlement */}
+      <div style={card}>
+        <h3 style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>🏆 Settle tournament bets</h3>
+        <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>
+          Run once after the final. Pays out all pending winner / golden boot / total goals bets.
+        </p>
+        {tournamentSettleMsg && (
+          <p style={{
+            color: tournamentSettleMsg.startsWith("✓") ? "#4ade80" : "#f87171",
+            fontSize: 12, marginBottom: 8,
+          }}>
+            {tournamentSettleMsg}
+          </p>
+        )}
+        <form onSubmit={handleTournamentSettle} style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          <input
+            value={tournamentWinner}
+            onChange={e => setTournamentWinner(e.target.value)}
+            placeholder="Champion team  (e.g. Spain)"
+            style={inputStyle}
+          />
+          <input
+            value={goldenBoot}
+            onChange={e => setGoldenBoot(e.target.value)}
+            placeholder="Golden Boot scorer  (e.g. Mbappé)"
+            style={inputStyle}
+          />
+          <button type="submit" disabled={tournamentLoading} style={{
+            background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff", border: "none",
+            borderRadius: 8, padding: "10px", fontSize: 14, fontWeight: 700,
+            cursor: tournamentLoading ? "not-allowed" : "pointer",
+            opacity: tournamentLoading ? 0.7 : 1,
+          }}>
+            {tournamentLoading ? "Settling..." : "Settle tournament bets"}
+          </button>
+        </form>
       </div>
 
       <div style={card}>
