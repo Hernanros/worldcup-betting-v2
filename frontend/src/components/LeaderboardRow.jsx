@@ -27,8 +27,11 @@ export default function LeaderboardRow({ player, rank }) {
         <div style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0" }}>
           {player.name}{isMe && " (you)"}
         </div>
-        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2 }}>
-          Streak: {player.challenge_streak} 🔥
+        <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, display: "flex", gap: 8 }}>
+          <span>🔥 {player.challenge_streak} streak</span>
+          {player.prediction_pts > 0 && (
+            <span style={{ color: "#a78bfa" }}>🎯 {player.prediction_pts} pts</span>
+          )}
         </div>
       </div>
       <div className="gradient-text" style={{ fontWeight: 800, fontSize: 16 }}>

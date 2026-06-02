@@ -6,6 +6,7 @@ import PageBackground from "../components/PageBackground.jsx"
 
 export default function LeaderboardPage() {
   const [players, setPlayers] = useState([])
+  const [predictions, setPredictions] = useState([])
   const [redCards, setRedCards] = useState([])
   const [tab, setTab] = useState("tokens")
   const [error, setError] = useState(null)
@@ -13,11 +14,13 @@ export default function LeaderboardPage() {
   async function load() {
     setError(null)
     try {
-      const [p, r] = await Promise.all([
+      const [p, pred, r] = await Promise.all([
         api.get("/api/leaderboard"),
+        api.get("/api/leaderboard/predictions"),
         api.get("/api/leaderboard/red-cards"),
       ])
       setPlayers(p)
+      setPredictions(pred)
       setRedCards(r)
     } catch (err) {
       setError(err.message || "Failed to load leaderboard")
@@ -30,6 +33,12 @@ export default function LeaderboardPage() {
     return unsub
   }, [])
 
+  const TABS = [
+    { id: "tokens", label: "🏆 Tokens" },
+    { id: "predictions", label: "🎯 Predictions" },
+    { id: "red-cards", label: "🟥 Red Cards" },
+  ]
+
   return (
     <div>
       <PageBackground momentKey="zidane_2006" />
@@ -38,15 +47,16 @@ export default function LeaderboardPage() {
         <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>Rankings</div>
       </div>
       <div style={{ padding: 16 }}>
-        <div style={{ display: "flex", gap: 8, marginBottom: 16 }}>
-          {["tokens", "red-cards"].map((t) => (
-            <button key={t} onClick={() => setTab(t)}
+        <div style={{ display: "flex", gap: 8, marginBottom: 16, overflowX: "auto" }}>
+          {TABS.map((t) => (
+            <button key={t.id} onClick={() => setTab(t.id)}
               style={{
-                background: tab === t ? "linear-gradient(135deg,#a855f7,#3b82f6)" : "#1e1b3a",
-                color: tab === t ? "#fff" : "#6b7280", border: "none",
-                borderRadius: 999, padding: "5px 16px", fontSize: 12, fontWeight: 600, cursor: "pointer",
+                background: tab === t.id ? "linear-gradient(135deg,#a855f7,#3b82f6)" : "#1e1b3a",
+                color: tab === t.id ? "#fff" : "#6b7280", border: "none",
+                borderRadius: 999, padding: "5px 16px", fontSize: 12, fontWeight: 600,
+                cursor: "pointer", whiteSpace: "nowrap",
               }}>
-              {t === "tokens" ? "🏆 Tokens" : "🟥 Red Cards"}
+              {t.label}
             </button>
           ))}
         </div>
@@ -56,6 +66,22 @@ export default function LeaderboardPage() {
         {tab === "tokens" && players.map((p, i) => (
           <LeaderboardRow key={p.id} player={p} rank={p.rank ?? i + 1} />
         ))}
+
+        {tab === "predictions" && (
+          <>
+            <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>
+              Exact score = 3 pts · Correct outcome = 1 pt
+            </p>
+            {predictions.map((p, i) => (
+              <LeaderboardRow key={p.id} player={p} rank={p.rank ?? i + 1} />
+            ))}
+            {predictions.length === 0 && (
+              <p style={{ color: "#6b7280", textAlign: "center", fontSize: 13 }}>
+                No predictions yet — be first to call a score!
+              </p>
+            )}
+          </>
+        )}
 
         {tab === "red-cards" && redCards.map((r) => (
           <div key={r.team} style={{ background: "#13131f", border: "1px solid #2d2b55",
