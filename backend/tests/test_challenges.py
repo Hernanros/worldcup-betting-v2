@@ -54,3 +54,36 @@ async def test_cannot_accept_own_challenge(client, db):
     resp = await client.post(f"/api/challenges/{ch_id}/accept",
                              headers={"Authorization": f"Bearer {alice['token']}"})
     assert resp.status_code == 400
+
+
+async def test_get_challenges_returns_open_and_for_me(client, db):
+    """GET /api/challenges returns my open challenges and challenges I can accept."""
+    m = await make_match(db)
+    alice = await join_player(client, "Alice")
+    bob_resp = await client.post("/api/auth/join", json={"name": "Bob", "code": "friends2026"})
+    bob = bob_resp.json()
+
+    alice_h = {"Authorization": f"Bearer {alice['token']}"}
+    bob_h = {"Authorization": f"Bearer {bob['token']}"}
+
+    # Alice issues a challenge
+    await client.post(f"/api/matches/{m.id}/challenges",
+                      json={"bet_type": "1x2", "selection": "Argentina",
+                            "acceptor_selection": "Away",
+                            "issuer_stake": 100, "issuer_odds": 2.0, "acceptor_odds": 2.0},
+                      headers=alice_h)
+
+    # Alice sees her own challenge in my_open, not in for_me
+    alice_resp = await client.get("/api/challenges", headers=alice_h)
+    assert alice_resp.status_code == 200
+    alice_body = alice_resp.json()
+    assert len(alice_body["my_open"]) == 1
+    assert len(alice_body["for_me"]) == 0
+
+    # Bob sees the challenge in for_me, not in my_open
+    bob_resp2 = await client.get("/api/challenges", headers=bob_h)
+    assert bob_resp2.status_code == 200
+    bob_body = bob_resp2.json()
+    assert len(bob_body["for_me"]) == 1
+    assert len(bob_body["my_open"]) == 0
+    assert bob_body["for_me"][0]["match_home_team"] == "Argentina"

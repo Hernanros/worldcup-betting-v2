@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
@@ -91,3 +92,51 @@ async def accept_challenge(challenge_id: int, auth=Depends(get_current_player), 
     await db.commit()
 
     return {"id": challenge.id, "new_balance": player.token_balance}
+
+
+@router.get("/api/challenges")
+async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    """Return open challenges: issued by me (my_open) and available to accept (for_me)."""
+    player, _ = auth
+
+    if player.league_id is not None:
+        league_player_ids = (await db.execute(
+            select(Player.id).where(Player.league_id == player.league_id)
+        )).scalars().all()
+        open_q = select(Challenge).where(
+            Challenge.status == "open",
+            Challenge.issuer_id.in_(league_player_ids),
+        )
+    else:
+        open_q = select(Challenge).where(Challenge.status == "open")
+
+    open_challenges = (await db.execute(open_q)).scalars().all()
+
+    match_ids = list({c.match_id for c in open_challenges})
+    matches: dict[int, Match] = {}
+    if match_ids:
+        match_rows = (await db.execute(select(Match).where(Match.id.in_(match_ids)))).scalars().all()
+        matches = {m.id: m for m in match_rows}
+
+    my_open = []
+    for_me = []
+    for c in open_challenges:
+        m = matches.get(c.match_id)
+        entry = {
+            "id": c.id,
+            "match_id": c.match_id,
+            "match_home_team": m.home_team if m else "",
+            "match_away_team": m.away_team if m else "",
+            "kickoff_time": m.kickoff_time.isoformat() if m else None,
+            "bet_type": c.bet_type,
+            "selection": c.selection,
+            "acceptor_selection": c.acceptor_selection,
+            "issuer_stake": c.issuer_stake,
+            "acceptor_stake": c.acceptor_stake,
+        }
+        if c.issuer_id == player.id:
+            my_open.append(entry)
+        else:
+            for_me.append(entry)
+
+    return {"my_open": my_open, "for_me": for_me}
