@@ -3,7 +3,8 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_admin
-from app.models import League, Player, Match
+from app.models import League, Player, Match, TournamentBet
+from app.settlement import determine_totals_winner
 
 router = APIRouter()
 
@@ -139,3 +140,66 @@ async def settle_match_manual(data: dict, _=Depends(get_admin), db: AsyncSession
     await manager.broadcast({"type": "match_settled", "match_id": match.id})
     await manager.broadcast({"type": "leaderboard_updated"})
     return {"settled": match_id, "home_score": int(home_score), "away_score": int(away_score)}
+
+
+@router.post("/api/admin/tournament/settle", status_code=200)
+async def settle_tournament_bets(
+    data: dict,
+    _=Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Settle all pending tournament bets. Call once the tournament ends.
+
+    Body:
+      winner       – team name that won (case-insensitive)
+      golden_boot  – top scorer name (case-insensitive)
+
+    total_goals bets are auto-settled from sum of all finished match scores.
+    """
+    winner_team = (data.get("winner") or "").strip()
+    golden_boot_player = (data.get("golden_boot") or "").strip()
+    if not winner_team or not golden_boot_player:
+        raise HTTPException(400, "winner and golden_boot are required")
+
+    # Sum all goals from finished matches
+    total_goals_row = await db.execute(
+        select(
+            func.coalesce(func.sum(Match.home_score), 0) +
+            func.coalesce(func.sum(Match.away_score), 0)
+        ).where(Match.status == "finished")
+    )
+    total_goals = int(total_goals_row.scalar() or 0)
+
+    # Settle every pending tournament bet
+    pending = (await db.execute(
+        select(TournamentBet).where(TournamentBet.status == "pending")
+    )).scalars().all()
+
+    settled_count = 0
+    for bet in pending:
+        if bet.bet_type == "winner":
+            won = bet.selection.lower() == winner_team.lower()
+        elif bet.bet_type == "golden_boot":
+            won = bet.selection.lower() == golden_boot_player.lower()
+        elif bet.bet_type == "total_goals":
+            won = determine_totals_winner(bet.selection, total_goals)
+        else:
+            won = False
+
+        bet.status = "won" if won else "lost"
+        if won:
+            player = await db.get(Player, bet.player_id)
+            player.token_balance += int(bet.stake * bet.odds_at_placement)
+        settled_count += 1
+
+    await db.commit()
+
+    from app.ws import manager
+    await manager.broadcast({"type": "leaderboard_updated"})
+
+    return {
+        "settled": settled_count,
+        "winner": winner_team,
+        "golden_boot": golden_boot_player,
+        "total_goals": total_goals,
+    }
