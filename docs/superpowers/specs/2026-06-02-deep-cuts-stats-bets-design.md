@@ -51,7 +51,7 @@ Markets are unique per stage — no market repeats across stages.
 | Market | Type | Settlement |
 |---|---|---|
 | 🥅 QF Penalty Shootouts | Exact count (0–2) | Count of QF matches with `went_to_pens = True` |
-| 🎭 Goals by Substitutes | Over / Under | Sum of `sub_goals` across all QF matches |
+| 🎭 Goals by Substitutes | Over / Under | Sum of `sub_goals` across all QF matches (goal scorer ∈ substitution events for that match) |
 | 🌟 Total QF Goals | Over / Under | Sum of `home_score + away_score` across QF |
 
 ### Semi-Finals (2 markets) — Lock: first SF kick-off
@@ -265,7 +265,7 @@ if all matches in that round are finished:
 - `home_offsides`, `away_offsides`
 - `went_to_et`, `went_to_pens` (from match status/score flags in API response)
 - `home_own_goals`, `away_own_goals` (from goal event types if available)
-- `sub_goals` (count of goals by substitutes, from goal event types)
+- `sub_goals` (count of goals by substitutes — cross-reference goal scorer names against substitution events in the same match; both are already in the events payload the poller fetches for red cards)
 
 The football API key (`FOOTBALL_API_KEY = c1b9cf857ce043c55933e305c1f483e6`) is already configured. These fields are available in the match statistics endpoint.
 
