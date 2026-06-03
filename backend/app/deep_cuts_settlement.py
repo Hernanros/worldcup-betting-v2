@@ -282,12 +282,10 @@ async def settle_stage(stage: str, db: AsyncSession) -> int:
 
         won = _evaluate_bet(market, bet.selection, matches)
         bet.status = "won" if won else "lost"
-        player = await db.get(Player, bet.player_id)
-        if player:
-            # Deduct stake (if not already deducted at placement)
-            player.token_balance -= bet.stake
-            if won:
-                # Add full return: stake * odds
+        if won:
+            player = await db.get(Player, bet.player_id)
+            if player:
+                # Stake was already deducted at bet placement; only add winnings here
                 player.token_balance += int(bet.stake * bet.odds_at_placement)
         settled += 1
 
@@ -350,10 +348,10 @@ async def settle_most_exhausted(db: AsyncSession, api_key: str) -> int:
     for bet in pending:
         won = _normalize_name(bet.selection) == norm_winner
         bet.status = "won" if won else "lost"
-        player = await db.get(Player, bet.player_id)
-        if player:
-            player.token_balance -= bet.stake
-            if won:
+        if won:
+            player = await db.get(Player, bet.player_id)
+            if player:
+                # Stake was already deducted at bet placement; only add winnings here
                 player.token_balance += int(bet.stake * bet.odds_at_placement)
         settled += 1
 

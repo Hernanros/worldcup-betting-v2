@@ -180,6 +180,8 @@ async def _make_spicy_bet(factory, market_key, stage, selection, stake=100, odds
         db.add(player)
         await db.commit()
         await db.refresh(player)
+        # Deduct stake at bet placement (as the API endpoint does)
+        player.token_balance -= stake
         bet = SpicyBet(
             player_id=player.id, league_id=league.id,
             market_key=market_key, stage=stage,
