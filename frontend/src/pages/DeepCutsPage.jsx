@@ -13,9 +13,10 @@ const STAGE_LABELS = {
   r16: "🏟️ Round of 16", qf: "🥊 Quarter-Finals", sf: "🌟 Semi-Finals", final: "🏆 Final",
 }
 const STATUS_BADGE = {
-  open: { label: "Open", color: "#1abc9c" },
-  locked: { label: "Locked", color: "#e74c3c" },
-  settled: { label: "Settled", color: "#888" },
+  open:     { label: "Open",     color: "#1abc9c" },
+  locked:   { label: "Locked",   color: "#e74c3c" },
+  settled:  { label: "Settled",  color: "#888" },
+  upcoming: { label: "Soon",     color: "#f59e0b" },
 }
 
 export default function DeepCutsPage() {

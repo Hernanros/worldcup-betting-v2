@@ -4,8 +4,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
 from app.models import Match, Prediction
+from app.deep_cuts_config import WC2026_GROUPS
 
 router = APIRouter()
+
+# Reverse lookup: team name → group letter (A–L), built once at import time
+_TEAM_TO_GROUP: dict[str, str] = {
+    team: letter
+    for letter, teams in WC2026_GROUPS.items()
+    for team in teams
+}
 
 
 @router.get("/api/predictions")
@@ -22,7 +30,9 @@ async def get_predictions(auth=Depends(get_current_player), db: AsyncSession = D
         result.append({
             "match_id": m.id, "home_team": m.home_team, "away_team": m.away_team,
             "kickoff_time": m.kickoff_time.isoformat(), "status": m.status,
-            "round": m.round, "home_team_confirmed": m.home_team_confirmed,
+            "round": m.round,
+            "group": _TEAM_TO_GROUP.get(m.home_team) if m.round == "group" else None,
+            "home_team_confirmed": m.home_team_confirmed,
             "away_team_confirmed": m.away_team_confirmed,
             "home_score": m.home_score, "away_score": m.away_score,
             "my_prediction": {

@@ -54,12 +54,22 @@ export default function PredictionRow({ entry, onSaved }) {
 
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 8 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ fontWeight: 600, fontSize: 13, color: "#e2e8f0" }}>
-          <Flag name={entry.home_team} />{entry.home_team}
-          <span style={{ color: "#6b7280", margin: "0 4px" }}>vs</span>
-          <Flag name={entry.away_team} />{entry.away_team}
-        </span>
+      {/* Group label */}
+      {entry.group && (
+        <div style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 4 }}>
+          Group {entry.group}
+        </div>
+      )}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flexWrap: "nowrap", minWidth: 0 }}>
+          <span style={{ fontWeight: 600, fontSize: 13, color: "#e2e8f0", whiteSpace: "nowrap" }}>
+            <Flag name={entry.home_team} />{entry.home_team}
+          </span>
+          <span style={{ color: "#6b7280", fontSize: 12, flexShrink: 0 }}>vs</span>
+          <span style={{ fontWeight: 600, fontSize: 13, color: "#e2e8f0", whiteSpace: "nowrap" }}>
+            <Flag name={entry.away_team} />{entry.away_team}
+          </span>
+        </div>
         {pred && (
           <span style={{
             fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,

@@ -1,11 +1,11 @@
 from datetime import datetime, timezone
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
-from app.models import SpicyBet, SpicyDismissal, Player
+from app.models import Match, SpicyBet, SpicyDismissal, Player
 from app.deep_cuts_config import (
     DEEP_CUTS_MARKETS, STAGE_ROUNDS, markets_for_stage,
     get_stage_lock_time,
@@ -15,6 +15,21 @@ from app.deep_cuts_settlement import get_stage_lock_time_from_db
 router = APIRouter()
 
 STAGE_ORDER = ["tournament", "group_stage", "r32", "r16", "qf", "sf", "final"]
+
+# Knockout stages are only open once their matches exist in the DB.
+# Before the bracket is drawn, these stages show as "upcoming" (not yet open).
+_KNOCKOUT_STAGES = {"r32", "r16", "qf", "sf", "final"}
+
+
+async def _stage_has_matches(stage: str, db: AsyncSession) -> bool:
+    """Returns True if at least one match exists for this stage's round."""
+    round_ = STAGE_ROUNDS.get(stage)
+    if not round_:
+        return True  # tournament / group_stage — always considered active
+    count = await db.scalar(
+        select(func.count()).select_from(Match).where(Match.round == round_)
+    )
+    return (count or 0) > 0
 
 
 def _resolve_spicy_odds(market: dict, selection: str) -> float:
@@ -57,7 +72,14 @@ async def _get_lock_time(stage: str, db: AsyncSession) -> Optional[datetime]:
     return await get_stage_lock_time_from_db(stage, db)
 
 
-def _stage_status(lock_time: Optional[datetime]) -> str:
+def _stage_status(lock_time: Optional[datetime], has_matches: bool = True) -> str:
+    """
+    "upcoming" — knockout stage that has no scheduled matches yet (bracket not drawn)
+    "open"     — betting is open
+    "locked"   — past the lock time
+    """
+    if not has_matches:
+        return "upcoming"
     if lock_time is None:
         return "open"
     now = datetime.now(timezone.utc)
@@ -69,10 +91,11 @@ async def get_stages(auth=Depends(get_current_player), db: AsyncSession = Depend
     result = []
     for stage in STAGE_ORDER:
         lock_time = await _get_lock_time(stage, db)
+        has_matches = await _stage_has_matches(stage, db) if stage in _KNOCKOUT_STAGES else True
         market_count = len(markets_for_stage(stage))
         result.append({
             "stage":        stage,
-            "status":       _stage_status(lock_time),
+            "status":       _stage_status(lock_time, has_matches),
             "lock_time":    lock_time.isoformat() if lock_time else None,
             "market_count": market_count,
         })
@@ -88,7 +111,9 @@ async def get_markets(
     if stage not in STAGE_ROUNDS:
         raise HTTPException(400, f"Unknown stage '{stage}'")
     lock_time = await _get_lock_time(stage, db)
-    locked = _stage_status(lock_time) == "locked"
+    has_matches = await _stage_has_matches(stage, db) if stage in _KNOCKOUT_STAGES else True
+    status = _stage_status(lock_time, has_matches)
+    locked = status == "locked"
     markets = []
     for key, m in markets_for_stage(stage).items():
         entry = {
@@ -148,6 +173,9 @@ async def place_spicy_bet(
         raise HTTPException(400, f"market '{market_key}' does not belong to stage '{stage}'")
 
     lock_time = await _get_lock_time(stage, db)
+    has_matches = await _stage_has_matches(stage, db) if stage in _KNOCKOUT_STAGES else True
+    if not has_matches:
+        raise HTTPException(400, f"Stage '{stage}' is not yet open — bracket not drawn")
     if lock_time and datetime.now(timezone.utc) >= lock_time:
         raise HTTPException(400, f"Stage '{stage}' is locked — bets are closed")
 
