@@ -111,6 +111,8 @@ async def place_spicy_bet(
         raise HTTPException(400, f"Unknown market '{market_key}'")
     if stage not in STAGE_ROUNDS:
         raise HTTPException(400, f"Unknown stage '{stage}'")
+    if DEEP_CUTS_MARKETS[market_key]["stage"] != stage:
+        raise HTTPException(400, f"market '{market_key}' does not belong to stage '{stage}'")
 
     lock_time = await _get_lock_time(stage, db)
     if lock_time and datetime.now(timezone.utc) >= lock_time:
@@ -125,20 +127,20 @@ async def place_spicy_bet(
     if stake < 1:
         raise HTTPException(400, "minimum stake is 1")
 
-    player = await db.get(Player, player.id)
-    if player.token_balance < stake:
+    fresh_player = await db.get(Player, player.id)
+    if fresh_player.token_balance < stake:
         raise HTTPException(400, "insufficient balance")
 
     bet = SpicyBet(
-        player_id         = player.id,
-        league_id         = player.league_id,
+        player_id         = fresh_player.id,
+        league_id         = fresh_player.league_id,
         market_key        = market_key,
         stage             = stage,
         selection         = selection,
         stake             = stake,
         odds_at_placement = odds,
     )
-    player.token_balance -= stake
+    fresh_player.token_balance -= stake
     db.add(bet)
     await db.commit()
     await db.refresh(bet)
