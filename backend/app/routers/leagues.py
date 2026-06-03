@@ -146,6 +146,62 @@ async def settle_match_manual(data: dict, _=Depends(get_admin), db: AsyncSession
     return {"settled": match_id, "home_score": int(home_score), "away_score": int(away_score)}
 
 
+@router.post("/api/admin/sync-fixture-ids")
+async def sync_fixture_ids(
+    auth=Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    One-time setup: fetch WC 2026 fixture list from API-Football,
+    match by home_team + away_team, store api_fixture_id on Match.
+    Run once before the tournament starts.
+    """
+    import requests as _req
+    from sqlalchemy import select as _select
+    from app.models import Match as _Match
+
+    try:
+        from app.config import settings
+        api_key = settings.football_api_key
+    except Exception:
+        import os
+        api_key = os.getenv("FOOTBALL_API_KEY", "")
+
+    try:
+        resp = _req.get(
+            "https://v3.football.api-sports.io/fixtures",
+            params={"league": "1", "season": "2026"},
+            headers={"x-apisports-key": api_key},
+            timeout=15,
+        )
+        resp.raise_for_status()
+        fixtures = resp.json().get("response", [])
+    except Exception as e:
+        raise HTTPException(502, f"API-Football fetch failed: {e}")
+
+    matches = (await db.execute(_select(_Match))).scalars().all()
+    match_lookup = {
+        (m.home_team.lower(), m.away_team.lower()): m
+        for m in matches
+    }
+
+    updated = 0
+    for f in fixtures:
+        teams = f.get("teams", {})
+        home = teams.get("home", {}).get("name", "").lower()
+        away = teams.get("away", {}).get("name", "").lower()
+        fid = f.get("fixture", {}).get("id")
+        if not fid:
+            continue
+        match = match_lookup.get((home, away))
+        if match and not match.api_fixture_id:
+            match.api_fixture_id = fid
+            updated += 1
+
+    await db.commit()
+    return {"updated": updated, "total_fixtures": len(fixtures)}
+
+
 @router.post("/api/admin/tournament/settle", status_code=200)
 async def settle_tournament_bets(
     data: dict,
