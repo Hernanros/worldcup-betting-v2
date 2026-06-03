@@ -105,3 +105,28 @@ def test_compute_sub_goals_own_goal_not_counted():
         {"type": "Goal",  "time": {"elapsed": 80}, "player": {"name": "Own Goal"}, "team": {"name": "Spain"}, "detail": "Own Goal"},
     ]
     assert compute_sub_goals(events) == 0
+
+def test_fetch_api_football_events_returns_sub_goals():
+    """sub_goals counts goals scored by players who were subbed on."""
+    mock_data = {
+        "response": [
+            {"type": "subst", "time": {"elapsed": 60}, "player": {"name": "Olmo"}, "team": {"name": "Spain"}},
+            {"type": "Goal",  "time": {"elapsed": 75}, "player": {"name": "Olmo"}, "team": {"name": "Spain"}, "detail": "Normal Goal"},
+            {"type": "Goal",  "time": {"elapsed": 20}, "player": {"name": "Torres"}, "team": {"name": "Spain"}, "detail": "Normal Goal"},
+        ]
+    }
+    with patch("app.results_client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = mock_data
+        mock_get.return_value.raise_for_status = MagicMock()
+        result = fetch_api_football_events(12345, "test_key")
+    assert result["sub_goals"] == 1
+    assert result["home_own_goals"] == 0
+    assert result["away_own_goals"] == 0
+
+def test_fetch_api_football_events_no_key_returns_zeros():
+    """Returns zero dict immediately when api_key is falsy — no network call."""
+    from app.results_client import fetch_api_football_events
+    with patch("app.results_client.requests.get") as mock_get:
+        result = fetch_api_football_events(12345, "")
+    mock_get.assert_not_called()
+    assert result == {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0}

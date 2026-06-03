@@ -209,7 +209,8 @@ def fetch_api_football_events(fixture_id: int, api_key: str) -> dict:
         base["sub_goals"] = compute_sub_goals(events)
 
         # Own goals — API-Football uses detail="Own Goal"
-        # Store total in home_own_goals for now (split requires separate fixtures call)
+        # Settlement sums home_own_goals+away_own_goals, so storing total in one field is equivalent.
+        # Per-team split would require a separate /fixtures call to identify home/away teams.
         total_og = sum(
             1 for e in events
             if e.get("type") == "Goal" and e.get("detail") == "Own Goal"
