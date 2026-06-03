@@ -62,18 +62,30 @@ def _evaluate_bet(market: dict, selection: str, matches) -> bool:
     if settle == "sum_field":
         total = _sum_fields(matches, market["field"])
         # selection is like "Over 2.5" or "Under 139.5"
-        parts = selection.split()
-        direction, line = parts[0].lower(), float(parts[1])
+        try:
+            parts = selection.split()
+            direction, line = parts[0].lower(), float(parts[1])
+        except (IndexError, ValueError):
+            logger.warning("Malformed selection '%s' for settle=%s", selection, settle)
+            return False
         return total > line if direction == "over" else total < line
 
     # -- count_went_to_et / count_went_to_pens: exact count ------------------
     if settle == "count_went_to_et":
         count = sum(1 for m in matches if m.went_to_et)
-        return int(selection) == count
+        try:
+            return int(selection) == count
+        except (ValueError, TypeError):
+            logger.warning("Malformed count selection '%s'", selection)
+            return False
 
     if settle == "count_went_to_pens":
         count = sum(1 for m in matches if m.went_to_pens)
-        return int(selection) == count
+        try:
+            return int(selection) == count
+        except (ValueError, TypeError):
+            logger.warning("Malformed count selection '%s'", selection)
+            return False
 
     # -- count_field: sum then exact count -----------------------------------
     if settle == "count_field":
@@ -155,8 +167,12 @@ def _evaluate_bet(market: dict, selection: str, matches) -> bool:
     if settle == "count_high_scoring":
         threshold = market.get("threshold", 3)
         count = sum(1 for m in matches if (m.home_score or 0) + (m.away_score or 0) >= threshold)
-        parts = selection.split()
-        direction, line = parts[0].lower(), float(parts[1])
+        try:
+            parts = selection.split()
+            direction, line = parts[0].lower(), float(parts[1])
+        except (IndexError, ValueError):
+            logger.warning("Malformed selection '%s' for settle=%s", selection, settle)
+            return False
         return count > line if direction == "over" else count < line
 
     # -- best_group_team ------------------------------------------------------
@@ -264,10 +280,6 @@ async def settle_stage(stage: str, db: AsyncSession) -> int:
     Returns number of bets settled.
     Caller must commit after this returns.
     """
-    if stage == "most_exhausted":
-        # Settled separately via settle_most_exhausted()
-        return 0
-
     matches = await _get_stage_matches(stage, db)
     pending_bets = (await db.execute(
         select(SpicyBet).where(SpicyBet.stage == stage, SpicyBet.status == "pending")
@@ -277,8 +289,11 @@ async def settle_stage(stage: str, db: AsyncSession) -> int:
     for bet in pending_bets:
         market = DEEP_CUTS_MARKETS.get(bet.market_key)
         if not market:
-            logger.warning("Unknown market_key %s on bet %d - skipping", bet.market_key, bet.id)
+            logger.warning("Unknown market_key %s on bet %d — skipping", bet.market_key, bet.id)
             continue
+
+        if market.get("settle") == "most_exhausted":
+            continue  # settled separately via settle_most_exhausted()
 
         won = _evaluate_bet(market, bet.selection, matches)
         bet.status = "won" if won else "lost"
@@ -299,17 +314,20 @@ async def settle_most_exhausted(db: AsyncSession, api_key: str) -> int:
     Returns number of bets settled.
     Caller must commit.
     """
+    import asyncio
     import requests as _requests
 
     max_minutes, winner_name = 0, ""
     page = 1
     while True:
         try:
-            resp = _requests.get(
-                "https://v3.football.api-sports.io/players",
-                params={"league": "1", "season": "2026", "page": page},
-                headers={"x-apisports-key": api_key},
-                timeout=15,
+            resp = await asyncio.to_thread(
+                lambda: _requests.get(
+                    "https://v3.football.api-sports.io/players",
+                    params={"league": "1", "season": "2026", "page": page},
+                    headers={"x-apisports-key": api_key},
+                    timeout=15,
+                )
             )
             resp.raise_for_status()
             data = resp.json()
