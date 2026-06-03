@@ -50,7 +50,7 @@ class Match(Base):
     away_score = Column(Integer)
     home_red_cards = Column(Integer, default=0)
     away_red_cards = Column(Integer, default=0)
-    corners = Column(Integer, default=0)
+    corners = Column(Integer, default=0)  # legacy aggregate; use home_corners+away_corners
     round = Column(String(20), nullable=False, default="group")
     home_team_confirmed = Column(Boolean, nullable=False, default=True)
     away_team_confirmed = Column(Boolean, nullable=False, default=True)
@@ -58,17 +58,17 @@ class Match(Base):
     next_slot = Column(String(4), nullable=True)  # 'home' or 'away'
     espn_event_id      = Column(String(20))
     api_fixture_id     = Column(Integer)
-    home_yellow_cards  = Column(Integer, default=0)
-    away_yellow_cards  = Column(Integer, default=0)
-    home_own_goals     = Column(Integer, default=0)
-    away_own_goals     = Column(Integer, default=0)
-    home_corners       = Column(Integer, default=0)
-    away_corners       = Column(Integer, default=0)
-    home_offsides      = Column(Integer, default=0)
-    away_offsides      = Column(Integer, default=0)
-    sub_goals          = Column(Integer, default=0)
-    went_to_et         = Column(Boolean, default=False)
-    went_to_pens       = Column(Boolean, default=False)
+    home_yellow_cards  = Column(Integer, nullable=False, default=0)
+    away_yellow_cards  = Column(Integer, nullable=False, default=0)
+    home_own_goals     = Column(Integer, nullable=False, default=0)
+    away_own_goals     = Column(Integer, nullable=False, default=0)
+    home_corners       = Column(Integer, nullable=False, default=0)
+    away_corners       = Column(Integer, nullable=False, default=0)
+    home_offsides      = Column(Integer, nullable=False, default=0)
+    away_offsides      = Column(Integer, nullable=False, default=0)
+    sub_goals          = Column(Integer, nullable=False, default=0)
+    went_to_et         = Column(Boolean, nullable=False, default=False)
+    went_to_pens       = Column(Boolean, nullable=False, default=False)
 
     bets = relationship("Bet", back_populates="match")
     challenges = relationship("Challenge", back_populates="match")
@@ -146,6 +146,8 @@ class SpicyBet(Base):
     player_id         = Column(Integer, ForeignKey("players.id"), nullable=False)
     league_id         = Column(Integer, ForeignKey("leagues.id"), nullable=True)
     market_key        = Column(String(80), nullable=False)
+    # tournament/group_stage/r32/r16/qf/sf/final
+    # stage-level bet (not tied to a specific match)
     stage             = Column(String(20), nullable=False)
     selection         = Column(String(200), nullable=False)
     stake             = Column(Integer, nullable=False)
@@ -160,6 +162,9 @@ class SpicyDismissal(Base):
     __tablename__ = "spicy_dismissals"
     id           = Column(Integer, primary_key=True)
     player_id    = Column(Integer, ForeignKey("players.id"), nullable=False)
+    # tournament/group_stage/r32/r16/qf/sf/final
     stage        = Column(String(20), nullable=False)
     dismissed_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     __table_args__ = (UniqueConstraint("player_id", "stage", name="uq_dismiss_player_stage"),)
+
+    player = relationship("Player", backref="spicy_dismissals")
