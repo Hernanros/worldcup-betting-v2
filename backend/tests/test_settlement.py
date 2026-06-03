@@ -19,15 +19,15 @@ def test_settle_bet_loss():
 
 
 def test_h2h_home_win():
-    assert determine_h2h_winner("Argentina", 2, 1) == "Argentina"
+    assert determine_h2h_winner("Argentina", "Brazil", 2, 1) == "Argentina"
 
 
 def test_h2h_away_win():
-    assert determine_h2h_winner("Argentina", 0, 1) == "Away"
+    assert determine_h2h_winner("Argentina", "Brazil", 0, 1) == "Brazil"
 
 
 def test_h2h_draw():
-    assert determine_h2h_winner("Argentina", 1, 1) == "Draw"
+    assert determine_h2h_winner("Argentina", "Brazil", 1, 1) == "Draw"
 
 
 def test_correct_score_match():
@@ -70,12 +70,22 @@ def test_settle_challenge_issuer_loss():
     assert bonus == 0
 
 
-def test_settle_challenge_acceptor_win():
-    assert settle_challenge_acceptor(stake=150, odds=1.5, won=True) == 225
+def test_settle_challenge_acceptor_win_no_streak():
+    payout, bonus = settle_challenge_acceptor(stake=150, odds=1.5, streak=0, won=True)
+    assert payout == 225
+    assert bonus == 0
+
+
+def test_settle_challenge_acceptor_win_with_streak():
+    payout, bonus = settle_challenge_acceptor(stake=150, odds=1.5, streak=3, won=True)
+    assert payout == 225
+    assert bonus == 22   # 10% of 225 = 22 (int truncation)
 
 
 def test_settle_challenge_acceptor_loss():
-    assert settle_challenge_acceptor(stake=150, odds=1.5, won=False) == 0
+    payout, bonus = settle_challenge_acceptor(stake=150, odds=1.5, streak=5, won=False)
+    assert payout == 0
+    assert bonus == 0
 
 
 # ── handicap ──────────────────────────────────────────────────────────────────

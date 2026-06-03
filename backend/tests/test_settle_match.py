@@ -105,10 +105,10 @@ async def test_1x2_home_win_pays_out(db):
 
 
 async def test_1x2_away_win_pays_out(db):
-    """Away team wins — selection must be 'Away' (canonical value)."""
+    """Away team wins — selection must be the away team name, not the literal 'Away'."""
     m = await make_match(db, home="Argentina", away="Brazil")
     alice = await make_player(db, "Alice")
-    await _bet(db, alice, m, "1x2", "Away", stake=100, odds=4.0)
+    await _bet(db, alice, m, "1x2", "Brazil", stake=100, odds=4.0)
     start = alice.token_balance
     await settle_match(db, m, _result(0, 1))
     await db.refresh(alice)
@@ -413,15 +413,15 @@ async def test_challenge_streak_resets_on_issuer_loss(db):
     assert alice.challenge_streak == 0
 
 
-async def test_open_challenge_not_settled(db):
-    """An unaccepted (open) challenge is left untouched by settlement."""
+async def test_open_challenge_expires_and_refunds(db):
+    """An unaccepted (open) challenge expires at settlement and refunds the issuer."""
     m = await make_match(db, home="Argentina", away="Brazil")
     alice = await make_player(db, "Alice", balance=1000)
     # Create an OPEN challenge (no acceptor)
     alice.token_balance -= 100
     ch = Challenge(
         issuer_id=alice.id, acceptor_id=None, match_id=m.id,
-        bet_type="1x2", selection="Argentina", acceptor_selection="Away",
+        bet_type="1x2", selection="Argentina", acceptor_selection="Brazil",
         issuer_stake=100, acceptor_stake=100,
         issuer_odds=2.0, acceptor_odds=2.0,
         status="open", bravery_streak_bonus_pct=0.0,
@@ -433,8 +433,8 @@ async def test_open_challenge_not_settled(db):
     start = alice.token_balance
     await settle_match(db, m, _result(2, 0))
     await db.refresh(ch); await db.refresh(alice)
-    assert ch.status == "open"           # unchanged — not resolved
-    assert alice.token_balance == start  # no credit
+    assert ch.status == "expired"              # expired, not left open
+    assert alice.token_balance == start + 100  # stake refunded
 
 
 # ─────────────────────────────────────────────────────────────────────────────

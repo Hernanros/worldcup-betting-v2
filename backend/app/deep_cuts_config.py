@@ -160,7 +160,9 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":    "exact_count",
         "settle":  "count_went_to_et",
         "options": [0, 1, 2, 3, 4, 5],
-        "odds":    [8.0, 3.5, 2.5, 3.0, 5.0, 10.0],
+        # Calibrated to ~108% overround (Binomial n=16, p=0.25 ET rate).
+        # Old odds [8,3.5,2.5,3,5,10] had 144% overround — corrected.
+        "odds":    [75.0, 15.0, 5.5, 3.5, 3.3, 4.3],
     },
     "r32_yellow_cards": {
         "stage":       "r32",
@@ -192,7 +194,9 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":        "exact_count",
         "settle":      "count_went_to_pens",
         "options":     [0, 1, 2, 3, 4],
-        "odds":        [3.0, 2.5, 3.0, 5.0, 10.0],
+        # Calibrated to ~107% overround (Binomial n=8, p=0.25 pen rate).
+        # Old odds [3,2.5,3,5,10] had 137% overround — corrected.
+        "odds":        [9.0, 3.4, 2.9, 4.4, 10.5],
     },
     "r16_total_goals": {
         "stage":       "r16",

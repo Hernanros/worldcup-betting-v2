@@ -29,6 +29,7 @@ async def settle_match(db: AsyncSession, match: Match, result: dict) -> None:
         match.espn_event_id = result["espn_event_id"]
 
     await _settle_bets(db, match, result)
+    await _expire_open_challenges(db, match)   # refund unaccepted challenges before settling
     await _settle_challenges(db, match, result)
     await _settle_predictions(db, match, result)
     await _propagate_winner(db, match, result)
@@ -94,22 +95,46 @@ def _evaluate_bet(bet_type, selection, match, result):
     return False
 
 
+async def _expire_open_challenges(db, match):
+    """Refund issuers for challenges that were never accepted before the match settled."""
+    open_chs = (await db.execute(
+        select(Challenge).where(Challenge.match_id == match.id, Challenge.status == "open")
+    )).scalars().all()
+    for ch in open_chs:
+        issuer = await db.get(Player, ch.issuer_id)
+        if issuer:
+            issuer.token_balance += ch.issuer_stake
+        ch.status = "expired"
+
+
 async def _settle_challenges(db, match, result):
     challenges = (await db.execute(
         select(Challenge).where(Challenge.match_id == match.id, Challenge.status == "accepted")
     )).scalars().all()
     for ch in challenges:
         issuer_won = _evaluate_bet(ch.bet_type, ch.selection, match, result)
-        issuer = await db.get(Player, ch.issuer_id)
+        issuer   = await db.get(Player, ch.issuer_id)
         acceptor = await db.get(Player, ch.acceptor_id)
-        payout, bonus = settle_challenge_issuer(ch.issuer_stake, ch.issuer_odds, issuer.challenge_streak, issuer_won)
+
+        # Issuer settlement + streak
+        payout, bonus = settle_challenge_issuer(
+            ch.issuer_stake, ch.issuer_odds, issuer.challenge_streak, issuer_won
+        )
         if payout:
             issuer.token_balance += payout + bonus
         else:
             issuer.challenge_streak = 0
-        acceptor_payout = settle_challenge_acceptor(ch.acceptor_stake, ch.acceptor_odds, not issuer_won)
+
+        # Acceptor settlement + streak (P1 fix: was missing entirely)
+        acceptor_won = not issuer_won
+        acceptor_payout, acceptor_bonus = settle_challenge_acceptor(
+            ch.acceptor_stake, ch.acceptor_odds, acceptor.challenge_streak, acceptor_won
+        )
         if acceptor_payout:
-            acceptor.token_balance += acceptor_payout
+            acceptor.token_balance += acceptor_payout + acceptor_bonus
+        else:
+            acceptor.challenge_streak = 0
+
         ch.status = "resolved"
 
 

@@ -13,8 +13,13 @@ def settle_challenge_issuer(stake: int, odds: float, streak: int, won: bool) -> 
     return payout, bonus
 
 
-def settle_challenge_acceptor(stake: int, odds: float, won: bool) -> int:
-    return int(stake * odds) if won else 0
+def settle_challenge_acceptor(stake: int, odds: float, streak: int, won: bool) -> tuple[int, int]:
+    """Mirror settle_challenge_issuer — returns (payout, streak_bonus)."""
+    if not won:
+        return 0, 0
+    payout = int(stake * odds)
+    bonus = apply_streak_bonus(payout, streak)
+    return payout, bonus
 
 
 def determine_h2h_winner(home_team: str, away_team: str, home_score: int, away_score: int) -> str:

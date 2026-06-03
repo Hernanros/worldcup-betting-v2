@@ -193,9 +193,49 @@ export default function HomePage() {
             )}
 
             {openChallenges.my_open.length > 0 && (
-              <p style={{ color: "#6b7280", fontSize: 11, marginTop: openChallenges.for_me.length > 0 ? 8 : 0 }}>
-                🕐 {openChallenges.my_open.length} of your challenge{openChallenges.my_open.length !== 1 ? "s" : ""} waiting for a taker
-              </p>
+              <>
+                <p style={{ color: "#6b7280", fontSize: 11, marginTop: openChallenges.for_me.length > 0 ? 8 : 0, marginBottom: 6 }}>
+                  🕐 Your open challenges — cancel to recover tokens
+                </p>
+                {openChallenges.my_open.map((c) => (
+                  <div key={c.id} style={{
+                    display: "flex", alignItems: "center", justifyContent: "space-between",
+                    background: "#13131f", border: "1px solid #2d2b55",
+                    borderRadius: 10, padding: "9px 12px", marginBottom: 6,
+                  }}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
+                        {c.match_home_team} vs {c.match_away_team}
+                      </div>
+                      <div style={{ color: "#e2e8f0", fontSize: 12, marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {c.selection} · <span style={{ color: "#fbbf24" }}>{c.issuer_stake} tokens at risk</span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          await api.delete(`/api/challenges/${c.id}`)
+                          setOpenChallenges(prev => ({
+                            ...prev,
+                            my_open: prev.my_open.filter(x => x.id !== c.id),
+                          }))
+                          load()  // refresh balance
+                        } catch (e) {
+                          alert(e.message || "Cancel failed")
+                        }
+                      }}
+                      style={{
+                        marginLeft: 10, flexShrink: 0,
+                        background: "none", border: "1px solid #ef4444",
+                        borderRadius: 6, color: "#ef4444", fontSize: 11,
+                        padding: "4px 10px", cursor: "pointer", fontWeight: 600,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ))}
+              </>
             )}
           </div>
         )}

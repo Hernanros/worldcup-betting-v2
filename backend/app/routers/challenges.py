@@ -77,6 +77,11 @@ async def accept_challenge(challenge_id: int, auth=Depends(get_current_player), 
     if challenge.issuer_id == player.id:
         raise HTTPException(400, "cannot accept your own challenge")
 
+    # P0 fix: block post-kickoff acceptance
+    match = await db.get(Match, challenge.match_id)
+    if not match or match.status != "upcoming":
+        raise HTTPException(400, "match has already kicked off — challenge is closed")
+
     # Enforce same-league rule
     issuer = await db.get(Player, challenge.issuer_id)
     if issuer.league_id != player.league_id:
@@ -87,11 +92,32 @@ async def accept_challenge(challenge_id: int, auth=Depends(get_current_player), 
         raise HTTPException(400, "insufficient balance")
 
     player.token_balance -= challenge.acceptor_stake
+    player.challenge_streak += 1   # P1: acceptor earns streak credit for accepting
     challenge.acceptor_id = player.id
     challenge.status = "accepted"
     await db.commit()
 
     return {"id": challenge.id, "new_balance": player.token_balance}
+
+
+@router.delete("/api/challenges/{challenge_id}")
+async def cancel_challenge(challenge_id: int, auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    """Cancel an open challenge and refund the issuer's stake."""
+    player, _ = auth
+    challenge = await db.get(Challenge, challenge_id)
+    if not challenge:
+        raise HTTPException(404, "challenge not found")
+    if challenge.issuer_id != player.id:
+        raise HTTPException(403, "only the issuer can cancel a challenge")
+    if challenge.status != "open":
+        raise HTTPException(400, f"cannot cancel a '{challenge.status}' challenge")
+
+    fresh_player = await db.get(Player, player.id)
+    fresh_player.token_balance += challenge.issuer_stake
+    challenge.status = "cancelled"
+    await db.commit()
+
+    return {"refunded": challenge.issuer_stake, "new_balance": fresh_player.token_balance}
 
 
 @router.get("/api/challenges")

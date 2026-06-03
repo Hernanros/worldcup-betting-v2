@@ -52,7 +52,7 @@ async def test_settle_tournament_bets_winner_wins(client, db):
     assert body["winner"] == "Spain"
 
     p = (await db.execute(sa_select(PlayerModel).where(PlayerModel.name == "Alice"))).scalar_one()
-    assert p.token_balance == 1400  # 1000 - 100 stake + 500 payout (100 * 5.0)
+    assert p.token_balance == 1450  # 1000 - 100 stake + 550 payout (100 * 5.5 server-side odds)
 
 
 async def test_settle_tournament_bets_winner_loses(client, db):
@@ -94,7 +94,7 @@ async def test_settle_tournament_bets_case_insensitive(client, db):
     )
 
     p = (await db.execute(sa_select(PlayerModel).where(PlayerModel.name == "Alice"))).scalar_one()
-    assert p.token_balance == 1400
+    assert p.token_balance == 1450  # 100 * 5.5 server-side Spain odds
 
 
 async def test_settle_tournament_requires_admin(client, db):
@@ -137,4 +137,6 @@ async def test_settle_tournament_bets_total_goals(client, db):
     assert resp.json()["total_goals"] == 3
 
     p = (await db.execute(sa_select(PlayerModel).where(PlayerModel.name == "Alice"))).scalar_one()
-    assert p.token_balance == 1100  # 1000 - 100 stake + 200 payout (100 * 2.0)
+    # "Over 2.5" not in TOTAL_GOALS_MARKETS (lines use 149.5/159.5/169.5 thresholds)
+    # → falls back to 1.90; payout = 100 * 1.90 = 190
+    assert p.token_balance == 1090  # 1000 - 100 stake + 190 payout
