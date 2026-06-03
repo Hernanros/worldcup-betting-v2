@@ -5,7 +5,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
-from app.models import TournamentBet, Player
+from app.models import TournamentBet, Player, Match
+from app.deep_cuts_config import WC2026_GROUPS
 
 router = APIRouter()
 
@@ -260,3 +261,116 @@ async def get_tournament_bets(auth=Depends(get_current_player), db: AsyncSession
             for b in bets
         ],
     }
+
+
+# ── WC 2026 Standings helpers ────────────────────────────────────────────────
+
+def _compute_full_standings(group: str, matches: list) -> list:
+    """
+    Compute group standings with full W/D/L/GF/GA/GD/Pts/RC/YC for display.
+    Only counts matches where both teams are in the group AND match is finished.
+    Returns list sorted best → worst (WC tiebreaker).
+    """
+    teams = WC2026_GROUPS[group]
+    stats = {
+        t: {"played": 0, "won": 0, "drawn": 0, "lost": 0,
+            "gf": 0, "ga": 0, "gd": 0, "pts": 0, "rc": 0, "yc": 0}
+        for t in teams
+    }
+    for m in matches:
+        if m.home_team not in stats or m.away_team not in stats:
+            continue
+        if m.status != "finished" or m.home_score is None or m.away_score is None:
+            continue
+        hs, as_ = m.home_score, m.away_score
+        h, a = m.home_team, m.away_team
+        stats[h]["played"] += 1
+        stats[a]["played"] += 1
+        stats[h]["gf"] += hs;  stats[h]["ga"] += as_
+        stats[a]["gf"] += as_; stats[a]["ga"] += hs
+        stats[h]["gd"] += hs - as_; stats[a]["gd"] += as_ - hs
+        stats[h]["rc"] += m.home_red_cards or 0
+        stats[a]["rc"] += m.away_red_cards or 0
+        stats[h]["yc"] += m.home_yellow_cards or 0
+        stats[a]["yc"] += m.away_yellow_cards or 0
+        if hs > as_:
+            stats[h]["won"] += 1;  stats[h]["pts"] += 3
+            stats[a]["lost"] += 1
+        elif hs == as_:
+            stats[h]["drawn"] += 1; stats[h]["pts"] += 1
+            stats[a]["drawn"] += 1; stats[a]["pts"] += 1
+        else:
+            stats[a]["won"] += 1;  stats[a]["pts"] += 3
+            stats[h]["lost"] += 1
+
+    return sorted(
+        [{"team": t, **s} for t, s in stats.items()],
+        key=lambda x: (-x["pts"], -x["gd"], -x["gf"], x["rc"], x["yc"], x["team"]),
+    )
+
+
+@router.get("/api/tournament/standings")
+async def get_standings(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    """
+    Returns group standings for all 12 WC 2026 groups (A–L) plus the
+    wildcard ranking (best 3rd-place finishers; top 8 advance in WC 2026).
+    """
+    # Fetch all group-stage matches once
+    result = await db.execute(
+        select(Match).where(Match.round == "group")
+    )
+    all_matches = result.scalars().all()
+
+    groups = {}
+    third_place_rows = []
+
+    for letter in "ABCDEFGHIJKL":
+        standings = _compute_full_standings(letter, all_matches)
+        groups[letter] = standings
+        if len(standings) >= 3:
+            third = dict(standings[2])   # 3rd-place entry
+            third["group"] = letter
+            third_place_rows.append(third)
+
+    # Wildcard ranking: rank all 12 third-place finishers; top 8 advance
+    wildcards = sorted(
+        third_place_rows,
+        key=lambda x: (-x["pts"], -x["gd"], -x["gf"], x["rc"], x["yc"], x["team"]),
+    )
+    for i, row in enumerate(wildcards):
+        row["wildcard_rank"] = i + 1
+        row["advances"] = i < 8   # top 8 advance
+
+    return {
+        "groups": groups,
+        "wildcards": wildcards,
+    }
+
+
+@router.get("/api/tournament/bracket")
+async def get_bracket(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    """
+    Returns all knockout-round matches grouped by stage.
+    Includes confirmed/unconfirmed team slots so the UI can render TBD placeholders.
+    """
+    KO_ROUNDS = ["r32", "r16", "qf", "sf", "final"]
+    result = await db.execute(
+        select(Match).where(Match.round.in_(KO_ROUNDS)).order_by(Match.kickoff_time)
+    )
+    matches = result.scalars().all()
+
+    bracket: dict[str, list] = {r: [] for r in KO_ROUNDS}
+    for m in matches:
+        bracket[m.round].append({
+            "id":               m.id,
+            "home_team":        m.home_team,
+            "away_team":        m.away_team,
+            "home_confirmed":   m.home_team_confirmed,
+            "away_confirmed":   m.away_team_confirmed,
+            "kickoff_time":     m.kickoff_time.isoformat() if m.kickoff_time else None,
+            "status":           m.status,
+            "home_score":       m.home_score,
+            "away_score":       m.away_score,
+        })
+
+    return {"rounds": bracket}
