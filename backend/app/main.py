@@ -92,6 +92,27 @@ async def _run_migrations():
             logger.info("Adopted %d player(s) into league %d, removed %d duplicates",
                         adopted, league.id, deleted)
 
+        # Deep Cuts: new Match stat columns
+        for col, typedef in [
+            ("espn_event_id",     "VARCHAR(20)"),
+            ("api_fixture_id",    "INTEGER"),
+            ("home_yellow_cards", "INTEGER NOT NULL DEFAULT 0"),
+            ("away_yellow_cards", "INTEGER NOT NULL DEFAULT 0"),
+            ("home_own_goals",    "INTEGER NOT NULL DEFAULT 0"),
+            ("away_own_goals",    "INTEGER NOT NULL DEFAULT 0"),
+            ("home_corners",      "INTEGER NOT NULL DEFAULT 0"),
+            ("away_corners",      "INTEGER NOT NULL DEFAULT 0"),
+            ("home_offsides",     "INTEGER NOT NULL DEFAULT 0"),
+            ("away_offsides",     "INTEGER NOT NULL DEFAULT 0"),
+            ("sub_goals",         "INTEGER NOT NULL DEFAULT 0"),
+            ("went_to_et",        "BOOLEAN NOT NULL DEFAULT FALSE"),
+            ("went_to_pens",      "BOOLEAN NOT NULL DEFAULT FALSE"),
+        ]:
+            await db.execute(text(
+                f"ALTER TABLE matches ADD COLUMN IF NOT EXISTS {col} {typedef}"
+            ))
+        await db.commit()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
