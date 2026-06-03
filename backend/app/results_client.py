@@ -1,6 +1,7 @@
 import logging
 import requests
 from datetime import datetime, timezone, timedelta
+from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +126,7 @@ def fetch_live_scores(football_api_key: str = "", odds_api_key: str = "") -> lis
     return results
 
 
-def fetch_top_scorer(api_key: str) -> str | None:
+def fetch_top_scorer(api_key: str) -> Optional[str]:
     resp = requests.get(
         "https://v3.football.api-sports.io/players/topscorers",
         params={"league": "1", "season": "2026"},
@@ -137,4 +138,146 @@ def fetch_top_scorer(api_key: str) -> str | None:
     if response:
         p = response[0]["player"]
         return f"{p['firstname']} {p['lastname']}"
+    return None
+
+
+def fetch_espn_match_stats(espn_event_id: str, league_slug: str = "fifa.world") -> dict:
+    """
+    Fetch per-team stats from ESPN summary endpoint for a completed match.
+    Returns dict ready to update Match columns.
+    Falls back to zeros on any error.
+    """
+    base = {
+        "home_yellow_cards": 0, "away_yellow_cards": 0,
+        "home_corners": 0,      "away_corners": 0,
+        "home_offsides": 0,     "away_offsides": 0,
+        "went_to_et": False,    "went_to_pens": False,
+    }
+    try:
+        resp = requests.get(
+            f"https://site.api.espn.com/apis/site/v2/sports/soccer/{league_slug}/summary",
+            params={"event": espn_event_id},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        data = resp.json()
+
+        # ET / pens from status
+        status_name = (
+            data.get("header", {})
+                .get("competitions", [{}])[0]
+                .get("status", {})
+                .get("type", {})
+                .get("name", "")
+        )
+        base["went_to_et"]   = status_name in ("STATUS_FINAL_AET", "STATUS_FINAL_PEN")
+        base["went_to_pens"] = status_name == "STATUS_FINAL_PEN"
+
+        # Per-team stats
+        stat_map = {"yellowCards": "yellow_cards", "wonCorners": "corners", "offsides": "offsides"}
+        for team_block in data.get("boxscore", {}).get("teams", []):
+            side = team_block.get("homeAway", "home")   # "home" | "away"
+            stats = {s["name"]: s.get("displayValue", "0") for s in team_block.get("statistics", [])}
+            for espn_key, our_key in stat_map.items():
+                try:
+                    base[f"{side}_{our_key}"] = int(float(stats.get(espn_key, "0")))
+                except (ValueError, TypeError):
+                    pass
+    except Exception as e:
+        logger.warning("ESPN summary fetch failed for event %s: %s", espn_event_id, e)
+    return base
+
+
+def fetch_api_football_events(fixture_id: int, api_key: str) -> dict:
+    """
+    Fetch goal + substitution events from API-Football for a completed match.
+    Returns own goal counts and sub_goals count.
+    Falls back to zeros on any error.
+    """
+    base = {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0}
+    if not fixture_id or not api_key:
+        return base
+    try:
+        resp = requests.get(
+            "https://v3.football.api-sports.io/fixtures/events",
+            params={"fixture": fixture_id},
+            headers={"x-apisports-key": api_key},
+            timeout=10,
+        )
+        resp.raise_for_status()
+        events = resp.json().get("response", [])
+        base["sub_goals"] = compute_sub_goals(events)
+
+        # Own goals — API-Football uses detail="Own Goal"
+        # Store total in home_own_goals for now (split requires separate fixtures call)
+        total_og = sum(
+            1 for e in events
+            if e.get("type") == "Goal" and e.get("detail") == "Own Goal"
+        )
+        base["home_own_goals"] = total_og
+        base["away_own_goals"] = 0
+    except Exception as e:
+        logger.warning("API-Football events fetch failed for fixture %s: %s", fixture_id, e)
+    return base
+
+
+def compute_sub_goals(events: list) -> int:
+    """
+    Cross-reference goal events with substitution events.
+    A goal is a 'sub goal' if the scorer was subbed on before the goal minute.
+    Own goals are excluded.
+    """
+    # Build map of (player_name, team_name) → sub_on_minute
+    sub_on = {}
+    for e in events:
+        if e.get("type") == "subst":
+            name = (e.get("player") or {}).get("name", "")
+            team = (e.get("team") or {}).get("name", "")
+            minute = (e.get("time") or {}).get("elapsed", 999)
+            if name:
+                sub_on[(name, team)] = minute
+
+    count = 0
+    for e in events:
+        if e.get("type") != "Goal":
+            continue
+        if e.get("detail") == "Own Goal":
+            continue
+        name   = (e.get("player") or {}).get("name", "")
+        team   = (e.get("team") or {}).get("name", "")
+        minute = (e.get("time") or {}).get("elapsed", 0)
+        key    = (name, team)
+        if key in sub_on and sub_on[key] < minute:
+            count += 1
+    return count
+
+
+def fetch_espn_event_id_from_scoreboard(home_team: str, away_team: str) -> Optional[str]:
+    """
+    Scan the current ESPN scoreboard to find the event ID for a given match.
+    Used to populate espn_event_id on Match records.
+    Returns None if not found.
+    """
+    try:
+        now = datetime.now(timezone.utc)
+        for delta in [0, 1]:
+            date_str = (now - timedelta(days=delta)).strftime("%Y%m%d")
+            resp = requests.get(
+                "https://site.api.espn.com/apis/site/v2/sports/soccer/fifa.world/scoreboard",
+                params={"dates": date_str},
+                timeout=10,
+            )
+            resp.raise_for_status()
+            for event in resp.json().get("events", []):
+                comp  = event.get("competitions", [{}])[0]
+                comps = comp.get("competitors", [])
+                h = next((c for c in comps if c["homeAway"] == "home"), None)
+                a = next((c for c in comps if c["homeAway"] == "away"), None)
+                if h and a:
+                    h_name = _normalize(h["team"]["displayName"])
+                    a_name = _normalize(a["team"]["displayName"])
+                    if h_name == home_team and a_name == away_team:
+                        return event["id"]
+    except Exception as e:
+        logger.warning("ESPN event ID lookup failed: %s", e)
     return None

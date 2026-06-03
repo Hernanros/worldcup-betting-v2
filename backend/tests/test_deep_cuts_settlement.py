@@ -23,3 +23,85 @@ def test_group_stage_lock_time_is_set():
     t = get_stage_lock_time("group_stage", db=None)
     assert t is not None
     assert t.tzinfo == timezone.utc
+
+from unittest.mock import patch, MagicMock
+from app.results_client import (
+    fetch_espn_match_stats, fetch_api_football_events,
+    compute_sub_goals,
+)
+
+def test_fetch_espn_match_stats_full_time():
+    """Parses yellow cards, corners, offsides, ET=False, pens=False from STATUS_FULL_TIME."""
+    mock_data = {
+        "header": {"competitions": [{"status": {"type": {"name": "STATUS_FULL_TIME"}}}]},
+        "boxscore": {"teams": [
+            {"homeAway": "home", "team": {"displayName": "Spain"}, "statistics": [
+                {"name": "yellowCards", "displayValue": "2"},
+                {"name": "redCards",    "displayValue": "0"},
+                {"name": "wonCorners",  "displayValue": "7"},
+                {"name": "offsides",    "displayValue": "3"},
+            ]},
+            {"homeAway": "away", "team": {"displayName": "England"}, "statistics": [
+                {"name": "yellowCards", "displayValue": "1"},
+                {"name": "redCards",    "displayValue": "1"},
+                {"name": "wonCorners",  "displayValue": "2"},
+                {"name": "offsides",    "displayValue": "1"},
+            ]},
+        ]},
+    }
+    with patch("app.results_client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = mock_data
+        mock_get.return_value.raise_for_status = MagicMock()
+        stats = fetch_espn_match_stats("703945")
+
+    assert stats["home_yellow_cards"] == 2
+    assert stats["away_yellow_cards"] == 1
+    assert stats["home_corners"] == 7
+    assert stats["away_corners"] == 2
+    assert stats["home_offsides"] == 3
+    assert stats["away_offsides"] == 1
+    assert stats["went_to_et"] is False
+    assert stats["went_to_pens"] is False
+
+def test_fetch_espn_match_stats_pens():
+    """Detects STATUS_FINAL_PEN → went_to_et=True, went_to_pens=True."""
+    mock_data = {
+        "header": {"competitions": [{"status": {"type": {"name": "STATUS_FINAL_PEN"}}}]},
+        "boxscore": {"teams": []},
+    }
+    with patch("app.results_client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = mock_data
+        mock_get.return_value.raise_for_status = MagicMock()
+        stats = fetch_espn_match_stats("703940")
+    assert stats["went_to_et"] is True
+    assert stats["went_to_pens"] is True
+
+def test_fetch_espn_match_stats_aet():
+    """Detects STATUS_FINAL_AET → went_to_et=True, went_to_pens=False."""
+    mock_data = {
+        "header": {"competitions": [{"status": {"type": {"name": "STATUS_FINAL_AET"}}}]},
+        "boxscore": {"teams": []},
+    }
+    with patch("app.results_client.requests.get") as mock_get:
+        mock_get.return_value.json.return_value = mock_data
+        mock_get.return_value.raise_for_status = MagicMock()
+        stats = fetch_espn_match_stats("703939")
+    assert stats["went_to_et"] is True
+    assert stats["went_to_pens"] is False
+
+def test_compute_sub_goals():
+    """Goal at 75' by a player who was subbed on at 60' counts as a sub goal."""
+    events = [
+        {"type": "subst", "time": {"elapsed": 60}, "player": {"name": "Cole Palmer"}, "team": {"name": "England"}},
+        {"type": "Goal",  "time": {"elapsed": 75}, "player": {"name": "Cole Palmer"}, "team": {"name": "England"}, "detail": "Normal Goal"},
+        {"type": "Goal",  "time": {"elapsed": 30}, "player": {"name": "Bellingham"},  "team": {"name": "England"}, "detail": "Normal Goal"},
+    ]
+    assert compute_sub_goals(events) == 1
+
+def test_compute_sub_goals_own_goal_not_counted():
+    """Own goals are not counted as sub goals even if scorer was a sub."""
+    events = [
+        {"type": "subst", "time": {"elapsed": 55}, "player": {"name": "Own Goal"}, "team": {"name": "Spain"}},
+        {"type": "Goal",  "time": {"elapsed": 80}, "player": {"name": "Own Goal"}, "team": {"name": "Spain"}, "detail": "Own Goal"},
+    ]
+    assert compute_sub_goals(events) == 0
