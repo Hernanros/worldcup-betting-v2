@@ -54,6 +54,7 @@ def fetch_espn_results() -> list[dict]:
                         "home_red_cards": 0,
                         "away_red_cards": 0,
                         "corners": 0,
+                        "espn_event_id": event["id"],
                     })
         except Exception as e:
             logger.warning("ESPN fetch failed for date %s: %s", date_str, e)

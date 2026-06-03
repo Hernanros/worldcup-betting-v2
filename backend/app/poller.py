@@ -7,6 +7,11 @@ from app.settlement import (
     determine_h2h_winner, determine_correct_score_winner,
     determine_totals_winner, determine_btts_winner, determine_handicap_winner,
 )
+from app.results_client import (
+    fetch_espn_match_stats, fetch_api_football_events,
+    fetch_espn_event_id_from_scoreboard,
+)
+from app.deep_cuts_settlement import settle_stage
 
 logger = logging.getLogger(__name__)
 
@@ -18,11 +23,42 @@ async def settle_match(db: AsyncSession, match: Match, result: dict) -> None:
     match.away_red_cards = result["away_red_cards"]
     match.corners = result["corners"]
     match.status = "finished"
+
+    # Store ESPN event ID if provided in result
+    if result.get("espn_event_id") and not match.espn_event_id:
+        match.espn_event_id = result["espn_event_id"]
+
     await _settle_bets(db, match, result)
     await _settle_challenges(db, match, result)
     await _settle_predictions(db, match, result)
     await _propagate_winner(db, match, result)
     await db.commit()
+
+    # Enrich match stats (non-blocking — log and continue on failure)
+    await _enrich_match_stats(db, match)
+
+
+async def _enrich_match_stats(db: AsyncSession, match: Match) -> None:
+    """Fetch detailed stats from ESPN summary + API-Football events and store on Match."""
+    try:
+        if match.espn_event_id:
+            espn_stats = fetch_espn_match_stats(match.espn_event_id)
+            for key, val in espn_stats.items():
+                setattr(match, key, val)
+
+        if match.api_fixture_id:
+            from app.config import settings
+            af_stats = fetch_api_football_events(
+                match.api_fixture_id,
+                settings.football_api_key,
+            )
+            for key, val in af_stats.items():
+                setattr(match, key, val)
+
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        logger.warning("Match %d enrichment failed: %s", match.id, e)
 
 
 async def _settle_bets(db, match, result):
@@ -126,12 +162,35 @@ def start_poller(app) -> None:
             return
         async with AsyncSessionLocal() as db:
             locked = (await db.execute(select(Match).where(Match.status == "locked"))).scalars().all()
+            settled_rounds: set = set()
             for result in results:
                 match = next((m for m in locked if m.home_team == result["home_team"] and m.away_team == result["away_team"]), None)
                 if match:
                     await settle_match(db, match, result)
                     await manager.broadcast({"type": "match_settled", "match_id": match.id})
                     await manager.broadcast({"type": "leaderboard_updated"})
+                    settled_rounds.add(match.round)
+
+            # After all matches settled, check if any stage is now complete → trigger Deep Cuts settlement
+            from app.deep_cuts_config import STAGE_ROUNDS
+            from sqlalchemy import select as _select
+            for stage_round in settled_rounds:
+                stage = next(
+                    (s for s, r in STAGE_ROUNDS.items() if r == stage_round),
+                    None,
+                )
+                if not stage:
+                    continue
+                remaining = (await db.execute(
+                    _select(Match).where(
+                        Match.round == stage_round,
+                        Match.status != "finished",
+                    )
+                )).scalars().all()
+                if not remaining:
+                    logger.info("Stage %s complete — running Deep Cuts settlement", stage)
+                    await settle_stage(stage, db)
+                    await db.commit()
 
     scheduler.add_job(_poll, "interval", seconds=60)
     scheduler.start()
