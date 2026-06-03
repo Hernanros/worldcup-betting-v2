@@ -130,3 +130,154 @@ def test_fetch_api_football_events_no_key_returns_zeros():
         result = fetch_api_football_events(12345, "")
     mock_get.assert_not_called()
     assert result == {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0}
+
+
+import pytest_asyncio
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from app.models import Base, Match, Player, League, SpicyBet
+from app.deep_cuts_settlement import settle_stage
+from datetime import datetime, timezone
+import sqlalchemy
+
+TEST_DB = "sqlite+aiosqlite:///:memory:"
+
+@pytest_asyncio.fixture
+async def settle_db():
+    engine = create_async_engine(TEST_DB)
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
+    factory = async_sessionmaker(engine, expire_on_commit=False)
+    async with factory() as session:
+        league = League(name="Test", invite_code="test")
+        session.add(league)
+        await session.commit()
+        await session.refresh(league)
+    yield engine, factory
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.drop_all)
+    await engine.dispose()
+
+
+async def _make_match(factory, home, away, round_, **kwargs):
+    async with factory() as db:
+        m = Match(
+            home_team=home, away_team=away,
+            kickoff_time=datetime(2026, 6, 20, tzinfo=timezone.utc),
+            status="finished", round=round_, **kwargs
+        )
+        db.add(m)
+        await db.commit()
+        await db.refresh(m)
+        return m.id
+
+
+async def _make_spicy_bet(factory, market_key, stage, selection, stake=100, odds=2.0):
+    async with factory() as db:
+        league = (await db.execute(
+            sqlalchemy.select(League).where(League.invite_code == "test")
+        )).scalar_one()
+        player = Player(name=f"P_{market_key[:8]}", token_balance=1000, league_id=league.id)
+        db.add(player)
+        await db.commit()
+        await db.refresh(player)
+        bet = SpicyBet(
+            player_id=player.id, league_id=league.id,
+            market_key=market_key, stage=stage,
+            selection=selection, stake=stake, odds_at_placement=odds,
+        )
+        db.add(bet)
+        await db.commit()
+        await db.refresh(bet)
+        return player.id, bet.id
+
+
+@pytest.mark.asyncio
+async def test_settle_sum_field_over_wins(settle_db):
+    """Over/under: player picks 'Over 2.5' own goals, actual=4 → wins."""
+    engine, factory = settle_db
+    await _make_match(factory, "Spain", "England", "group",
+                      home_own_goals=2, away_own_goals=2)
+    player_id, bet_id = await _make_spicy_bet(
+        factory, "own_goals", "group_stage", "Over 2.5", stake=100, odds=1.85
+    )
+    async with factory() as db:
+        await settle_stage("group_stage", db)
+        await db.commit()
+
+    async with factory() as db:
+        bet = await db.get(SpicyBet, bet_id)
+        player = await db.get(Player, player_id)
+        assert bet.status == "won"
+        assert player.token_balance == 1000 - 100 + int(100 * 1.85)
+
+
+@pytest.mark.asyncio
+async def test_settle_sum_field_under_wins(settle_db):
+    """Over/under: player picks 'Under 2.5' own goals, actual=1 → wins."""
+    engine, factory = settle_db
+    await _make_match(factory, "France", "Brazil", "group",
+                      home_own_goals=0, away_own_goals=1)
+    player_id, bet_id = await _make_spicy_bet(
+        factory, "own_goals", "group_stage", "Under 2.5", stake=100, odds=1.95
+    )
+    async with factory() as db:
+        await settle_stage("group_stage", db)
+        await db.commit()
+
+    async with factory() as db:
+        bet = await db.get(SpicyBet, bet_id)
+        assert bet.status == "won"
+
+
+@pytest.mark.asyncio
+async def test_settle_team_pick_top_goals(settle_db):
+    """Team pick: player picks France (3 goals) beats Spain (1 goal) → wins."""
+    engine, factory = settle_db
+    await _make_match(factory, "France", "Germany", "r32", home_score=3, away_score=0)
+    await _make_match(factory, "Spain",  "Italy",   "r32", home_score=1, away_score=0)
+    player_id, bet_id = await _make_spicy_bet(
+        factory, "r32_top_scorer", "r32", "France", stake=100, odds=32.0
+    )
+    async with factory() as db:
+        await settle_stage("r32", db)
+        await db.commit()
+
+    async with factory() as db:
+        bet = await db.get(SpicyBet, bet_id)
+        assert bet.status == "won"
+
+
+@pytest.mark.asyncio
+async def test_settle_exact_count_pens(settle_db):
+    """Exact count: player picks 1 shootout, 1 match has went_to_pens=True → wins."""
+    engine, factory = settle_db
+    await _make_match(factory, "Portugal", "Morocco", "r16", went_to_pens=True)
+    await _make_match(factory, "England",  "USA",     "r16", went_to_pens=False)
+    player_id, bet_id = await _make_spicy_bet(
+        factory, "r16_pen_shootouts", "r16", "1", stake=100, odds=2.5
+    )
+    async with factory() as db:
+        await settle_stage("r16", db)
+        await db.commit()
+
+    async with factory() as db:
+        bet = await db.get(SpicyBet, bet_id)
+        assert bet.status == "won"
+
+
+@pytest.mark.asyncio
+async def test_settle_yes_no_et(settle_db):
+    """Yes/no: player picks 'yes' for any SF going to ET, one does → wins."""
+    engine, factory = settle_db
+    await _make_match(factory, "Spain", "France", "sf", went_to_et=True)
+    await _make_match(factory, "Brazil", "England", "sf", went_to_et=False)
+    player_id, bet_id = await _make_spicy_bet(
+        factory, "sf_any_et", "sf", "yes", stake=100, odds=2.20
+    )
+    async with factory() as db:
+        await settle_stage("sf", db)
+        await db.commit()
+
+    async with factory() as db:
+        bet = await db.get(SpicyBet, bet_id)
+        assert bet.status == "won"
