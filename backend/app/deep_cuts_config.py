@@ -16,10 +16,11 @@ STAGE_ROUNDS = {
     "final":       "final",
 }
 
+# ⚠️ Estimated group compositions — verify against official FIFA draw before Jun 11, 2026
 # ── WC 2026 group compositions (A–L, 48 group stage teams) ─────────────────
 WC2026_GROUPS = {
     "A": ["Mexico", "Jamaica", "Venezuela", "Ecuador"],
-    "B": ["USA", "Panama", "Bolivia", "New Zealand"],
+    "B": ["USA", "Panama", "Costa Rica", "New Zealand"],
     "C": ["Morocco", "Belgium", "Canada", "Honduras"],
     "D": ["Brazil", "Croatia", "Japan", "Paraguay"],
     "E": ["Argentina", "Chile", "Australia", "Poland"],
@@ -28,7 +29,7 @@ WC2026_GROUPS = {
     "H": ["Germany", "Netherlands", "South Korea", "Iran"],
     "I": ["England", "Senegal", "Tunisia", "South Africa"],
     "J": ["Colombia", "Uruguay", "El Salvador", "Bolivia"],
-    "K": ["Turkey", "Croatia", "Saudi Arabia", "Ghana"],
+    "K": ["Turkey", "Ukraine", "Saudi Arabia", "Ghana"],
     "L": ["Ivory Coast", "Norway", "Switzerland", "Czechia"],
 }
 
