@@ -3,7 +3,7 @@ import { useParams, useNavigate, useLocation, useOutletContext } from "react-rou
 import { api } from "../api.js"
 import BetPanel from "../components/BetPanel.jsx"
 import ChallengePanel from "../components/ChallengePanel.jsx"
-import PageHero from "../components/PageHero.jsx"
+import PageBackground from "../components/PageBackground.jsx"
 import { getMomentForMatch } from "../data/moments.js"
 import { flagUrl } from "../data/teams.js"
 
@@ -66,12 +66,11 @@ export default function MatchDetailPage() {
 
   const isUpcoming = match.status === "upcoming"
 
+  const momentKey = getMomentForMatch(match.home_team, match.away_team).key
+
   return (
     <div>
-      <PageHero
-        momentKey={getMomentForMatch(match.home_team, match.away_team).key}
-        height={160}
-      />
+      <PageBackground momentKey={momentKey} />
       <div style={{ padding: 16 }}>
         <button onClick={() => navigate(-1)}
           style={{ color: "#a78bfa", background: "none", border: "none", fontSize: 13, cursor: "pointer", marginBottom: 16 }}>

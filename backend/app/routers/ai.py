@@ -1,4 +1,5 @@
 import json
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import anthropic
@@ -43,6 +44,24 @@ def _build_prompt(match: Match, player: Player, odds: dict,
     if open_challenges:
         lines.append(f"Open challenges already posted: {len(open_challenges)} — suggest something different")
     lines += ["", "Available odds:"]
+    # Fallback: if no odds cached for this match, provide typical WC-style defaults
+    # so Claude always has meaningful data to build suggestions from.
+    if not odds:
+        odds = {
+            "h2h": [
+                {"name": match.home_team, "price": 2.5},
+                {"name": "Draw",          "price": 3.2},
+                {"name": match.away_team, "price": 2.8},
+            ],
+            "totals": [
+                {"name": "Over 2.5", "price": 2.0},
+                {"name": "Under 2.5", "price": 1.85},
+            ],
+            "btts": [
+                {"name": "Yes", "price": 2.0},
+                {"name": "No",  "price": 1.85},
+            ],
+        }
     for market, outcomes in odds.items():
         lines.append(f"  {market}:")
         for o in outcomes:
@@ -93,9 +112,21 @@ async def suggest_challenge(
             system=_SYSTEM,
             messages=[{"role": "user", "content": prompt}],
         )
-        suggestions = json.loads(message.content[0].text)
+        raw = message.content[0].text.strip()
+        # Strip optional markdown code-fence wrapping (```json ... ```)
+        fence_match = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)
+        if fence_match:
+            raw = fence_match.group(1).strip()
+        # If raw starts with [ or {, parse it; otherwise try to extract the first JSON array
+        if not raw.startswith("["):
+            arr_match = re.search(r"\[[\s\S]*\]", raw)
+            raw = arr_match.group(0) if arr_match else "[]"
+        suggestions = json.loads(raw)
         if not isinstance(suggestions, list):
             suggestions = []
+        # Ensure each suggestion has all required fields
+        required = {"title", "bet_type", "my_pick", "their_pick", "my_odds", "their_odds", "stake", "reason"}
+        suggestions = [s for s in suggestions if isinstance(s, dict) and required.issubset(s.keys())]
     except Exception:
         suggestions = []
 

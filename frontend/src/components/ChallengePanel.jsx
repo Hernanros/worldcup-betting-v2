@@ -78,16 +78,40 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
       {/* Issue form */}
       <div style={{ background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 12 }}>
         <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>Issue a new challenge</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-          <span style={{ color: "#6b7280", fontSize: 11 }}>Bet type:</span>
-          <span style={{
-            background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
-            borderRadius: 999, padding: "2px 8px", fontSize: 10, color: "#c4b5fd", fontWeight: 700,
-            textTransform: "uppercase",
-          }}>
-            {betType.replace(/_/g, " ")}
-          </span>
+
+        {/* Bet type selector */}
+        <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
+          {[
+            { key: "1x2",          label: "1×2",           hint: "Win / Draw / Win" },
+            { key: "correct_score", label: "Score",         hint: "Exact scoreline" },
+            { key: "btts",         label: "BTTS",           hint: "Both teams score" },
+            { key: "totals",       label: "Totals",         hint: "Over / Under goals" },
+          ].map(({ key, label, hint }) => (
+            <button
+              key={key}
+              title={hint}
+              onClick={() => { setBetType(key); setSelection(""); setAcceptorSelection("") }}
+              style={{
+                padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700,
+                cursor: "pointer", border: "1px solid",
+                background: betType === key ? "rgba(168,85,247,0.2)" : "transparent",
+                borderColor: betType === key ? "rgba(168,85,247,0.6)" : "#2d2b55",
+                color: betType === key ? "#c4b5fd" : "#6b7280",
+                transition: "all 0.1s",
+              }}
+            >
+              {label}
+            </button>
+          ))}
         </div>
+
+        {/* Per-type pick hints */}
+        <p style={{ color: "#4b5563", fontSize: 10, marginBottom: 8 }}>
+          {betType === "1x2"           && "Your pick: team name or 'Draw'. Their pick: the opposing side."}
+          {betType === "correct_score" && "Format: '2-1' (home-away). E.g. your pick '2-1', their pick '1-2'."}
+          {betType === "btts"          && "Pick 'Yes' or 'No'. Their pick is the opposite."}
+          {betType === "totals"        && "E.g. 'Over 2.5' vs 'Under 2.5'. Agree on the line with your opponent."}
+        </p>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input placeholder="Your pick" value={selection} onChange={(e) => setSelection(e.target.value)}
             style={{ flex: 1, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
