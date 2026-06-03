@@ -5,6 +5,7 @@ import { getPlayer } from "../auth.js"
 import MatchCard from "../components/MatchCard.jsx"
 import LeaderboardRow from "../components/LeaderboardRow.jsx"
 import PageBackground from "../components/PageBackground.jsx"
+import DeepCutsBanner from "../components/DeepCutsBanner.jsx"
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -65,6 +66,8 @@ export default function HomePage() {
     <div>
       <PageBackground momentKey="rotating" />
       <div style={{ padding: 16 }}>
+
+        <DeepCutsBanner />
 
         {/* ── MY STATS ─────────────────────────────────── */}
         <div style={{
