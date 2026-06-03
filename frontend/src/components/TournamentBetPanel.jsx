@@ -1,49 +1,58 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { api } from "../api.js"
-import { GOLDEN_BOOT_PLAYERS } from "../data/teams.js"
 
 const MARKET_ICONS = {
-  winner: "🏆",
+  winner:      "🏆",
   golden_boot: "👟",
   total_goals: "⚽",
 }
 
 export default function TournamentBetPanel({ onBetPlaced }) {
-  const [markets, setMarkets] = useState(null)
-  const [locked, setLocked] = useState(false)
+  const [markets, setMarkets]           = useState(null)
+  const [locked, setLocked]             = useState(false)
   const [activeMarket, setActiveMarket] = useState("winner")
-  const [selection, setSelection] = useState("")
+  const [selection, setSelection]       = useState("")        // picked from list
   const [selectionOdds, setSelectionOdds] = useState(null)
-  const [goldenBootText, setGoldenBootText] = useState("")
-  const [stake, setStake] = useState(100)
-  const [loading, setLoading] = useState(false)
-  const [msg, setMsg] = useState("")
-  const [teamSearch, setTeamSearch] = useState("")
+  const [freeText, setFreeText]         = useState("")        // golden boot custom name
+  const [search, setSearch]             = useState("")
+  const [stake, setStake]               = useState(100)
+  const [loading, setLoading]           = useState(false)
+  const [msg, setMsg]                   = useState("")
 
   useEffect(() => {
     api.get("/api/tournament/markets")
-      .then((data) => {
-        setMarkets(data.markets)
-        setLocked(data.locked)
-      })
+      .then((data) => { setMarkets(data.markets); setLocked(data.locked) })
       .catch(() => {})
   }, [])
 
   if (!markets) return null
 
-  const market = markets[activeMarket]
-  const isText = market.type === "text"
+  const market      = markets[activeMarket]
+  const isTextPick  = market.type === "text_pick"   // golden boot: list + free-text fallback
+  const hasOptions  = Array.isArray(market.options) && market.options.length > 0
 
-  const filteredOptions = market.options
-    ? market.options.filter((o) =>
-        o.name.toLowerCase().includes(teamSearch.toLowerCase())
-      )
+  // For golden boot: if user typed a custom name that's not on the list, use unknown_odds.
+  const effectiveSelection = isTextPick && freeText.trim() ? freeText.trim() : selection
+  const effectiveOdds = isTextPick && freeText.trim()
+    ? (market.unknown_odds ?? 101.0)
+    : selectionOdds
+
+  const filteredOptions = hasOptions
+    ? market.options.filter((o) => o.name.toLowerCase().includes(search.toLowerCase()))
     : []
 
-  function selectOption(name, odds) {
+  function selectFromList(name, odds) {
     setSelection(name)
     setSelectionOdds(odds)
+    setFreeText("")    // clear free-text when picking from list
+    setMsg("")
+  }
+
+  function handleFreeTextChange(val) {
+    setFreeText(val)
+    setSelection("")   // deselect list pick when typing custom
+    setSelectionOdds(null)
     setMsg("")
   }
 
@@ -51,31 +60,33 @@ export default function TournamentBetPanel({ onBetPlaced }) {
     setActiveMarket(key)
     setSelection("")
     setSelectionOdds(null)
-    setGoldenBootText("")
-    setTeamSearch("")
+    setFreeText("")
+    setSearch("")
     setMsg("")
   }
 
-  async function submit() {
-    const finalSelection = isText ? goldenBootText.trim() : selection
-    const finalOdds = isText ? market.default_odds : selectionOdds
+  const potentialWin = effectiveOdds && stake
+    ? Math.floor(stake * effectiveOdds)
+    : null
 
-    if (!finalSelection) return setMsg(isText ? "Enter a player name" : "Pick a selection first")
+  async function submit() {
+    if (!effectiveSelection) return setMsg(isTextPick ? "Pick a player or type a name" : "Pick a selection first")
     if (!stake || stake < 1) return setMsg("Minimum stake is 1 token")
 
     setLoading(true)
     setMsg("")
     try {
       const result = await api.post("/api/tournament/bets", {
-        bet_type: activeMarket,
-        selection: finalSelection,
+        bet_type:  activeMarket,
+        selection: effectiveSelection,
         stake,
-        odds: finalOdds,
+        // odds field ignored server-side; server resolves authoritative value
       })
-      setMsg(`✓ Bet placed! New balance: ${result.new_balance} tokens`)
+      const confirmedOdds = result.odds ?? effectiveOdds
+      setMsg(`✓ Bet placed @ ${confirmedOdds}x! New balance: ${result.new_balance} tokens`)
       setSelection("")
       setSelectionOdds(null)
-      setGoldenBootText("")
+      setFreeText("")
       onBetPlaced?.(result.new_balance)
     } catch (err) {
       setMsg(`✗ ${err.message}`)
@@ -84,33 +95,19 @@ export default function TournamentBetPanel({ onBetPlaced }) {
     }
   }
 
-  const potentialWin = (() => {
-    const odds = isText ? market.default_odds : selectionOdds
-    if (!odds || !stake) return null
-    return Math.floor(stake * odds)
-  })()
-
   return (
     <div style={{ marginBottom: 16 }}>
-      {/* Lock countdown */}
+      {/* Lock banner */}
       {!locked && (
         <div style={{
           background: "linear-gradient(135deg, rgba(168,85,247,0.1), rgba(59,130,246,0.1))",
-          border: "1px solid #a855f7",
-          borderRadius: 10,
-          padding: "8px 14px",
-          marginBottom: 14,
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          fontSize: 12,
-          color: "#a78bfa",
+          border: "1px solid #a855f7", borderRadius: 10, padding: "8px 14px", marginBottom: 14,
+          display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#a78bfa",
         }}>
           <span>🔓</span>
           <span>Tournament bets lock at kickoff — <strong>June 11, 2026 at 18:00 UTC</strong></span>
         </div>
       )}
-
       {locked && (
         <div style={{
           background: "rgba(239,68,68,0.1)", border: "1px solid #ef4444",
@@ -124,20 +121,13 @@ export default function TournamentBetPanel({ onBetPlaced }) {
       {/* Market tabs */}
       <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
         {Object.entries(markets).map(([key, m]) => (
-          <button
-            key={key}
-            onClick={() => handleMarketSwitch(key)}
-            style={{
-              flex: 1,
-              background: activeMarket === key
-                ? "linear-gradient(135deg,#a855f7,#3b82f6)"
-                : "#1e1b3a",
-              color: activeMarket === key ? "#fff" : "#6b7280",
-              border: "none", borderRadius: 8, padding: "8px 4px",
-              fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "center",
-              lineHeight: 1.3,
-            }}
-          >
+          <button key={key} onClick={() => handleMarketSwitch(key)} style={{
+            flex: 1,
+            background: activeMarket === key ? "linear-gradient(135deg,#a855f7,#3b82f6)" : "#1e1b3a",
+            color: activeMarket === key ? "#fff" : "#6b7280",
+            border: "none", borderRadius: 8, padding: "8px 4px",
+            fontSize: 11, fontWeight: 600, cursor: "pointer", textAlign: "center", lineHeight: 1.3,
+          }}>
             <div style={{ fontSize: 16 }}>{MARKET_ICONS[key]}</div>
             <div>{m.label.replace(/^[^ ]+ /, "")}</div>
           </button>
@@ -145,47 +135,35 @@ export default function TournamentBetPanel({ onBetPlaced }) {
       </div>
 
       {/* Market description */}
-      <p style={{ color: "#6b7280", fontSize: 12, marginBottom: 12 }}>
-        {market.description}
-      </p>
+      <p style={{ color: "#6b7280", fontSize: 12, marginBottom: 12 }}>{market.description}</p>
 
-      {/* Winner / total goals — searchable pick list */}
-      {!isText && !locked && (
+      {/* Picklist (winner, total_goals, golden_boot listed players) */}
+      {!locked && hasOptions && (
         <>
-          {activeMarket === "winner" && (
-            <input
-              placeholder="Search team..."
-              value={teamSearch}
-              onChange={(e) => setTeamSearch(e.target.value)}
-              style={{
-                width: "100%", background: "#0c0c14", border: "1px solid #2d2b55",
-                borderRadius: 8, padding: "7px 12px", color: "#e2e8f0",
-                fontSize: 13, marginBottom: 8,
-              }}
-            />
-          )}
+          <input
+            placeholder={isTextPick ? "Search player…" : "Search team…"}
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: "100%", background: "#0c0c14", border: "1px solid #2d2b55",
+              borderRadius: 8, padding: "7px 12px", color: "#e2e8f0",
+              fontSize: 13, marginBottom: 8, boxSizing: "border-box",
+            }}
+          />
           <div style={{
-            maxHeight: 220,
-            overflowY: "auto",
-            display: "flex",
-            flexDirection: "column",
-            gap: 4,
-            marginBottom: 12,
+            maxHeight: 220, overflowY: "auto",
+            display: "flex", flexDirection: "column", gap: 4, marginBottom: 12,
           }}>
             {filteredOptions.map((o) => (
-              <button
-                key={o.name}
-                onClick={() => selectOption(o.name, o.odds)}
-                style={{
-                  background: selection === o.name
-                    ? "linear-gradient(135deg, rgba(168,85,247,0.2), rgba(59,130,246,0.2))"
-                    : "#13131f",
-                  border: `1px solid ${selection === o.name ? "#a855f7" : "#2d2b55"}`,
-                  borderRadius: 8, padding: "8px 12px",
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  cursor: "pointer",
-                }}
-              >
+              <button key={o.name} onClick={() => selectFromList(o.name, o.odds)} style={{
+                background: selection === o.name
+                  ? "linear-gradient(135deg, rgba(168,85,247,0.2), rgba(59,130,246,0.2))"
+                  : "#13131f",
+                border: `1px solid ${selection === o.name ? "#a855f7" : "#2d2b55"}`,
+                borderRadius: 8, padding: "8px 12px",
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                cursor: "pointer",
+              }}>
                 <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 500 }}>{o.name}</span>
                 <span style={{
                   color: "#a78bfa", fontSize: 12, fontWeight: 700,
@@ -199,26 +177,34 @@ export default function TournamentBetPanel({ onBetPlaced }) {
         </>
       )}
 
-      {/* Golden boot — player dropdown */}
-      {isText && !locked && (
+      {/* Golden Boot: free-text fallback for players not on the list */}
+      {isTextPick && !locked && (
         <div style={{ marginBottom: 12 }}>
-          <select
-            value={goldenBootText}
-            onChange={(e) => setGoldenBootText(e.target.value)}
-            style={{
-              width: "100%", background: "#0c0c14", border: "1px solid #2d2b55",
-              borderRadius: 8, padding: "9px 12px", color: goldenBootText ? "#e2e8f0" : "#6b7280",
-              fontSize: 13, appearance: "none", cursor: "pointer",
-            }}
-          >
-            <option value="">Select a player...</option>
-            {GOLDEN_BOOT_PLAYERS.map((p) => (
-              <option key={p} value={p}>{p}</option>
-            ))}
-          </select>
-          <p style={{ color: "#6b7280", fontSize: 11, marginTop: 6 }}>
-            Fixed odds: <strong style={{ color: "#a78bfa" }}>{market.default_odds}x</strong>
-          </p>
+          <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 5 }}>
+            Not on the list? Type any player name:
+          </div>
+          <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <input
+              placeholder="e.g. Erling Haaland…"
+              value={freeText}
+              onChange={(e) => handleFreeTextChange(e.target.value)}
+              style={{
+                flex: 1, background: "#0c0c14", border: `1px solid ${freeText ? "#a855f7" : "#2d2b55"}`,
+                borderRadius: 8, padding: "7px 12px", color: "#e2e8f0",
+                fontSize: 13, boxSizing: "border-box",
+              }}
+            />
+            {freeText && (
+              <span style={{ color: "#f59e0b", fontSize: 11, whiteSpace: "nowrap" }}>
+                {market.unknown_odds ?? 101}x
+              </span>
+            )}
+          </div>
+          {freeText && (
+            <p style={{ fontSize: 10, color: "#6b7280", margin: "4px 0 0" }}>
+              Unlisted player — odds {market.unknown_odds ?? 101}x applied at placement
+            </p>
+          )}
         </div>
       )}
 
@@ -247,17 +233,17 @@ export default function TournamentBetPanel({ onBetPlaced }) {
           <motion.button
             whileTap={{ scale: 0.97 }}
             onClick={submit}
-            disabled={loading}
+            disabled={loading || !effectiveSelection}
             style={{
               width: "100%",
-              background: loading ? "#1e1b3a" : "linear-gradient(135deg,#a855f7,#3b82f6)",
-              color: loading ? "#6b7280" : "#fff",
+              background: loading || !effectiveSelection ? "#1e1b3a" : "linear-gradient(135deg,#a855f7,#3b82f6)",
+              color: loading || !effectiveSelection ? "#6b7280" : "#fff",
               border: "none", borderRadius: 8, padding: "12px",
               fontSize: 14, fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
+              cursor: loading || !effectiveSelection ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Placing..." : `Place ${MARKET_ICONS[activeMarket]} Bet`}
+            {loading ? "Placing…" : `Place ${MARKET_ICONS[activeMarket]} Bet`}
           </motion.button>
         </>
       )}

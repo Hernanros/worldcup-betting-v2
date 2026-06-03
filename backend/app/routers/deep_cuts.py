@@ -17,6 +17,39 @@ router = APIRouter()
 STAGE_ORDER = ["tournament", "group_stage", "r32", "r16", "qf", "sf", "final"]
 
 
+def _resolve_spicy_odds(market: dict, selection: str) -> float:
+    """Return server-authoritative odds for a Deep Cuts bet.
+
+    The client MUST NOT influence the returned value.
+    """
+    mtype = market.get("type")
+
+    if mtype == "over_under":
+        for line in market.get("lines", []):
+            if line["name"].lower() == selection.lower():
+                return float(line["odds"])
+        return 1.90  # safe fallback
+
+    if mtype == "exact_count":
+        options = market.get("options", [])
+        odds    = market.get("odds", [])
+        try:
+            idx = options.index(int(selection))
+            return float(odds[idx])
+        except (ValueError, IndexError):
+            return 2.0
+
+    if mtype == "yes_no":
+        odds_map = market.get("odds", {})
+        key = selection.lower()
+        if key in odds_map:
+            return float(odds_map[key])
+        return 2.0
+
+    # team_pick, text_pick, group_advance — all use default_odds
+    return float(market.get("default_odds", 10.0))
+
+
 async def _get_lock_time(stage: str, db: AsyncSession) -> Optional[datetime]:
     t = get_stage_lock_time(stage, db=None)
     if t:
@@ -84,7 +117,7 @@ async def get_markets(
         elif m["type"] == "group_advance":
             entry["teams"]        = m["teams"]
             entry["group"]        = m["group"]
-            entry["default_odds"] = m.get("default_odds", 1.5)
+            entry["default_odds"] = m.get("default_odds", 4.0)
         markets.append(entry)
     return {
         "stage":     stage,
@@ -120,12 +153,15 @@ async def place_spicy_bet(
 
     try:
         stake = int(data.get("stake", 0))
-        odds  = float(data.get("odds", 2.0))
     except (TypeError, ValueError):
-        raise HTTPException(400, "invalid stake or odds")
+        raise HTTPException(400, "invalid stake")
 
     if stake < 1:
         raise HTTPException(400, "minimum stake is 1")
+
+    # Server-side odds — client value is intentionally ignored.
+    market_cfg = DEEP_CUTS_MARKETS[market_key]
+    odds = _resolve_spicy_odds(market_cfg, selection)
 
     fresh_player = await db.get(Player, player.id)
     if fresh_player.token_balance < stake:
@@ -144,7 +180,7 @@ async def place_spicy_bet(
     db.add(bet)
     await db.commit()
     await db.refresh(bet)
-    return {"id": bet.id, "new_balance": player.token_balance}
+    return {"id": bet.id, "new_balance": fresh_player.token_balance, "odds": odds}
 
 
 @router.get("/api/deep-cuts/bets")

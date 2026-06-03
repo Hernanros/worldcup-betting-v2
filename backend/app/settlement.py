@@ -17,11 +17,11 @@ def settle_challenge_acceptor(stake: int, odds: float, won: bool) -> int:
     return int(stake * odds) if won else 0
 
 
-def determine_h2h_winner(home_team: str, home_score: int, away_score: int) -> str:
+def determine_h2h_winner(home_team: str, away_team: str, home_score: int, away_score: int) -> str:
     if home_score > away_score:
         return home_team
     if away_score > home_score:
-        return "Away"
+        return away_team
     return "Draw"
 
 

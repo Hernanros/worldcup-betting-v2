@@ -75,7 +75,7 @@ async def _settle_bets(db, match, result):
 def _evaluate_bet(bet_type, selection, match, result):
     hs, as_ = result["home_score"], result["away_score"]
     if bet_type == "1x2":
-        return selection == determine_h2h_winner(match.home_team, hs, as_)
+        return selection == determine_h2h_winner(match.home_team, match.away_team, hs, as_)
     if bet_type == "correct_score":
         return determine_correct_score_winner(selection, hs, as_)
     if bet_type == "totals":
@@ -134,7 +134,7 @@ def _same_outcome(ph, pa, ah, aa):
 async def _propagate_winner(db, match, result):
     if not match.next_match_id:
         return
-    winner = determine_h2h_winner(match.home_team, result["home_score"], result["away_score"])
+    winner = determine_h2h_winner(match.home_team, match.away_team, result["home_score"], result["away_score"])
     winning_team = match.home_team if winner == match.home_team else match.away_team
     next_match = await db.get(Match, match.next_match_id)
     if not next_match:
