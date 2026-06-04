@@ -73,6 +73,7 @@ GOLDEN_BOOT_ODDS = [
     {"name": "Erling Haaland",       "aliases": ["haaland"],                           "odds": 8.0},
     {"name": "Harry Kane",           "aliases": ["kane"],                              "odds": 9.0},
     {"name": "Lionel Messi",         "aliases": ["messi", "leo messi", "lio messi"],   "odds": 10.0},
+    {"name": "Cristiano Ronaldo",    "aliases": ["ronaldo", "cr7", "cristiano"],        "odds": 10.0},
 
     # Tier 2 — strong contenders
     {"name": "Bukayo Saka",          "aliases": ["saka"],                              "odds": 12.0},
