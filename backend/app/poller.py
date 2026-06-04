@@ -68,6 +68,8 @@ async def _settle_bets(db, match, result):
     for bet in bets:
         won = _evaluate_bet(bet.bet_type, bet.selection, match, result)
         payout = settle_bet(bet.stake, bet.odds_at_placement, won)
+        if payout and bet.is_wildcard:
+            payout *= 2  # wildcard bets pay double on a win
         bet.status = "won" if won else "lost"
         if payout:
             player = await db.get(Player, bet.player_id)
@@ -158,12 +160,16 @@ async def _settle_predictions(db, match, result):
     )).scalars().all()
     hs, as_ = result["home_score"], result["away_score"]
     for pred in preds:
+        multiplier = 2 if pred.is_double else 1
         if pred.home_score_pred == hs and pred.away_score_pred == as_:
-            pred.status, pred.points_awarded = "correct_score", 3
+            pred.status = "correct_score"
+            pred.points_awarded = 3 * multiplier
         elif _same_outcome(pred.home_score_pred, pred.away_score_pred, hs, as_):
-            pred.status, pred.points_awarded = "correct_outcome", 1
+            pred.status = "correct_outcome"
+            pred.points_awarded = 1 * multiplier
         else:
-            pred.status, pred.points_awarded = "wrong", 0
+            pred.status = "wrong"
+            pred.points_awarded = 0
 
 
 def _same_outcome(ph, pa, ah, aa):
