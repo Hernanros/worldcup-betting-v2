@@ -5,7 +5,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
-from app.models import TournamentBet, Player, Match
+from app.models import TournamentBet, Player, Match, InsurancePick
 from app.deep_cuts_config import WC2026_GROUPS
 
 router = APIRouter()
@@ -374,3 +374,64 @@ async def get_bracket(auth=Depends(get_current_player), db: AsyncSession = Depen
         })
 
     return {"rounds": bracket}
+
+
+@router.post("/api/tournament/insurance")
+async def place_insurance_pick(
+    data: dict,
+    auth=Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
+    if datetime.now(timezone.utc) >= TOURNAMENT_LOCK_TIME:
+        raise HTTPException(400, "Tournament bets are locked — insurance picks are closed")
+
+    player, _ = auth
+    bet_type  = data.get("bet_type")
+    selection = (data.get("selection") or "").strip()
+
+    if not bet_type or not selection:
+        raise HTTPException(400, "bet_type and selection are required")
+    if bet_type not in ("winner", "golden_boot"):
+        raise HTTPException(400, "Insurance is only available for the winner and golden_boot markets")
+
+    primary_bet = (await db.execute(
+        select(TournamentBet).where(
+            TournamentBet.player_id == player.id,
+            TournamentBet.bet_type  == bet_type,
+            TournamentBet.status    == "pending",
+        )
+    )).scalar_one_or_none()
+    if not primary_bet:
+        raise HTTPException(400, f"You must have a pending {bet_type} bet to add insurance")
+
+    existing = (await db.execute(
+        select(InsurancePick).where(
+            InsurancePick.player_id == player.id,
+            InsurancePick.bet_type  == bet_type,
+        )
+    )).scalar_one_or_none()
+    if existing:
+        raise HTTPException(400, f"You have already placed an insurance pick for {bet_type}")
+
+    if selection.lower() == primary_bet.selection.lower():
+        raise HTTPException(400, "Insurance selection must differ from your primary bet")
+
+    pick = InsurancePick(
+        player_id         = player.id,
+        tournament_bet_id = primary_bet.id,
+        bet_type          = bet_type,
+        selection         = selection,
+    )
+    db.add(pick)
+    await db.commit()
+    await db.refresh(pick)
+    return {"id": pick.id, "bet_type": pick.bet_type, "selection": pick.selection, "status": pick.status}
+
+
+@router.get("/api/tournament/insurance")
+async def get_insurance_picks(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    player, _ = auth
+    picks = (await db.execute(
+        select(InsurancePick).where(InsurancePick.player_id == player.id)
+    )).scalars().all()
+    return [{"id": p.id, "bet_type": p.bet_type, "selection": p.selection, "status": p.status} for p in picks]
