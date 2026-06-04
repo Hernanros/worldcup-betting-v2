@@ -68,10 +68,17 @@ async def _run_migrations():
         else:
             league = existing
 
-        # 5. Adopt any players with league_id=NULL into the default league
-        #    Skip (delete) orphans whose name already exists in target league
+        # 5a. Add is_admin column to players if missing
+        await db.execute(text(
+            "ALTER TABLE players ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await db.commit()
+
+        # 5b. Adopt pre-multi-league orphan players (league_id=NULL, is_admin=FALSE)
+        #     into the default league. Admin players (is_admin=TRUE) are intentionally
+        #     kept with league_id=NULL so they can see all groups.
         orphans = (await db.execute(
-            select(Player).where(Player.league_id.is_(None))
+            select(Player).where(Player.league_id.is_(None), Player.is_admin.is_(False))
         )).scalars().all()
         adopted = deleted = 0
         for p in orphans:

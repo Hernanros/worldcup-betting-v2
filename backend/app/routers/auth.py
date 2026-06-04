@@ -47,6 +47,7 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
         query = query.where(Player.league_id.is_(None))
     result = await db.execute(query)
     player = result.scalar_one_or_none()
+    returning = player is not None  # track before possible creation
 
     if player:
         # Player exists
@@ -58,7 +59,8 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
             raise HTTPException(404, "Player not found in this group — check your name or register")
         try:
             player = Player(name=name, token_balance=1000,
-                            league_id=league.id if league else None)
+                            league_id=league.id if league else None,
+                            is_admin=is_admin)
             db.add(player)
             await db.commit()
             await db.refresh(player)
@@ -66,7 +68,11 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
             await db.rollback()
             result = await db.execute(query)
             player = result.scalar_one_or_none()
+            returning = True  # race condition → player was already there
 
+    # Ensure the is_admin flag is persisted on the record (important for adoption guard)
+    if is_admin and not player.is_admin:
+        player.is_admin = True
     token = make_token(player.id, is_admin)
     player.session_token = token
     await db.commit()
@@ -75,6 +81,7 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
         "token": token,
         "player": _player_dict(player, is_admin),
         "league": {"id": league.id, "name": league.name} if league else None,
+        "returning": returning,
     }
 
 

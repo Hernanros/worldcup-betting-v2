@@ -28,6 +28,7 @@ class Player(Base):
     challenge_streak = Column(Integer, nullable=False, default=0)
     total_challenges_issued = Column(Integer, nullable=False, default=0)
     volume_milestone_reached = Column(Integer, nullable=False, default=0)
+    is_admin = Column(Boolean, nullable=False, default=False)
     league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)
     league    = relationship("League", back_populates="players")
 

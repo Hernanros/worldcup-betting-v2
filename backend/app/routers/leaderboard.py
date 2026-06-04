@@ -1,4 +1,5 @@
-from fastapi import APIRouter, Depends
+from typing import Optional
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy import select, func, desc
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -22,14 +23,20 @@ async def _prediction_pts_by_player(db: AsyncSession, league_id) -> dict:
 
 
 @router.get("/api/leaderboard")
-async def leaderboard(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
-    player, _ = auth
-    query = select(Player).order_by(desc(Player.token_balance))
-    if player.league_id is not None:
-        query = query.where(Player.league_id == player.league_id)
+async def leaderboard(
+    league_id: Optional[int] = Query(default=None),
+    auth=Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
+    player, is_admin = auth
+    # Admin may pass ?league_id=X to scope to a specific group; non-admin always sees own group
+    effective_league = league_id if is_admin else player.league_id
+    query = select(Player).where(Player.is_admin.is_(False)).order_by(desc(Player.token_balance))
+    if effective_league is not None:
+        query = query.where(Player.league_id == effective_league)
     players = (await db.execute(query)).scalars().all()
 
-    pts_map = await _prediction_pts_by_player(db, player.league_id)
+    pts_map = await _prediction_pts_by_player(db, effective_league)
 
     result = []
     for i, p in enumerate(players):
@@ -46,20 +53,26 @@ async def leaderboard(auth=Depends(get_current_player), db: AsyncSession = Depen
 
 
 @router.get("/api/leaderboard/predictions")
-async def predictions_leaderboard(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+async def predictions_leaderboard(
+    league_id: Optional[int] = Query(default=None),
+    auth=Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
     """Players ranked by total prediction points (correct score = 3, correct outcome = 1)."""
-    player, _ = auth
+    player, is_admin = auth
+    effective_league = league_id if is_admin else player.league_id
     stmt = (
         select(
             Player,
             func.coalesce(func.sum(Prediction.points_awarded), 0).label("pts")
         )
         .outerjoin(Prediction, Prediction.player_id == Player.id)
+        .where(Player.is_admin.is_(False))
         .group_by(Player.id)
         .order_by(desc("pts"))
     )
-    if league_id := player.league_id:
-        stmt = stmt.where(Player.league_id == league_id)
+    if effective_league is not None:
+        stmt = stmt.where(Player.league_id == effective_league)
     rows = (await db.execute(stmt)).all()
 
     result = []

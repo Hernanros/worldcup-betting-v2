@@ -1,23 +1,37 @@
 import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import { subscribe } from "../ws.js"
+import { getPlayer } from "../auth.js"
 import LeaderboardRow from "../components/LeaderboardRow.jsx"
 import PageBackground from "../components/PageBackground.jsx"
 import HelpTip from "../components/HelpTip.jsx"
 
 export default function LeaderboardPage() {
+  const currentPlayer = getPlayer()
+  const isAdmin = currentPlayer?.is_admin ?? false
+
   const [players, setPlayers] = useState([])
   const [predictions, setPredictions] = useState([])
   const [redCards, setRedCards] = useState([])
   const [tab, setTab] = useState("tokens")
   const [error, setError] = useState(null)
+  // Admin: league selector
+  const [leagues, setLeagues] = useState([])
+  const [selectedLeague, setSelectedLeague] = useState(null) // null = all
+
+  useEffect(() => {
+    if (isAdmin) {
+      api.get("/api/leagues").then(setLeagues).catch(() => {})
+    }
+  }, [isAdmin])
 
   async function load() {
     setError(null)
+    const qs = isAdmin && selectedLeague ? `?league_id=${selectedLeague}` : ""
     try {
       const [p, pred, r] = await Promise.all([
-        api.get("/api/leaderboard"),
-        api.get("/api/leaderboard/predictions"),
+        api.get(`/api/leaderboard${qs}`),
+        api.get(`/api/leaderboard/predictions${qs}`),
         api.get("/api/leaderboard/red-cards"),
       ])
       setPlayers(p)
@@ -30,9 +44,14 @@ export default function LeaderboardPage() {
 
   useEffect(() => {
     load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeague])
+
+  useEffect(() => {
     const unsub = subscribe((e) => { if (e.type === "leaderboard_updated") load() })
     return unsub
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLeague])
 
   const TABS = [
     { id: "tokens", label: "🏆 Tokens", tip: "Ranked by total token balance. Earn tokens by winning bets, challenges, and Deep Cuts markets." },
@@ -48,6 +67,46 @@ export default function LeaderboardPage() {
         <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>Rankings</div>
       </div>
       <div style={{ padding: 16 }}>
+
+        {/* Admin league selector */}
+        {isAdmin && leagues.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+              👁 Viewing group
+            </div>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              <button
+                onClick={() => setSelectedLeague(null)}
+                style={{
+                  padding: "4px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600,
+                  cursor: "pointer", border: "1px solid",
+                  background: selectedLeague === null ? "rgba(168,85,247,0.2)" : "transparent",
+                  borderColor: selectedLeague === null ? "rgba(168,85,247,0.6)" : "#2d2b55",
+                  color: selectedLeague === null ? "#c4b5fd" : "#6b7280",
+                }}
+              >
+                All groups
+              </button>
+              {leagues.map((lg) => (
+                <button
+                  key={lg.id}
+                  onClick={() => setSelectedLeague(lg.id)}
+                  style={{
+                    padding: "4px 12px", borderRadius: 999, fontSize: 11, fontWeight: 600,
+                    cursor: "pointer", border: "1px solid",
+                    background: selectedLeague === lg.id ? "rgba(168,85,247,0.2)" : "transparent",
+                    borderColor: selectedLeague === lg.id ? "rgba(168,85,247,0.6)" : "#2d2b55",
+                    color: selectedLeague === lg.id ? "#c4b5fd" : "#6b7280",
+                  }}
+                >
+                  {lg.name}
+                  <span style={{ color: "#4b5563", marginLeft: 4 }}>({lg.player_count})</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div style={{ display: "flex", gap: 8, marginBottom: 16, overflowX: "auto" }}>
           {TABS.map((t) => (
             <button key={t.id} onClick={() => setTab(t.id)}

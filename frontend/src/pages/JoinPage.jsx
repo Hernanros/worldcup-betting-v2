@@ -5,7 +5,7 @@ import { api } from "../api.js"
 import { setAuth } from "../auth.js"
 
 export default function JoinPage() {
-  const [mode, setMode] = useState("login") // "login" | "register"
+  const [mode, setMode] = useState("join") // "join" (find-or-create) | "login" | "register"
   const [name, setName] = useState("")
   const [code, setCode] = useState("")
   const [error, setError] = useState("")
@@ -24,7 +24,8 @@ export default function JoinPage() {
         mode,
       })
       setAuth(data.token, data.player, data.league ?? null)
-      const greeting = mode === "register"
+      const isNew = mode === "register" || (mode === "join" && !data.returning)
+      const greeting = isNew
         ? `✓ Welcome to ${data.league?.name ?? "the game"}!`
         : `✓ Welcome back, ${data.player.name}!`
       setMsg(greeting)
@@ -88,7 +89,7 @@ export default function JoinPage() {
           marginBottom: 20,
           border: "1px solid #2d2b55",
         }}>
-          {[["login", "Sign In"], ["register", "New Player"]].map(([m, label]) => (
+          {[["join", "Enter Game"], ["login", "Sign In"], ["register", "New Player"]].map(([m, label]) => (
             <button
               key={m}
               type="button"
@@ -114,7 +115,9 @@ export default function JoinPage() {
         </div>
 
         <p style={{ color: "#6b7280", textAlign: "center", marginBottom: 20, fontSize: 13 }}>
-          {mode === "login"
+          {mode === "join"
+            ? "Enter your name and group invite code. New player? You'll be registered automatically."
+            : mode === "login"
             ? "Enter your name and group invite code to continue."
             : "Pick a name and enter your group's invite code to join."}
         </p>
@@ -157,8 +160,8 @@ export default function JoinPage() {
             }}
           >
             {loading
-              ? (mode === "login" ? "Signing in..." : "Joining...")
-              : (mode === "login" ? "Sign In" : "Join the game")}
+              ? (mode === "login" ? "Signing in..." : mode === "register" ? "Joining..." : "Entering...")
+              : (mode === "login" ? "Sign In" : mode === "register" ? "Join the game" : "Enter game")}
           </button>
         </form>
       </motion.div>
