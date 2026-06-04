@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import PredictionRow from "../components/PredictionRow.jsx"
 import PageBackground from "../components/PageBackground.jsx"
+import HelpTip from "../components/HelpTip.jsx"
 
 export default function PredictionsPage() {
   const [entries, setEntries] = useState([])
@@ -35,7 +36,10 @@ export default function PredictionsPage() {
           padding: "10px 16px", marginBottom: 16,
           display: "flex", justifyContent: "space-between",
         }}>
-          <span style={{ color: "#6b7280", fontSize: 13 }}>Your total points</span>
+          <span style={{ color: "#6b7280", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>
+            Your total points
+            <HelpTip text="Prediction points are separate from tokens. Exact score = 3 pts, correct outcome (win/draw/loss) = 1 pt. Points appear on the Predictions leaderboard tab." />
+          </span>
           <span className="gradient-text" style={{ fontWeight: 800, fontSize: 18 }}>{totalPoints} pts</span>
         </div>
         {entries.map((e) => <PredictionRow key={e.match_id} entry={e} onSaved={load} />)}
