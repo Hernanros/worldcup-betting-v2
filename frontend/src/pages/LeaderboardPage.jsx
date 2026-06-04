@@ -3,6 +3,7 @@ import { api } from "../api.js"
 import { subscribe } from "../ws.js"
 import LeaderboardRow from "../components/LeaderboardRow.jsx"
 import PageBackground from "../components/PageBackground.jsx"
+import HelpTip from "../components/HelpTip.jsx"
 
 export default function LeaderboardPage() {
   const [players, setPlayers] = useState([])
@@ -34,9 +35,9 @@ export default function LeaderboardPage() {
   }, [])
 
   const TABS = [
-    { id: "tokens", label: "🏆 Tokens" },
-    { id: "predictions", label: "🎯 Predictions" },
-    { id: "red-cards", label: "🟥 Red Cards" },
+    { id: "tokens", label: "🏆 Tokens", tip: "Ranked by total token balance. Earn tokens by winning bets, challenges, and Deep Cuts markets." },
+    { id: "predictions", label: "🎯 Predictions", tip: "Ranked by prediction points. Exact final score = 3 pts, correct match outcome (win/draw/loss) = 1 pt. You can make one prediction per match." },
+    { id: "red-cards", label: "🟥 Red Cards", tip: "Teams ranked by total red cards received across all their matches. A fun side-stat — not tied to your scoring." },
   ]
 
   return (
@@ -54,9 +55,9 @@ export default function LeaderboardPage() {
                 background: tab === t.id ? "linear-gradient(135deg,#a855f7,#3b82f6)" : "#1e1b3a",
                 color: tab === t.id ? "#fff" : "#6b7280", border: "none",
                 borderRadius: 999, padding: "5px 16px", fontSize: 12, fontWeight: 600,
-                cursor: "pointer", whiteSpace: "nowrap",
+                cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4,
               }}>
-              {t.label}
+              {t.label} <HelpTip text={t.tip} />
             </button>
           ))}
         </div>
