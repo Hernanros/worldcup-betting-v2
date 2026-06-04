@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 import anthropic
 from app.database import get_db
 from app.deps import get_current_player
-from app.models import Match, Player
+from app.models import Match, Player, Bet, TournamentBet, SpicyBet
 from app.config import settings
 
 router = APIRouter()
@@ -32,7 +32,8 @@ Typical WC lines: corners ~9.5, offsides ~3.5, total cards ~3.5."""
 
 
 def _build_prompt(match: Match, player: Player, odds: dict,
-                  existing_bet=None, existing_prediction=None, open_challenges=None) -> str:
+                  existing_bet=None, existing_prediction=None, open_challenges=None,
+                  recent_bets=None, tournament_bets=None, deep_cuts_bets=None) -> str:
     lines = [
         f"Match: {match.home_team} vs {match.away_team}",
         f"Round: {match.round}",
@@ -43,6 +44,23 @@ def _build_prompt(match: Match, player: Player, odds: dict,
         lines.append(f"Player already bet: {existing_bet.selection} ({existing_bet.bet_type}), stake {existing_bet.stake} — avoid suggesting the same position")
     if existing_prediction:
         lines.append(f"Player predicted score: {existing_prediction.home_score_pred}-{existing_prediction.away_score_pred} — use this as context for their view on the match")
+    if recent_bets:
+        summary = "; ".join(
+            f"{b.selection} ({b.bet_type}) → {b.status}" for b in recent_bets
+        )
+        lines.append(f"Player's last {len(recent_bets)} settled bets: {summary}")
+        wins = sum(1 for b in recent_bets if b.status == "won")
+        lines.append(f"Recent win rate: {wins}/{len(recent_bets)} — {'hot streak' if wins > len(recent_bets) / 2 else 'cold run'}")
+    if tournament_bets:
+        tb_summary = "; ".join(
+            f"{b.bet_type}: {b.selection}" for b in tournament_bets
+        )
+        lines.append(f"Player's tournament bets: {tb_summary} — factor into suggestion (don't contradict outright, or suggest a hedge)")
+    if deep_cuts_bets:
+        dc_summary = "; ".join(
+            f"{b.market_key}: {b.selection}" for b in deep_cuts_bets[:5]
+        )
+        lines.append(f"Player's recent prop bets: {dc_summary}")
     if open_challenges:
         lines.append(f"Open challenges already posted: {len(open_challenges)} — suggest something different")
     lines += ["", "Available odds:"]
@@ -118,7 +136,30 @@ async def suggest_challenge(
         sa_select(Challenge).where(Challenge.match_id == match.id, Challenge.status == "open")
     )).scalars().all()
 
-    prompt = _build_prompt(match, player, odds, existing_bet, existing_prediction, open_challenges)
+    # Richer context: recent bet history, tournament position, deep cuts bets
+    recent_bets = (await db.execute(
+        sa_select(Bet)
+        .where(Bet.player_id == player.id, Bet.status.in_(["won", "lost"]))
+        .order_by(Bet.id.desc())
+        .limit(10)
+    )).scalars().all()
+    tournament_bets = (await db.execute(
+        sa_select(TournamentBet).where(TournamentBet.player_id == player.id)
+    )).scalars().all()
+    deep_cuts_bets = (await db.execute(
+        sa_select(SpicyBet)
+        .where(SpicyBet.player_id == player.id)
+        .order_by(SpicyBet.id.desc())
+        .limit(5)
+    )).scalars().all()
+
+    prompt = _build_prompt(
+        match, player, odds,
+        existing_bet, existing_prediction, open_challenges,
+        recent_bets=recent_bets,
+        tournament_bets=tournament_bets,
+        deep_cuts_bets=deep_cuts_bets,
+    )
     try:
         message = anthropic_client.messages.create(
             model="claude-haiku-4-5-20251001",

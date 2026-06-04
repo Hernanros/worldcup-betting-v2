@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
-from app.models import Player, League
+from app.models import Player, League, Bet
 from app.deps import make_token, get_current_player
 from app.config import settings
 
@@ -82,6 +82,10 @@ async def join(data: dict, db: AsyncSession = Depends(get_db)):
 async def get_me(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
     player, _ = auth
     p = await db.get(Player, player.id)
+    wildcards_used = (await db.execute(
+        select(func.count(Bet.id))
+        .where(Bet.player_id == p.id, Bet.is_wildcard == True)  # noqa: E712
+    )).scalar() or 0
     return {
         "id": p.id,
         "name": p.name,
@@ -89,6 +93,7 @@ async def get_me(auth=Depends(get_current_player), db: AsyncSession = Depends(ge
         "challenge_streak": p.challenge_streak,
         "total_challenges_issued": p.total_challenges_issued,
         "volume_milestone_reached": p.volume_milestone_reached,
+        "wildcards_used": wildcards_used,
     }
 
 

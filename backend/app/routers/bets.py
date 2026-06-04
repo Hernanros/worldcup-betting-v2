@@ -1,6 +1,6 @@
 import json
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
@@ -91,9 +91,20 @@ async def place_bet(match_id: int, data: dict, auth=Depends(get_current_player),
     # Server-side odds — client value is intentionally ignored.
     odds = _resolve_match_odds(match, bet_type, selection)
 
+    is_wildcard = bool(data.get("is_wildcard", False))
+
     player = await db.get(Player, player.id)
     if player.token_balance < stake:
         raise HTTPException(400, "insufficient balance")
+
+    # Enforce max 3 wildcard bets per player per tournament
+    if is_wildcard:
+        wildcards_used = (await db.execute(
+            select(func.count(Bet.id))
+            .where(Bet.player_id == player.id, Bet.is_wildcard == True)  # noqa: E712
+        )).scalar() or 0
+        if wildcards_used >= 3:
+            raise HTTPException(400, "You have already used all 3 wildcard bets")
 
     bet = Bet(
         player_id=player.id,
@@ -102,13 +113,25 @@ async def place_bet(match_id: int, data: dict, auth=Depends(get_current_player),
         selection=selection,
         stake=stake,
         odds_at_placement=odds,
+        is_wildcard=is_wildcard,
     )
     player.token_balance -= stake
     db.add(bet)
     await db.commit()
     await db.refresh(bet)
 
-    return {"id": bet.id, "new_balance": player.token_balance, "odds": odds}
+    # Return updated wildcard count so the UI can refresh immediately
+    wildcards_used_after = (await db.execute(
+        select(func.count(Bet.id))
+        .where(Bet.player_id == player.id, Bet.is_wildcard == True)  # noqa: E712
+    )).scalar() or 0
+
+    return {
+        "id": bet.id,
+        "new_balance": player.token_balance,
+        "odds": odds,
+        "wildcards_used": wildcards_used_after,
+    }
 
 
 @router.get("/api/bets")
@@ -135,6 +158,7 @@ async def get_my_bets(auth=Depends(get_current_player), db: AsyncSession = Depen
             "stake": b.stake,
             "odds": b.odds_at_placement,
             "status": b.status,
+            "is_wildcard": b.is_wildcard,
         }
         for b, m in rows
     ]

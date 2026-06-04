@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { api } from "../api.js"
+import HelpTip from "./HelpTip.jsx"
 
 export default function ChallengePanel({ match, challenges, onUpdate, onBalanceChange, prefill, playerStreak = 0, totalChallenges = 0 }) {
   const [issuerStake, setIssuerStake] = useState(prefill?.stake ?? 100)
@@ -11,6 +12,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const [loading, setLoading] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
+  const [shareUrl, setShareUrl] = useState("")
 
   const acceptorStake = acceptorOdds > 0
     ? Math.max(1, Math.round(issuerStake * (issuerOdds / acceptorOdds)))
@@ -26,6 +28,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
         issuer_stake: issuerStake, issuer_odds: issuerOdds, acceptor_odds: acceptorOdds,
       })
       setMsg(`✓ Challenge issued! Balance: ${r.new_balance}`)
+      setShareUrl(`${window.location.origin}/matches/${match.id}`)
       onBalanceChange?.(r.new_balance)
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
@@ -52,7 +55,10 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
 
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12, padding: 16, marginBottom: 12 }}>
-      <h3 style={{ color: "#a78bfa", fontWeight: 700, marginBottom: 12, fontSize: 14 }}>Challenges</h3>
+      <h3 style={{ color: "#a78bfa", fontWeight: 700, marginBottom: 12, fontSize: 14, display: "flex", alignItems: "center" }}>
+        Challenges
+        <HelpTip text="Head-to-head bets with specific friends. You pick your side and theirs, set the odds, and issue the challenge. They accept, the match settles, tokens move automatically." />
+      </h3>
 
       {(playerStreak > 0 || milestoneText) && (
         <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
@@ -60,16 +66,20 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             <div style={{
               background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
               borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#c4b5fd", fontWeight: 700,
+              display: "flex", alignItems: "center", gap: 2,
             }}>
               🔥 {playerStreak} streak{streakBonus ? ` — ${streakBonus} win bonus` : ""}
+              <HelpTip text="Win challenges in a row to boost your payout: 3-win streak = +10%, 4-win = +20%, 5+ win = +35%." />
             </div>
           )}
           {milestoneText && (
             <div style={{
               background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
               borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#4ade80", fontWeight: 700,
+              display: "flex", alignItems: "center", gap: 2,
             }}>
               🎯 {milestoneText}
+              <HelpTip text="Issue more challenges to unlock one-time token bonuses: 5 challenges → +50, 10 → +150, 20 → +400 tokens." />
             </div>
           )}
         </div>
@@ -84,7 +94,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
           {[
             { key: "1x2",           label: "1×2",      hint: "Match result" },
             { key: "correct_score", label: "Score",     hint: "Exact scoreline" },
-            { key: "btts",          label: "BTTS",      hint: "Both teams score" },
+            { key: "btts",          label: "Both Score", hint: "Both teams score at least one goal each" },
             { key: "totals",        label: "Goals",     hint: "Over / Under goals" },
             { key: "corners",       label: "🔺 Corners",  hint: "Over / Under corners" },
             { key: "offsides",      label: "🚩 Offsides", hint: "Over / Under offsides" },
@@ -112,7 +122,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
         <p style={{ color: "#4b5563", fontSize: 10, marginBottom: 8 }}>
           {betType === "1x2"           && "Your pick: team name or 'Draw'. Their pick: the opposing side."}
           {betType === "correct_score" && "Format: '2-1' (home-away). E.g. your pick '2-1', their pick '1-2'."}
-          {betType === "btts"          && "Pick 'Yes' or 'No'. Their pick is the opposite."}
+          {betType === "btts"          && "Both Teams To Score: pick 'Yes' (both teams score) or 'No' (at least one team keeps a clean sheet). Their pick is the opposite."}
           {betType === "totals"        && "E.g. 'Over 2.5' vs 'Under 2.5'. Agree on the line with your opponent."}
           {betType === "corners"       && "E.g. 'Over 9.5' vs 'Under 9.5'. Total corners in the match."}
           {betType === "offsides"      && "E.g. 'Over 3.5' vs 'Under 3.5'. Total offside calls in the match."}
@@ -140,8 +150,9 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             style={{ width: 60, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
               padding: "4px 8px", color: "#e2e8f0", fontSize: 12 }} />
         </div>
-        <p style={{ color: "#a78bfa", fontSize: 11, marginBottom: 8 }}>
+        <p style={{ color: "#a78bfa", fontSize: 11, marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
           Their counter-stake: <strong>{acceptorStake}</strong> tokens
+          <HelpTip text="Their stake = your stake × (your odds ÷ their odds). Lower their odds means they put in more to balance the bet." />
         </p>
         <button onClick={issue} disabled={loading}
           style={{ background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
@@ -187,6 +198,26 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
       )}
 
       {msg && <p style={{ color: msg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 12, marginTop: 8 }}>{msg}</p>}
+      {shareUrl && (
+        <button
+          onClick={() => {
+            const text = `⚽ I've challenged you on ${match.home_team} vs ${match.away_team}! Accept here: ${shareUrl}`
+            if (navigator.share) {
+              navigator.share({ title: "WC 2026 Challenge", text, url: shareUrl }).catch(() => {})
+            } else {
+              navigator.clipboard.writeText(text)
+              setMsg("✓ Link copied — send it to your opponent!")
+            }
+          }}
+          style={{
+            width: "100%", background: "#1e1b3a", border: "1px solid #a855f7",
+            borderRadius: 8, padding: "9px", fontSize: 13, fontWeight: 700,
+            color: "#a78bfa", cursor: "pointer", marginTop: 6,
+          }}
+        >
+          📤 Share challenge link
+        </button>
+      )}
     </div>
   )
 }

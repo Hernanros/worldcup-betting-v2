@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
 import { api } from "../api.js"
+import HelpTip            from "../components/HelpTip.jsx"
 import OverUnderMarket    from "../components/markets/OverUnderMarket.jsx"
 import ExactCountMarket   from "../components/markets/ExactCountMarket.jsx"
 import YesNoMarket        from "../components/markets/YesNoMarket.jsx"
@@ -67,7 +68,10 @@ export default function DeepCutsPage() {
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px 12px 80px" }}>
       <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1abc9c" }}>🔪 Deep Cuts</h2>
+        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1abc9c", display: "flex", alignItems: "center" }}>
+          🔪 Deep Cuts
+          <HelpTip text="Prop bets scoped to each tournament stage — from group stage all the way to the final. Each round has unique markets. Bets lock when that stage starts and settle when it ends." />
+        </h2>
         <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>Stage-specific proposition bets · unique markets each round</p>
       </div>
 
@@ -88,7 +92,7 @@ export default function DeepCutsPage() {
         })}
       </div>
 
-      {isLocked && <div style={{ padding: "10px 14px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #e74c3c", color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>🔒 This stage is locked — no new bets accepted.</div>}
+      {isLocked && <div style={{ padding: "10px 14px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #e74c3c", color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>🔒 This stage is locked — the matches have started, so no new bets are accepted. Your existing bets will settle when the stage ends.</div>}
       {error && <div style={{ padding: "10px 14px", background: "#2d0a0a", borderRadius: 8, color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>{error}</div>}
 
       {markets.map(market => {

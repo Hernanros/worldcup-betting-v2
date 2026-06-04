@@ -30,6 +30,7 @@ export default function MatchDetailPage() {
   const [myBet, setMyBet] = useState(null)
   const [playerStreak, setPlayerStreak] = useState(0)
   const [totalChallenges, setTotalChallenges] = useState(0)
+  const [wildcardsUsed, setWildcardsUsed] = useState(0)
 
   async function load() {
     setError(null)
@@ -45,6 +46,7 @@ export default function MatchDetailPage() {
       if (me) {
         setPlayerStreak(me.challenge_streak)
         setTotalChallenges(me.total_challenges_issued)
+        setWildcardsUsed(me.wildcards_used ?? 0)
       }
     } catch (err) {
       setError(err.message || "Match not found")
@@ -129,7 +131,16 @@ export default function MatchDetailPage() {
                 </div>
               </div>
             )}
-            <BetPanel match={match} odds={match.odds} onBetPlaced={(bal) => { load(); onBalanceChange?.(bal) }} />
+            <BetPanel
+              match={match}
+              odds={match.odds}
+              wildcardsUsed={wildcardsUsed}
+              onBetPlaced={(bal, newWildcardsUsed) => {
+                if (newWildcardsUsed !== undefined) setWildcardsUsed(newWildcardsUsed)
+                load()
+                onBalanceChange?.(bal)
+              }}
+            />
             <ChallengePanel
               match={match}
               challenges={match.open_challenges}
