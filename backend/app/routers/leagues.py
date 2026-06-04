@@ -5,7 +5,7 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_admin
-from app.models import League, Player, Match, TournamentBet
+from app.models import League, Player, Match, TournamentBet, InsurancePick
 from app.settlement import determine_totals_winner
 
 logger = logging.getLogger(__name__)
@@ -257,6 +257,32 @@ async def settle_tournament_bets(
             if player:
                 player.token_balance += int(bet.stake * bet.odds_at_placement)
         settled_count += 1
+
+    await db.commit()
+
+    # ── Settle insurance picks ─────────────────────────────────────────────
+    insurance_picks = (await db.execute(
+        select(InsurancePick).where(InsurancePick.status == "pending")
+    )).scalars().all()
+
+    for pick in insurance_picks:
+        if pick.bet_type == "winner":
+            pick_correct = pick.selection.lower() == winner_team.lower()
+        elif pick.bet_type == "golden_boot":
+            pick_correct = pick.selection.lower() == golden_boot_player.lower()
+        else:
+            pick_correct = False
+
+        primary = await db.get(TournamentBet, pick.tournament_bet_id)
+
+        if pick_correct and primary and primary.status == "lost":
+            pick.status = "correct"
+            payout = int(primary.stake * primary.odds_at_placement * 0.5)
+            ins_player = await db.get(Player, pick.player_id)
+            if ins_player:
+                ins_player.token_balance += payout
+        else:
+            pick.status = "wrong"
 
     await db.commit()
 
