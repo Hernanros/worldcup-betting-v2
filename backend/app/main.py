@@ -92,6 +92,18 @@ async def _run_migrations():
             logger.info("Adopted %d player(s) into league %d, removed %d duplicates",
                         adopted, league.id, deleted)
 
+        # Wildcard bets
+        await db.execute(text(
+            "ALTER TABLE bets ADD COLUMN IF NOT EXISTS is_wildcard BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await db.commit()
+
+        # Double-points predictions
+        await db.execute(text(
+            "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS is_double BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await db.commit()
+
         # Deep Cuts: new Match stat columns
         try:
             for col, typedef in [

@@ -85,6 +85,7 @@ class Bet(Base):
     stake = Column(Integer, nullable=False)
     odds_at_placement = Column(Float, nullable=False)
     status = Column(String(20), nullable=False, default="pending")
+    is_wildcard = Column(Boolean, nullable=False, default=False)
 
     player = relationship("Player", back_populates="bets")
     match = relationship("Match", back_populates="bets")
@@ -120,6 +121,7 @@ class Prediction(Base):
     away_score_pred = Column(Integer, nullable=False)
     status = Column(String(30), nullable=False, default="pending")
     points_awarded = Column(Integer, nullable=False, default=0)
+    is_double = Column(Boolean, nullable=False, default=False)
 
     __table_args__ = (UniqueConstraint("player_id", "match_id", name="uq_pred_player_match"),)
 
