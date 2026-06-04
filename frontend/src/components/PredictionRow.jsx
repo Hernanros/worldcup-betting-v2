@@ -1,6 +1,7 @@
 import { useState, useRef } from "react"
 import { api } from "../api.js"
 import { flagUrl } from "../data/teams.js"
+import HelpTip from "./HelpTip.jsx"
 
 function Flag({ name }) {
   const url = flagUrl(name, 40)
@@ -75,11 +76,12 @@ export default function PredictionRow({ entry, onSaved }) {
             fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
             background: pred.status === "correct_score" ? "#16a34a" :
                         pred.status === "correct_outcome" ? "#2563eb" : "#374151",
-            color: "#fff",
+            color: "#fff", display: "inline-flex", alignItems: "center", gap: 3,
           }}>
             {pred.status === "correct_score" ? "+3 pts ✓" :
              pred.status === "correct_outcome" ? "+1 pt ~" :
              pred.status === "wrong" ? "Wrong" : "Pending"}
+            <HelpTip text="Exact score (e.g. 2-1 = 2-1) earns 3 pts. Correct outcome (right winner or draw, wrong score) earns 1 pt. Pending means the match hasn't finished yet." />
           </span>
         )}
       </div>
