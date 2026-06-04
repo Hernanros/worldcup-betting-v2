@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { api } from "../api.js"
+import HelpTip from "./HelpTip.jsx"
 
 const MARKET_ICONS = {
   winner:      "🏆",
@@ -135,7 +136,12 @@ export default function TournamentBetPanel({ onBetPlaced }) {
       </div>
 
       {/* Market description */}
-      <p style={{ color: "#6b7280", fontSize: 12, marginBottom: 12 }}>{market.description}</p>
+      <p style={{ color: "#6b7280", fontSize: 12, marginBottom: 12, display: "flex", alignItems: "center", gap: 4 }}>
+        {market.description}
+        {activeMarket === "winner" && <HelpTip text="Pick the team that lifts the trophy. Odds reflect probability — favourites pay less. Lock date: June 11, 18:00 UTC." />}
+        {activeMarket === "golden_boot" && <HelpTip text="Top scorer of the entire tournament. Pick from the list or type any player name — unlisted players get 101x odds. Lock date: June 11, 18:00 UTC." />}
+        {activeMarket === "total_goals" && <HelpTip text="Over/Under on total goals across all 64 matches. WC 2026 averages ~2.5 goals per match. Lock date: June 11, 18:00 UTC." />}
+      </p>
 
       {/* Picklist (winner, total_goals, golden_boot listed players) */}
       {!locked && hasOptions && (
@@ -224,8 +230,9 @@ export default function TournamentBetPanel({ onBetPlaced }) {
             />
             <span style={{ color: "#6b7280", fontSize: 12 }}>tokens</span>
             {potentialWin && (
-              <span style={{ color: "#4ade80", fontSize: 12, marginLeft: "auto" }}>
+              <span style={{ color: "#4ade80", fontSize: 12, marginLeft: "auto", display: "flex", alignItems: "center", gap: 3 }}>
                 Win: {potentialWin.toLocaleString()}
+                <HelpTip text="Potential payout = stake × odds. Odds are locked at placement — they won't change if the market moves." />
               </span>
             )}
           </div>
