@@ -28,15 +28,16 @@ async def settle_match(db: AsyncSession, match: Match, result: dict) -> None:
     if result.get("espn_event_id") and not match.espn_event_id:
         match.espn_event_id = result["espn_event_id"]
 
+    # Enrich first so yellow cards / corners / offsides are on the match object
+    # before challenges are evaluated (non-blocking — settlement proceeds even on failure)
+    await _enrich_match_stats(db, match)
+
     await _settle_bets(db, match, result)
     await _expire_open_challenges(db, match)   # refund unaccepted challenges before settling
     await _settle_challenges(db, match, result)
     await _settle_predictions(db, match, result)
     await _propagate_winner(db, match, result)
     await db.commit()
-
-    # Enrich match stats (non-blocking — log and continue on failure)
-    await _enrich_match_stats(db, match)
 
 
 async def _enrich_match_stats(db: AsyncSession, match: Match) -> None:
@@ -84,12 +85,25 @@ def _evaluate_bet(bet_type, selection, match, result):
     if bet_type == "btts":
         return determine_btts_winner(selection, hs, as_)
     if bet_type == "corners":
-        return determine_totals_winner(selection, result.get("corners", 0))
+        # Use enriched per-team corners when available; fall back to legacy total
+        enriched = (match.home_corners or 0) + (match.away_corners or 0)
+        total = enriched or result.get("corners", 0)
+        return determine_totals_winner(selection, total)
     if bet_type == "yellow_cards":
-        return determine_totals_winner(selection, result.get("yellow_cards", 0))
+        enriched = (match.home_yellow_cards or 0) + (match.away_yellow_cards or 0)
+        total = enriched or result.get("yellow_cards", 0)
+        return determine_totals_winner(selection, total)
     if bet_type == "red_cards":
-        total_reds = result.get("home_red_cards", 0) + result.get("away_red_cards", 0)
-        return determine_totals_winner(selection, total_reds)
+        enriched = (match.home_red_cards or 0) + (match.away_red_cards or 0)
+        total = enriched or result.get("home_red_cards", 0) + result.get("away_red_cards", 0)
+        return determine_totals_winner(selection, total)
+    if bet_type == "offsides":
+        total = (match.home_offsides or 0) + (match.away_offsides or 0)
+        return determine_totals_winner(selection, total)
+    if bet_type == "total_cards":
+        total = ((match.home_yellow_cards or 0) + (match.away_yellow_cards or 0) +
+                 (match.home_red_cards or 0) + (match.away_red_cards or 0))
+        return determine_totals_winner(selection, total)
     if bet_type == "handicap":
         return determine_handicap_winner(selection, match.home_team, hs, as_)
     return False

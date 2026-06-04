@@ -17,16 +17,18 @@ Given a match and its current odds, suggest exactly 2 interesting P2P challenge 
 Respond ONLY with a valid JSON array — no markdown, no explanation, just the array.
 Each item in the array must have exactly these fields:
 {
-  "title": "short label for the bet type, e.g. 'Home Win' or 'Correct Score'",
-  "bet_type": "one of: 1x2, correct_score, btts, totals",
-  "my_pick": "issuer selection matching bet_type: team name for 1x2, 'H-A' for correct_score (e.g. '2-1'), 'Yes'/'No' for btts, 'Over N.5'/'Under N.5' for totals",
+  "title": "short label for the bet type, e.g. 'Home Win' or 'Corner Fest'",
+  "bet_type": "one of: 1x2, correct_score, btts, totals, corners, offsides, total_cards",
+  "my_pick": "issuer selection — team name for 1x2 | 'H-A' for correct_score (e.g. '2-1') | 'Yes'/'No' for btts | 'Over N.5'/'Under N.5' for totals/corners/offsides/total_cards",
   "their_pick": "acceptor's opposing selection in the same format",
   "my_odds": 2.5,
   "their_odds": 1.6,
   "stake": 100,
   "reason": "one sentence explaining why this pick is interesting"
 }
-Stakes should be between 50 and 300. Odds must be positive floats."""
+Stakes should be between 50 and 300. Odds must be positive floats.
+Vary the bet types across suggestions — don't suggest 1x2 twice.
+Typical WC lines: corners ~9.5, offsides ~3.5, total cards ~3.5."""
 
 
 def _build_prompt(match: Match, player: Player, odds: dict,
@@ -54,12 +56,24 @@ def _build_prompt(match: Match, player: Player, odds: dict,
                 {"name": match.away_team, "price": 2.8},
             ],
             "totals": [
-                {"name": "Over 2.5", "price": 2.0},
+                {"name": "Over 2.5",  "price": 2.0},
                 {"name": "Under 2.5", "price": 1.85},
             ],
             "btts": [
                 {"name": "Yes", "price": 2.0},
                 {"name": "No",  "price": 1.85},
+            ],
+            "corners": [
+                {"name": "Over 9.5",  "price": 1.90},
+                {"name": "Under 9.5", "price": 1.90},
+            ],
+            "offsides": [
+                {"name": "Over 3.5",  "price": 1.90},
+                {"name": "Under 3.5", "price": 1.90},
+            ],
+            "total_cards": [
+                {"name": "Over 3.5",  "price": 1.90},
+                {"name": "Under 3.5", "price": 1.90},
             ],
         }
     for market, outcomes in odds.items():

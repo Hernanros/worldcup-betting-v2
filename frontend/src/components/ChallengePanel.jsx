@@ -82,10 +82,13 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
         {/* Bet type selector */}
         <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
           {[
-            { key: "1x2",          label: "1×2",           hint: "Win / Draw / Win" },
-            { key: "correct_score", label: "Score",         hint: "Exact scoreline" },
-            { key: "btts",         label: "BTTS",           hint: "Both teams score" },
-            { key: "totals",       label: "Totals",         hint: "Over / Under goals" },
+            { key: "1x2",           label: "1×2",      hint: "Match result" },
+            { key: "correct_score", label: "Score",     hint: "Exact scoreline" },
+            { key: "btts",          label: "BTTS",      hint: "Both teams score" },
+            { key: "totals",        label: "Goals",     hint: "Over / Under goals" },
+            { key: "corners",       label: "🔺 Corners",  hint: "Over / Under corners" },
+            { key: "offsides",      label: "🚩 Offsides", hint: "Over / Under offsides" },
+            { key: "total_cards",   label: "🟨 Cards",    hint: "Over / Under total cards (Y+R)" },
           ].map(({ key, label, hint }) => (
             <button
               key={key}
@@ -111,6 +114,9 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
           {betType === "correct_score" && "Format: '2-1' (home-away). E.g. your pick '2-1', their pick '1-2'."}
           {betType === "btts"          && "Pick 'Yes' or 'No'. Their pick is the opposite."}
           {betType === "totals"        && "E.g. 'Over 2.5' vs 'Under 2.5'. Agree on the line with your opponent."}
+          {betType === "corners"       && "E.g. 'Over 9.5' vs 'Under 9.5'. Total corners in the match."}
+          {betType === "offsides"      && "E.g. 'Over 3.5' vs 'Under 3.5'. Total offside calls in the match."}
+          {betType === "total_cards"   && "E.g. 'Over 3.5' vs 'Under 3.5'. Total yellow + red cards combined."}
         </p>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
           <input placeholder="Your pick" value={selection} onChange={(e) => setSelection(e.target.value)}
