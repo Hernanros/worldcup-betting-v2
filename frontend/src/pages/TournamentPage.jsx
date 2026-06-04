@@ -3,6 +3,7 @@ import { api } from "../api.js"
 import { flagUrl } from "../data/teams.js"
 import TournamentBetPanel from "../components/TournamentBetPanel.jsx"
 import PageBackground from "../components/PageBackground.jsx"
+import HelpTip from "../components/HelpTip.jsx"
 
 const STATUS_COLOR = { pending: "#fbbf24", won: "#4ade80", lost: "#f87171" }
 
@@ -110,9 +111,12 @@ function GroupTable({ letter, rows }) {
         {/* Header */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 28px 28px 28px 28px 42px", alignItems: "center", padding: "0 12px 6px", borderBottom: "1px solid #2d2b55", marginBottom: 4 }}>
           <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textTransform: "uppercase" }}>Team</span>
-          {["P", "W", "D", "L", "Pts"].map(h => (
+          {["P", "W", "D", "L"].map(h => (
             <span key={h} style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center" }}>{h}</span>
           ))}
+          <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+            Pts<HelpTip text="P=Played W=Wins D=Draws L=Losses Pts=Points (3 for a win, 1 for a draw). Top 2 in each group advance automatically; 3rd enters the wildcard race." />
+          </span>
         </div>
         {/* Rows */}
         {rows.map((row, idx) => {
@@ -146,8 +150,9 @@ function GroupTable({ letter, rows }) {
 function WildcardsTable({ wildcards }) {
   return (
     <div style={{ marginBottom: 20 }}>
-      <div style={{ fontSize: 11, fontWeight: 800, color: "#fbbf24", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6 }}>
+      <div style={{ fontSize: 11, fontWeight: 800, color: "#fbbf24", letterSpacing: 2, textTransform: "uppercase", marginBottom: 6, display: "flex", alignItems: "center", gap: 4 }}>
         🃏 Wildcard Race — Best 3rd-Place (Top 8 Advance)
+        <HelpTip text="In WC 2026, all 12 groups produce one 3rd-place team. The 8 best 3rd-place teams advance to the Round of 32 as wildcards. Ranked by: points → goal difference → goals scored." />
       </div>
       <div style={{ ...CARD, padding: "8px 0", marginBottom: 0 }}>
         {/* Header */}
@@ -156,7 +161,9 @@ function WildcardsTable({ wildcards }) {
           <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textTransform: "uppercase" }}>Team</span>
           <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center" }}>Grp</span>
           <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center" }}>Pts</span>
-          <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center" }}>GD</span>
+          <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 1 }}>
+            GD<HelpTip text="Goal Difference = goals scored minus goals conceded. Used as tiebreaker when points are equal." />
+          </span>
           <span style={{ fontSize: 10, color: "#6b7280", fontWeight: 700, textAlign: "center" }}>GF</span>
         </div>
         {wildcards.map((row) => {
@@ -234,7 +241,7 @@ function BracketMatch({ m }) {
         ? <TeamFlag name={name} size={18} />
         : <span style={{ fontSize: 14, width: 20 }}>❓</span>}
       <span style={{ flex: 1, fontSize: 12, color: confirmed ? "#e2e8f0" : "#6b7280", fontWeight: won ? 700 : 400, fontStyle: confirmed ? "normal" : "italic", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-        {confirmed ? name : "TBD"}
+        {confirmed ? name : <span style={{ display: "inline-flex", alignItems: "center", gap: 3 }}>TBD<HelpTip text="To Be Determined — this slot fills in once the previous round match is settled." /></span>}
       </span>
       {isFinished && (
         <span style={{ fontSize: 13, fontWeight: 700, color: won ? "#4ade80" : "#9ca3af", minWidth: 14, textAlign: "right" }}>
