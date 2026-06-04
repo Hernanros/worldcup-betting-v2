@@ -170,3 +170,20 @@ class SpicyDismissal(Base):
     __table_args__ = (UniqueConstraint("player_id", "stage", name="uq_dismiss_player_stage"),)
 
     player = relationship("Player", backref="spicy_dismissals")
+
+
+class InsurancePick(Base):
+    """Free second pick on winner/golden_boot tournament markets.
+    Pays int(primary.stake * primary.odds_at_placement * 0.5) tokens if
+    primary bet lost AND this pick is correct.
+    """
+    __tablename__ = "insurance_picks"
+    id                = Column(Integer, primary_key=True)
+    player_id         = Column(Integer, ForeignKey("players.id"), nullable=False)
+    tournament_bet_id = Column(Integer, ForeignKey("tournament_bets.id"), nullable=False)
+    bet_type          = Column(String(30), nullable=False)   # "winner" or "golden_boot"
+    selection         = Column(String(100), nullable=False)
+    status            = Column(String(20), nullable=False, default="pending")  # pending/correct/wrong
+
+    player          = relationship("Player", backref="insurance_picks")
+    tournament_bet  = relationship("TournamentBet", backref="insurance_pick", uselist=False)

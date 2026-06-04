@@ -104,6 +104,19 @@ async def _run_migrations():
         ))
         await db.commit()
 
+        # Insurance picks table
+        await db.execute(text("""
+            CREATE TABLE IF NOT EXISTS insurance_picks (
+                id SERIAL PRIMARY KEY,
+                player_id INTEGER NOT NULL REFERENCES players(id),
+                tournament_bet_id INTEGER NOT NULL REFERENCES tournament_bets(id),
+                bet_type VARCHAR(30) NOT NULL,
+                selection VARCHAR(100) NOT NULL,
+                status VARCHAR(20) NOT NULL DEFAULT 'pending'
+            )
+        """))
+        await db.commit()
+
         # Deep Cuts: new Match stat columns
         try:
             for col, typedef in [
