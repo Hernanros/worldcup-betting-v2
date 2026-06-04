@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { api } from "../api.js"
 import { getLeague } from "../auth.js"
 import PageBackground from "../components/PageBackground.jsx"
+import HelpTip from "../components/HelpTip.jsx"
 
 export default function AIPage() {
   const navigate = useNavigate()
@@ -73,7 +74,10 @@ export default function AIPage() {
       <PageBackground momentKey="iniesta_2010" />
       <div style={{ padding: "16px 16px 8px" }}>
         <div style={{ fontSize: 24 }}>🤖</div>
-        <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>AI Assistant</div>
+        <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4, display: "flex", alignItems: "center", gap: 6 }}>
+          AI Assistant
+          <HelpTip text="Claude analyses the current odds for a match and suggests 3 challenge ideas — each with picks, odds, and a reason. Hit 'Use This' to pre-fill the challenge form." />
+        </div>
       </div>
       <div style={{ padding: 16, maxWidth: 480, margin: "0 auto" }}>
         <p style={{ color: "#6b7280", fontSize: 13, marginBottom: 20 }}>
@@ -139,7 +143,10 @@ export default function AIPage() {
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
               <div style={{ textAlign: "center", flex: 1 }}>
-                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>Your pick</div>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                  Your pick
+                  <HelpTip text="The side of the bet you'd take. If you win, you receive stake × your odds in tokens." />
+                </div>
                 <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14 }}>{s.my_pick}</div>
                 <div style={{ color: "#4ade80", fontSize: 11 }}>{s.my_odds}x</div>
               </div>
