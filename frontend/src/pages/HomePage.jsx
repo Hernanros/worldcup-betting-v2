@@ -6,6 +6,7 @@ import MatchCard from "../components/MatchCard.jsx"
 import LeaderboardRow from "../components/LeaderboardRow.jsx"
 import PageBackground from "../components/PageBackground.jsx"
 import DeepCutsBanner from "../components/DeepCutsBanner.jsx"
+import HelpTip from "../components/HelpTip.jsx"
 
 export default function HomePage() {
   const navigate = useNavigate()
@@ -74,15 +75,29 @@ export default function HomePage() {
           display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 20,
         }}>
           {[
-            { label: "💰 Tokens", value: (player?.token_balance ?? 0).toLocaleString() },
-            { label: "🎯 Pred. pts", value: loading ? "…" : `${predictionPts}` },
-            { label: "📊 Rank", value: loading ? "…" : (myRank ? `#${myRank}` : "—") },
-          ].map(({ label, value }) => (
+            {
+              label: "💰 Tokens",
+              value: (player?.token_balance ?? 0).toLocaleString(),
+              tip: "Your in-game currency. Win bets, challenges, and predictions to earn more. Tokens don't expire — they persist until the final is settled.",
+            },
+            {
+              label: "🎯 Pred. pts",
+              value: loading ? "…" : `${predictionPts}`,
+              tip: "Points earned from score predictions: exact scoreline = 3 pts, correct match outcome = 1 pt. Displayed separately from token winnings.",
+            },
+            {
+              label: "📊 Rank",
+              value: loading ? "…" : (myRank ? `#${myRank}` : "—"),
+              tip: "Your position in the token leaderboard — highest token balance wins. Tie-broken alphabetically. Check Rankings for all tabs.",
+            },
+          ].map(({ label, value, tip }) => (
             <div key={label} style={{
               background: "#13131f", border: "1px solid #2d2b55",
               borderRadius: 10, padding: "10px 8px", textAlign: "center",
             }}>
-              <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>{label}</div>
+              <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
+                {label} <HelpTip text={tip} />
+              </div>
               <div className="gradient-text" style={{ fontWeight: 800, fontSize: 16 }}>{value}</div>
             </div>
           ))}
@@ -138,9 +153,19 @@ export default function HomePage() {
                   <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 13 }}>{b.selection}</div>
                 </div>
                 <div style={{ textAlign: "right" }}>
-                  <div style={{ color: "#fbbf24", fontSize: 10, fontWeight: 700 }}>PENDING</div>
+                  <div style={{ display: "flex", gap: 4, justifyContent: "flex-end", alignItems: "center", marginBottom: 2 }}>
+                    {b.is_wildcard && (
+                      <span style={{ color: "#fbbf24", fontSize: 9, fontWeight: 700,
+                        background: "rgba(251,191,36,0.15)", border: "1px solid rgba(251,191,36,0.4)",
+                        borderRadius: 4, padding: "1px 5px", display: "inline-flex", alignItems: "center", gap: 2 }}>
+                        🃏 2×
+                        <HelpTip text="Wildcard bet — if you win, payout is doubled. You had 3 wildcards for the whole tournament." />
+                      </span>
+                    )}
+                    <div style={{ color: "#fbbf24", fontSize: 10, fontWeight: 700 }}>PENDING</div>
+                  </div>
                   <div style={{ color: "#4ade80", fontSize: 12, fontWeight: 600 }}>
-                    +{Math.floor(b.stake * b.odds).toLocaleString()}
+                    +{Math.floor(b.stake * b.odds * (b.is_wildcard ? 2 : 1)).toLocaleString()}
                   </div>
                 </div>
               </div>
