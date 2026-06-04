@@ -15,27 +15,37 @@ def _normalize_db_url(url: str) -> str:
 
 
 async def _run_migrations():
-    """Idempotent schema migrations — safe to run on every startup."""
+    """Idempotent schema migrations — safe to run on every startup.
+
+    ORDERING RULE: ALL DDL (ALTER TABLE / CREATE TABLE) must run before any
+    ORM-based queries.  SQLAlchemy's autoflush will try to SELECT every column
+    the ORM model knows about; if a column hasn't been added yet the query
+    will fail with UndefinedColumnError.  Keep DDL first, data migrations last.
+    """
     from sqlalchemy import text, select
     from app.database import AsyncSessionLocal
     from app.models import League, Player
 
     async with AsyncSessionLocal() as db:
-        # 1. Add league_id column to players if it doesn't exist yet
+
+        # ── PHASE 1: SCHEMA DDL ──────────────────────────────────────────────
+        # Run every ALTER / CREATE before any ORM query touches the session.
+
+        # players.league_id
         await db.execute(text(
             "ALTER TABLE players ADD COLUMN IF NOT EXISTS "
             "league_id INTEGER REFERENCES leagues(id)"
         ))
         await db.commit()
 
-        # 2. Drop the old single-column unique constraint on name if present
+        # Drop stale single-column unique constraint on players.name
         for cname in ("players_name_key", "ix_players_name", "uq_player_name"):
             await db.execute(text(
                 f"ALTER TABLE players DROP CONSTRAINT IF EXISTS {cname}"
             ))
         await db.commit()
 
-        # 3. Add composite unique constraint (name, league_id) — ignore if already exists
+        # Composite unique constraint (name, league_id)
         try:
             await db.execute(text(
                 "ALTER TABLE players ADD CONSTRAINT uq_player_name_league "
@@ -45,73 +55,31 @@ async def _run_migrations():
         except Exception:
             await db.rollback()
 
-        # 3b. Add ai_enabled column to leagues if missing (backfill True)
+        # leagues.ai_enabled
         await db.execute(text(
             "ALTER TABLE leagues ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN NOT NULL DEFAULT TRUE"
         ))
         await db.commit()
 
-        # 4. Ensure a default league exists (uses settings.invite_code so existing
-        #    players can continue joining with their old code)
-        default_code = settings.invite_code
-        default_name = "Friends 2026"
-        existing = (await db.execute(
-            select(League).where(League.invite_code == default_code)
-        )).scalar_one_or_none()
-
-        if not existing:
-            league = League(name=default_name, invite_code=default_code)
-            db.add(league)
-            await db.commit()
-            await db.refresh(league)
-            logger.info("Created default league '%s' (code: %s)", default_name, default_code)
-        else:
-            league = existing
-
-        # 5a. Add is_admin column to players if missing
+        # players.is_admin  (must be before any ORM Player query)
         await db.execute(text(
             "ALTER TABLE players ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE"
         ))
         await db.commit()
 
-        # 5b. Adopt pre-multi-league orphan players (league_id=NULL, is_admin=FALSE)
-        #     into the default league. Admin players (is_admin=TRUE) are intentionally
-        #     kept with league_id=NULL so they can see all groups.
-        orphans = (await db.execute(
-            select(Player).where(Player.league_id.is_(None), Player.is_admin.is_(False))
-        )).scalars().all()
-        adopted = deleted = 0
-        for p in orphans:
-            collision = (await db.execute(
-                select(Player).where(
-                    Player.name == p.name,
-                    Player.league_id == league.id,
-                )
-            )).scalar_one_or_none()
-            if collision:
-                await db.delete(p)
-                deleted += 1
-            else:
-                p.league_id = league.id
-                adopted += 1
-        if orphans:
-            await db.commit()
-            logger.info("Adopted %d player(s) into league %d, removed %d duplicates",
-                        adopted, league.id, deleted)
-
-        # Wildcard bets
+        # bets.is_wildcard  (must be before any ORM Bet query / autoflush)
         await db.execute(text(
             "ALTER TABLE bets ADD COLUMN IF NOT EXISTS is_wildcard BOOLEAN NOT NULL DEFAULT FALSE"
         ))
         await db.commit()
 
-        # Double-points predictions
+        # predictions.is_double
         await db.execute(text(
             "ALTER TABLE predictions ADD COLUMN IF NOT EXISTS is_double BOOLEAN NOT NULL DEFAULT FALSE"
         ))
         await db.commit()
 
-        # Insurance picks table
+        # insurance_picks table
         await db.execute(text("""
             CREATE TABLE IF NOT EXISTS insurance_picks (
                 id SERIAL PRIMARY KEY,
@@ -148,6 +116,50 @@ async def _run_migrations():
         except Exception:
             await db.rollback()
             raise
+
+        # ── PHASE 2: DATA MIGRATIONS (ORM queries) ───────────────────────────
+        # All columns exist now — autoflush is safe.
+
+        # Ensure a default league exists (uses settings.invite_code so existing
+        # players can continue joining with their old code)
+        default_code = settings.invite_code
+        default_name = "Friends 2026"
+        existing = (await db.execute(
+            select(League).where(League.invite_code == default_code)
+        )).scalar_one_or_none()
+
+        if not existing:
+            league = League(name=default_name, invite_code=default_code)
+            db.add(league)
+            await db.commit()
+            await db.refresh(league)
+            logger.info("Created default league '%s' (code: %s)", default_name, default_code)
+        else:
+            league = existing
+
+        # Adopt pre-multi-league orphan players (league_id=NULL, is_admin=FALSE)
+        # into the default league. Admin players stay at NULL intentionally.
+        orphans = (await db.execute(
+            select(Player).where(Player.league_id.is_(None), Player.is_admin.is_(False))
+        )).scalars().all()
+        adopted = deleted = 0
+        for p in orphans:
+            collision = (await db.execute(
+                select(Player).where(
+                    Player.name == p.name,
+                    Player.league_id == league.id,
+                )
+            )).scalar_one_or_none()
+            if collision:
+                await db.delete(p)
+                deleted += 1
+            else:
+                p.league_id = league.id
+                adopted += 1
+        if orphans:
+            await db.commit()
+            logger.info("Adopted %d player(s) into league %d, removed %d duplicates",
+                        adopted, league.id, deleted)
 
 
 @asynccontextmanager
