@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_current_player
@@ -8,7 +8,6 @@ from app.deep_cuts_config import WC2026_GROUPS
 
 router = APIRouter()
 
-# Reverse lookup: team name → group letter (A–L), built once at import time
 _TEAM_TO_GROUP: dict[str, str] = {
     team: letter
     for letter, teams in WC2026_GROUPS.items()
@@ -36,8 +35,11 @@ async def get_predictions(auth=Depends(get_current_player), db: AsyncSession = D
             "away_team_confirmed": m.away_team_confirmed,
             "home_score": m.home_score, "away_score": m.away_score,
             "my_prediction": {
-                "home_score_pred": pred.home_score_pred, "away_score_pred": pred.away_score_pred,
-                "status": pred.status, "points_awarded": pred.points_awarded,
+                "home_score_pred": pred.home_score_pred,
+                "away_score_pred": pred.away_score_pred,
+                "status": pred.status,
+                "points_awarded": pred.points_awarded,
+                "is_double": pred.is_double,
             } if pred else None,
         })
     return result
@@ -54,24 +56,58 @@ async def save_prediction(data: dict, auth=Depends(get_current_player), db: Asyn
     if not match.home_team_confirmed or not match.away_team_confirmed:
         raise HTTPException(400, "teams not yet confirmed")
 
+    is_double = bool(data.get("is_double", False))
+
     existing = (await db.execute(
-        select(Prediction).where(Prediction.player_id == player.id, Prediction.match_id == data["match_id"])
+        select(Prediction).where(
+            Prediction.player_id == player.id,
+            Prediction.match_id == data["match_id"],
+        )
     )).scalar_one_or_none()
+
+    # Only check limit when newly activating is_double (not when updating existing double)
+    currently_double = existing.is_double if existing else False
+    if is_double and not currently_double:
+        doubles_used = (await db.execute(
+            select(func.count(Prediction.id)).where(
+                Prediction.player_id == player.id,
+                Prediction.is_double == True,  # noqa: E712
+            )
+        )).scalar() or 0
+        if doubles_used >= 3:
+            raise HTTPException(400, "You have already used all 3 double-point picks")
 
     if existing:
         existing.home_score_pred = int(data["home_score_pred"])
         existing.away_score_pred = int(data["away_score_pred"])
+        existing.is_double = is_double
         pred = existing
     else:
         pred = Prediction(
-            player_id=player.id, match_id=data["match_id"],
+            player_id=player.id,
+            match_id=data["match_id"],
             home_score_pred=int(data["home_score_pred"]),
             away_score_pred=int(data["away_score_pred"]),
+            is_double=is_double,
         )
         db.add(pred)
 
     await db.commit()
     await db.refresh(pred)
-    return {"id": pred.id, "home_score_pred": pred.home_score_pred,
-            "away_score_pred": pred.away_score_pred, "status": pred.status,
-            "points_awarded": pred.points_awarded}
+
+    doubles_used_after = (await db.execute(
+        select(func.count(Prediction.id)).where(
+            Prediction.player_id == player.id,
+            Prediction.is_double == True,  # noqa: E712
+        )
+    )).scalar() or 0
+
+    return {
+        "id": pred.id,
+        "home_score_pred": pred.home_score_pred,
+        "away_score_pred": pred.away_score_pred,
+        "status": pred.status,
+        "points_awarded": pred.points_awarded,
+        "is_double": pred.is_double,
+        "doubles_used": doubles_used_after,
+    }
