@@ -9,6 +9,7 @@ const BASE_TABS = [
   { to: "/deep-cuts",  icon: "🔪", label: "Deep Cuts" },
   { to: "/rankings",   icon: "📊", label: "Rankings" },
   { to: "/ai",         icon: "🤖", label: "AI", requiresAI: true },
+  { to: "/help",       icon: "❓", label: "Help" },
 ]
 
 export default function BottomNav() {
