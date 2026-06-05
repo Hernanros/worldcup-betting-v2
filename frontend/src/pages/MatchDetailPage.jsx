@@ -1,7 +1,7 @@
+// frontend/src/pages/MatchDetailPage.jsx
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, useLocation, useOutletContext } from "react-router-dom"
 import { api } from "../api.js"
-import BetPanel from "../components/BetPanel.jsx"
 import ChallengePanel from "../components/ChallengePanel.jsx"
 import PageBackground from "../components/PageBackground.jsx"
 import { getMomentForMatch } from "../data/moments.js"
@@ -27,26 +27,20 @@ export default function MatchDetailPage() {
   const [match, setMatch] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [myBet, setMyBet] = useState(null)
   const [playerStreak, setPlayerStreak] = useState(0)
   const [totalChallenges, setTotalChallenges] = useState(0)
-  const [wildcardsUsed, setWildcardsUsed] = useState(0)
 
   async function load() {
     setError(null)
     try {
-      const [data, bets, me] = await Promise.all([
+      const [data, me] = await Promise.all([
         api.get(`/api/matches/${id}`),
-        api.get("/api/bets").catch(() => []),
         api.get("/api/me").catch(() => null),
       ])
       setMatch(data)
-      const existing = (bets || []).find((b) => b.match_id === Number(id))
-      setMyBet(existing ?? null)
       if (me) {
         setPlayerStreak(me.challenge_streak)
         setTotalChallenges(me.total_challenges_issued)
-        setWildcardsUsed(me.wildcards_used ?? 0)
       }
     } catch (err) {
       setError(err.message || "Match not found")
@@ -57,12 +51,12 @@ export default function MatchDetailPage() {
 
   useEffect(() => { load() }, [id])
 
-  // Auto-scroll to challenges section if ?tab=challenges in URL
+  // Auto-scroll to dare panel when ?tab=challenges
   useEffect(() => {
     const params = new URLSearchParams(location.search)
     if (params.get("tab") === "challenges") {
       setTimeout(() => {
-        document.getElementById("challenges-panel")?.scrollIntoView({ behavior: "smooth", block: "start" })
+        document.getElementById("dare-panel")?.scrollIntoView({ behavior: "smooth", block: "start" })
       }, 400)
     }
   }, [location.search, loading])
@@ -77,13 +71,12 @@ export default function MatchDetailPage() {
   if (!match) return null
 
   const isUpcoming = match.status === "upcoming"
-
   const momentKey = getMomentForMatch(match.home_team, match.away_team).key
 
   return (
     <div>
       <PageBackground momentKey={momentKey} />
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: 16, paddingBottom: 80 }}>
         <button onClick={() => navigate(-1)}
           style={{ color: "#a78bfa", background: "none", border: "none", fontSize: 13, cursor: "pointer", marginBottom: 16 }}>
           ← Back
@@ -92,83 +85,89 @@ export default function MatchDetailPage() {
         {/* Match header */}
         <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12,
           padding: 20, marginBottom: 16, textAlign: "center" }}>
+          <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 1, marginBottom: 12 }}>
+            {match.round}
+          </div>
           <div style={{ display: "flex", justifyContent: "space-around", alignItems: "center" }}>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
               <TeamFlag name={match.home_team} />
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", marginTop: 6 }}>{match.home_team}</div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#e2e8f0", marginTop: 6,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
+                {match.home_team}
+              </div>
               {match.home_score !== null && (
                 <div className="gradient-text" style={{ fontSize: 32, fontWeight: 800, marginTop: 6 }}>{match.home_score}</div>
               )}
             </div>
-            <div style={{ color: "#6b7280" }}>
-              <div style={{ fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1 }}>
-                {match.status === "locked" && match.home_score !== null ? "LIVE" : match.status}
-              </div>
+            <div style={{ color: "#4b5563", fontWeight: 800, fontSize: 20, padding: "0 8px" }}>
+              {match.home_score !== null ? "–" : "vs"}
             </div>
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+            <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flex: 1 }}>
               <TeamFlag name={match.away_team} />
-              <div style={{ fontWeight: 700, fontSize: 14, color: "#e2e8f0", marginTop: 6 }}>{match.away_team}</div>
+              <div style={{ fontWeight: 700, fontSize: 13, color: "#e2e8f0", marginTop: 6,
+                overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 100 }}>
+                {match.away_team}
+              </div>
               {match.away_score !== null && (
                 <div className="gradient-text" style={{ fontSize: 32, fontWeight: 800, marginTop: 6 }}>{match.away_score}</div>
               )}
             </div>
           </div>
+          {match.status !== "upcoming" && (
+            <div style={{ marginTop: 10, color: "#6b7280", fontSize: 11, fontWeight: 700,
+              textTransform: "uppercase", letterSpacing: 1 }}>
+              {match.status === "locked" && match.home_score !== null ? "🔴 LIVE" : match.status}
+            </div>
+          )}
         </div>
 
-        {isUpcoming && (
-          <>
-            {myBet && (
-              <div style={{
-                background: "#13131f", border: "1px solid #2d2b55",
-                borderRadius: 10, padding: "12px 16px", marginBottom: 12,
-              }}>
-                <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700,
-                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
-                  Your Bet
-                </div>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 14 }}>{myBet.selection}</div>
-                    <div style={{ color: "#6b7280", fontSize: 11 }}>
-                      {myBet.stake} tokens @ {myBet.odds}x →{" "}
-                      <span style={{ color: "#4ade80" }}>win {Math.floor(myBet.stake * myBet.odds).toLocaleString()}</span>
-                    </div>
-                  </div>
-                  <span style={{
-                    color: "#fbbf24", fontSize: 10, fontWeight: 700,
-                    background: "#0c0c14", padding: "3px 8px", borderRadius: 999, border: "1px solid #2d2b55",
-                  }}>PENDING</span>
-                </div>
-              </div>
-            )}
-            <BetPanel
-              match={match}
-              odds={match.odds}
-              wildcardsUsed={wildcardsUsed}
-              onBetPlaced={(bal, newWildcardsUsed) => {
-                if (newWildcardsUsed !== undefined) setWildcardsUsed(newWildcardsUsed)
-                load()
-                onBalanceChange?.(bal)
-              }}
-            />
-            <div id="challenges-panel">
-              <ChallengePanel
-                match={match}
-                challenges={match.open_challenges}
-                onUpdate={load}
-                onBalanceChange={onBalanceChange}
-                prefill={prefill}
-                playerStreak={playerStreak}
-                totalChallenges={totalChallenges}
-              />
-            </div>
-          </>
-        )}
+        {/* Quick action links */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
+          <button onClick={() => navigate("/predict")} style={{
+            background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10,
+            padding: "10px 8px", cursor: "pointer", textAlign: "center",
+          }}>
+            <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>🎯 Predict</div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>Guess the exact score</div>
+          </button>
+          <button onClick={() => navigate("/deep-cuts")} style={{
+            background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10,
+            padding: "10px 8px", cursor: "pointer", textAlign: "center",
+          }}>
+            <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>🔪 Deep Cuts</div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>Prop bets for this stage</div>
+          </button>
+        </div>
 
-        {!isUpcoming && (
-          <p style={{ color: "#6b7280", textAlign: "center", fontSize: 14 }}>
-            Betting is closed for this match.
-          </p>
+        {/* Dare panel */}
+        {isUpcoming ? (
+          <div id="dare-panel">
+            <ChallengePanel
+              match={match}
+              challenges={match.open_challenges}
+              onUpdate={load}
+              onBalanceChange={onBalanceChange}
+              prefill={prefill}
+              playerStreak={playerStreak}
+              totalChallenges={totalChallenges}
+            />
+          </div>
+        ) : (
+          <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12,
+            padding: 20, textAlign: "center" }}>
+            <div style={{ color: "#6b7280", fontSize: 13 }}>
+              {match.status === "finished"
+                ? "This match has finished. Dares have been settled."
+                : "Dares lock at kick-off. Check back for the next match!"}
+            </div>
+            <button onClick={() => navigate("/matches")} style={{
+              marginTop: 12, background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
+              border: "none", borderRadius: 8, padding: "8px 20px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+            }}>
+              All matches →
+            </button>
+          </div>
         )}
       </div>
     </div>
