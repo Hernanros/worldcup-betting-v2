@@ -12,6 +12,8 @@ const DARE_TYPES = [
   { key: "total_cards",  label: "🟨 Cards Line",   short: "Cards",        yesNo: false, hint: "Over/Under total cards (yellow + red)",     presets: ["Over 2.5", "Over 3.5", "Under 3.5", "Under 4.5"] },
   { key: "corners",      label: "🔺 Corners Line", short: "Corners",      yesNo: false, hint: "Over/Under total corner kicks",             presets: ["Over 8.5", "Over 9.5", "Over 10.5", "Under 9.5"] },
   { key: "offsides",     label: "🚩 Offsides Line",short: "Offsides",     yesNo: false, hint: "Over/Under total offside calls in the match", presets: ["Over 2.5", "Over 3.5", "Under 3.5"] },
+  { key: "handicap", label: "🎲 Handicap", short: "Handicap", yesNo: false, handicap: true,
+    hint: "Give a team a head start: 'Argentina +1.5' wins even if they draw or lose by 1 goal" },
 ]
 
 function oppositeOf(type, sel) {
@@ -57,6 +59,69 @@ function PresetChips({ presets, value, onChange }) {
           {p}
         </button>
       ))}
+    </div>
+  )
+}
+
+/* ── Handicap picker ───────────────────────────────────────── */
+function HandicapPicker({ match, selection, onPick }) {
+  const LINES = ["+0.5", "+1", "+1.5", "+2", "+2.5"]
+  // Parse current selection if any: "Argentina +1.5" → team="Argentina", line="+1.5"
+  const parts = selection ? selection.split(" ") : []
+  const currentLine = parts.length >= 2 ? parts[parts.length - 1] : null
+  const currentTeam = parts.length >= 2 ? parts.slice(0, -1).join(" ") : null
+
+  function pick(team, line) {
+    const otherTeam = team === match.home_team ? match.away_team : match.home_team
+    const neg = line.replace("+", "-")
+    // issuerSel used for settlement; acceptorSel is display-only
+    onPick(`${team} ${line}`, `${otherTeam} ${neg}`)
+  }
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 6 }}>
+        Which team gets the head-start?
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
+        {[match.home_team, match.away_team].map(team => (
+          <button key={team} onClick={() => pick(team, currentLine || "+1")} style={{
+            padding: "8px 4px", borderRadius: 8, fontSize: 11, fontWeight: 700,
+            cursor: "pointer", border: "1px solid",
+            background: currentTeam === team ? "rgba(168,85,247,0.2)" : "transparent",
+            borderColor: currentTeam === team ? "rgba(168,85,247,0.6)" : "#2d2b55",
+            color: currentTeam === team ? "#c4b5fd" : "#6b7280",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+          }}>
+            {team}
+          </button>
+        ))}
+      </div>
+      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>
+        Head-start (goals)
+      </div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {LINES.map(line => (
+          <button key={line} onClick={() => pick(currentTeam || match.home_team, line)} style={{
+            padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700,
+            cursor: "pointer", border: "1px solid",
+            background: currentLine === line ? "rgba(168,85,247,0.2)" : "transparent",
+            borderColor: currentLine === line ? "rgba(168,85,247,0.6)" : "#2d2b55",
+            color: currentLine === line ? "#c4b5fd" : "#6b7280",
+          }}>
+            {line}
+          </button>
+        ))}
+      </div>
+      {selection && (
+        <div style={{ marginTop: 8, padding: "6px 10px", background: "rgba(168,85,247,0.08)",
+          borderRadius: 8, border: "1px solid rgba(168,85,247,0.2)" }}>
+          <span style={{ color: "#c4b5fd", fontSize: 11 }}>
+            You back: <strong>{selection}</strong>
+            {" "}(they still "win" even if they lose by less than {currentLine?.replace("+", "")} {currentLine === "+1" ? "goal" : "goals"})
+          </span>
+        </div>
+      )}
     </div>
   )
 }
@@ -193,6 +258,12 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             <YesNoPicker label="Their call (auto)" value={acceptorSelection}
               onChange={v => { setAcceptorSelection(v); setSelection(oppositeOf(currentType, v)) }} />
           </div>
+        ) : currentType.handicap ? (
+          <HandicapPicker
+            match={match}
+            selection={selection}
+            onPick={(sel, acceptSel) => { setSelection(sel); setAcceptorSelection(acceptSel) }}
+          />
         ) : (
           <div style={{ marginBottom: 10 }}>
             {currentType.presets && (
