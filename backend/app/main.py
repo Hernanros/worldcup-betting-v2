@@ -139,10 +139,14 @@ async def _run_migrations():
 
         # Adopt pre-multi-league orphan players (league_id=NULL, is_admin=FALSE)
         # into the default league. Admin players stay at NULL intentionally.
+        # NEVER delete a player — if there is a name collision just skip that orphan;
+        # deleting triggers SQLAlchemy FK nullification which violates NOT NULL on
+        # child tables (tournament_bets, bets, etc.).
+        from sqlalchemy import text as _text
         orphans = (await db.execute(
             select(Player).where(Player.league_id.is_(None), Player.is_admin.is_(False))
         )).scalars().all()
-        adopted = deleted = 0
+        adopted = skipped = 0
         for p in orphans:
             collision = (await db.execute(
                 select(Player).where(
@@ -151,15 +155,14 @@ async def _run_migrations():
                 )
             )).scalar_one_or_none()
             if collision:
-                await db.delete(p)
-                deleted += 1
+                skipped += 1  # keep the orphan — do not delete it
             else:
                 p.league_id = league.id
                 adopted += 1
         if orphans:
             await db.commit()
-            logger.info("Adopted %d player(s) into league %d, removed %d duplicates",
-                        adopted, league.id, deleted)
+            logger.info("Adopted %d player(s) into league %d, skipped %d collision(s)",
+                        adopted, league.id, skipped)
 
 
 @asynccontextmanager
