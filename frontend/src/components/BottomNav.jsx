@@ -5,10 +5,10 @@ const BASE_TABS = [
   { to: "/",           icon: "🏠", label: "Home" },
   { to: "/matches",    icon: "⚽", label: "Matches" },
   { to: "/predict",    icon: "🎯", label: "Predict" },
+  { to: "/ai",         icon: "🤖", label: "AI",       requiresAI: true },
   { to: "/tournament", icon: "🏆", label: "Tournmt" },
-  { to: "/deep-cuts",  icon: "🔪", label: "Deep Cuts" },
+  { to: "/deep-cuts",  icon: "🔪", label: "Cuts" },
   { to: "/rankings",   icon: "📊", label: "Rankings" },
-  { to: "/ai",         icon: "🤖", label: "AI", requiresAI: true },
   { to: "/help",       icon: "❓", label: "Help" },
 ]
 
