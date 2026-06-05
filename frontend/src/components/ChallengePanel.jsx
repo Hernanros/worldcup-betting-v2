@@ -80,8 +80,11 @@ function HandicapPicker({ match, selection, onPick }) {
 
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 6 }}>
-        Which team gets the head-start?
+      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>
+        Which team are <strong style={{ color: "#a78bfa" }}>you</strong> backing with a head-start?
+      </div>
+      <div style={{ color: "#4b5563", fontSize: 9, marginBottom: 8 }}>
+        Your team gets extra virtual goals — they can lose and you still win.
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
         {[match.home_team, match.away_team].map(team => (
@@ -93,12 +96,12 @@ function HandicapPicker({ match, selection, onPick }) {
             color: currentTeam === team ? "#c4b5fd" : "#6b7280",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
           }}>
-            {team}
+            {currentTeam === team ? `✓ ${team}` : team}
           </button>
         ))}
       </div>
       <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>
-        Head-start (goals)
+        Head-start size (goals)
       </div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
         {LINES.map(line => (
@@ -114,12 +117,14 @@ function HandicapPicker({ match, selection, onPick }) {
         ))}
       </div>
       {selection && (
-        <div style={{ marginTop: 8, padding: "6px 10px", background: "rgba(168,85,247,0.08)",
+        <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(168,85,247,0.08)",
           borderRadius: 8, border: "1px solid rgba(168,85,247,0.2)" }}>
-          <span style={{ color: "#c4b5fd", fontSize: 11 }}>
-            You back: <strong>{selection}</strong>
-            {" "}(they still "win" even if they lose by less than {currentLine?.replace("+", "")} {currentLine === "+1" ? "goal" : "goals"})
-          </span>
+          <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+            ✓ You back: {selection}
+          </div>
+          <div style={{ color: "#6b7280", fontSize: 10 }}>
+            You win if {currentTeam} loses by fewer than {currentLine?.replace("+", "")} {currentLine === "+1" ? "goal" : "goals"}, draws, or wins outright.
+          </div>
         </div>
       )}
     </div>
