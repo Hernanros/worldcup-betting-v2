@@ -10,50 +10,19 @@ const SECTIONS = [
     items: [
       {
         q: "What is WC Bets 2026?",
-        a: "A private betting game for your friend group during the 2026 World Cup. You start with 1,000 tokens (fake money). Bet on matches, make score predictions, challenge friends head-to-head, and try to finish the tournament with the highest token balance.",
+        a: "A private game for your friend group during the 2026 World Cup. You start with 1,000 tokens. Dare friends on matches, predict exact scores, pick the tournament winner, and try to end with the most tokens.",
       },
       {
         q: "How do I join?",
-        a: "Ask your group admin for the invite code. Go to the login page, enter your name and the code, and you're in. You start with 1,000 tokens automatically.",
+        a: "Ask your group admin for the invite code. Enter your name and the code on the login screen — you're in instantly with 1,000 tokens.",
       },
       {
         q: "What are tokens?",
-        a: "Tokens are your in-game currency — they're not real money. Win bets to earn more, lose bets and they're gone. Your token balance on the leaderboard is your score. Tokens never expire.",
+        a: "Tokens are in-game currency — not real money. Win dares and tournament bets to earn more; lose them and they're gone. Your token balance is your score on the leaderboard.",
       },
       {
         q: "How do I switch groups?",
-        a: "Tap the ⇄ Switch button in the top bar. This takes you back to the login screen where you can enter a different group's invite code.",
-      },
-    ],
-  },
-  {
-    id: "bets",
-    emoji: "💰",
-    title: "Match bets",
-    items: [
-      {
-        q: "How do match bets work?",
-        a: "Pick a market (1×2, Both Score, Goals, or Exact Score), choose your outcome, set your stake, and hit Place Bet. Tokens are deducted immediately. If you win, your stake × odds is credited when the match settles.",
-      },
-      {
-        q: "What does 1×2 mean?",
-        a: "It's the match result market: 1 = Home Win, × = Draw, 2 = Away Win. The most common bet type in football.",
-      },
-      {
-        q: "What are odds?",
-        a: "Odds tell you how much you win relative to your stake. Odds of 2.5 means a 100-token bet pays 250 tokens if correct. Higher odds = less likely outcome = bigger reward.",
-      },
-      {
-        q: "What is a Wildcard bet? 🃏",
-        a: "You get 3 wildcards for the entire tournament. Mark a bet as wildcard and if it wins, the payout doubles. Use them on your most confident picks — once gone, they're gone.",
-      },
-      {
-        q: "When do bets settle?",
-        a: "Automatically within a few minutes of the final whistle. You don't need to do anything — the app fetches the result and credits winnings.",
-      },
-      {
-        q: "Can I cancel a bet?",
-        a: "No — once placed, match bets are final. Double-check your selection before confirming.",
+        a: "Tap the ⇄ Switch button in the top bar to return to the login screen and enter a different group's invite code.",
       },
     ],
   },
@@ -63,43 +32,55 @@ const SECTIONS = [
     title: "Score predictions",
     items: [
       {
-        q: "What's the difference between a prediction and a bet?",
-        a: "Predictions are free — they don't cost tokens. You guess the exact final score of a match. Correct score = 3 pts, correct result (win/draw/loss) = 1 pt. Prediction points appear on a separate leaderboard tab.",
+        q: "How do predictions work?",
+        a: "Predictions are free — they cost no tokens. You guess the exact final score of each match before it kicks off. Correct score = 3 pts, correct result (win/draw/loss) = 1 pt. Prediction points appear on a separate leaderboard tab.",
       },
       {
-        q: "What is a double-points prediction? ⚡",
-        a: "You can mark up to 3 predictions per tournament as double-points. If that prediction is correct, you earn 6 pts (exact score) or 2 pts (correct outcome) instead of the usual 3 or 1. Pick your most confident calls.",
+        q: "What are ⚡ Double Points predictions?",
+        a: "You can mark up to 3 predictions as Double Points for the whole tournament. A correct Double Points prediction earns 6 pts (exact score) or 2 pts (correct outcome) instead of the usual 3 or 1. Choose your most confident picks — you only get 3.",
       },
       {
-        q: "When does prediction scoring lock?",
-        a: "Predictions lock when the match kicks off. You can update your prediction any time before kick-off.",
+        q: "When do predictions lock?",
+        a: "Predictions lock at kick-off. You can update them any time before the match starts.",
       },
     ],
   },
   {
-    id: "challenges",
+    id: "dares",
     emoji: "⚔️",
-    title: "Challenges",
+    title: "Dares",
     items: [
       {
-        q: "What is a challenge?",
-        a: "A head-to-head bet between you and a specific friend. You pick your side, they pick theirs, you both put up tokens, and the match result decides who wins.",
+        q: "What is a dare?",
+        a: "A head-to-head wager between you and a friend. You pick a spicy outcome, they take the opposite side, you both put up tokens. The match result settles it automatically.",
       },
       {
-        q: "How do I issue a challenge?",
-        a: "Open a match, go to Challenges, pick your bet type and selections, set the odds and your stake. Their counter-stake is calculated automatically. Tap Issue Challenge, then share the link with your opponent.",
+        q: "What can I dare on?",
+        a: "8 dare types: Both Teams Score? (Yes/No) · Red Card? (Yes/No) · Extra Time? (Yes/No) · Penalties? (Yes/No) · Goals Over/Under · Cards Over/Under · Corners Over/Under · Handicap (+0.5 to +2.5 goals for a team). These are outcomes you can't cover with a simple prediction.",
       },
       {
-        q: "What is a challenge streak? 🔥",
-        a: "Win challenges back-to-back to build a streak. 3 wins in a row = +10% payout bonus. 4 in a row = +20%. 5+ = +35%. The bonus applies to your winnings on that challenge.",
+        q: "How does the Handicap dare work? 🎲",
+        a: "Pick a team and give them a goal head-start. 'Argentina +1.5' means your dare wins even if Argentina draws or loses by just 1 goal. The friend taking the other side needs Argentina to lose by 2+. Lines available: +0.5, +1, +1.5, +2, +2.5.",
       },
       {
-        q: "What are the challenge milestones? 🎯",
-        a: "Issue enough challenges and earn one-time token bonuses: 5 challenges issued → +50 tokens, 10 → +150, 20 → +400. These stack with your normal winnings.",
+        q: "How do I send a dare?",
+        a: "Open a match → tap 'Dare friends'. Choose the dare type, pick your side (the other side auto-fills), set your stake and odds, tap 'Send Dare'. Share the link so your opponent can accept.",
       },
       {
-        q: "Can I cancel a challenge I issued?",
-        a: "Yes — as long as it hasn't been accepted yet. Go to the Home screen, find your open challenge, and hit Cancel to recover your staked tokens.",
+        q: "What is the dare streak? 🔥",
+        a: "Win dares back-to-back and earn a payout bonus: 3 wins in a row = +10%, 4 = +20%, 5+ = +35%. The bonus applies on top of your normal winnings.",
+      },
+      {
+        q: "What are the dare milestones? 🎯",
+        a: "Send enough dares for one-time bonuses: 5 dares sent → +50 tokens, 10 → +150 tokens, 20 → +400 tokens.",
+      },
+      {
+        q: "Can I cancel a dare I sent?",
+        a: "Yes, as long as it hasn't been accepted yet. Go to the Home screen, find your open dare under 'Dares I sent', and hit Cancel to recover your staked tokens.",
+      },
+      {
+        q: "When do dares settle?",
+        a: "Automatically within minutes of the final whistle. No action needed — tokens move on their own.",
       },
     ],
   },
@@ -110,15 +91,15 @@ const SECTIONS = [
     items: [
       {
         q: "What are tournament bets?",
-        a: "Long-range bets on the whole tournament: who wins it, who scores the most goals (Golden Boot), and the total goals across all 64 matches. These lock at kick-off of the first match (June 11, 18:00 UTC) and settle when the tournament ends.",
+        a: "Long-range bets on the whole tournament: who wins it, who scores the most goals (Golden Boot), and total goals across all 64 matches. These lock at the first whistle (June 11) and settle when the tournament ends.",
       },
       {
         q: "What is an insurance pick?",
-        a: "For Winner and Golden Boot bets, after placing your primary bet you can add a free insurance pick — a second choice at no cost. If your primary bet loses but your insurance pick is correct, you get back 50% of what your primary would have paid. If your primary wins, insurance is ignored.",
+        a: "After placing a Winner or Golden Boot bet, you can add a free insurance pick — a second choice at no cost. If your main bet loses but your insurance is correct, you get back 50% of what the main bet would have paid.",
       },
       {
         q: "Why are some Golden Boot players not in the list?",
-        a: "The list covers the main contenders. If you want to bet on someone not listed, just type their name in the search box — you'll get 101x odds on unlisted players.",
+        a: "The list covers main contenders. Type any name in the search box to bet on unlisted players — you'll get 101× odds on them.",
       },
     ],
   },
@@ -129,11 +110,11 @@ const SECTIONS = [
     items: [
       {
         q: "What are Deep Cuts?",
-        a: "Stage-specific prop bets that unlock as the tournament progresses. Each round (Group Stage, Round of 16, Quarter-Finals, etc.) has unique markets — things like 'Will any group stage match end 0–0?' or 'Which team advances from Group A?'",
+        a: "Stage-specific prop bets that unlock round by round: Group Stage, Round of 32, Quarter-Finals, etc. Each round has unique markets — things like 'Will any group game end 0–0?' or 'Which team advances from Group A?'",
       },
       {
         q: "When do Deep Cuts lock?",
-        a: "Each stage's markets lock when that stage begins. Check the stage badge — Open (green) means you can still bet, Locked (red) means that stage has started.",
+        a: "Each stage's markets lock when that stage begins. Check the badge — Open (green) means you can still bet, Locked (red) means that stage has started.",
       },
     ],
   },
@@ -144,11 +125,11 @@ const SECTIONS = [
     items: [
       {
         q: "What does the AI do?",
-        a: "It analyses the match, your existing bets and predictions, your recent form, and the available odds — then suggests a bet or challenge you might not have considered. It's a conversation starter, not financial advice.",
+        a: "It analyses the match, your friend group's recent dares, and the available dare types — then suggests a specific dare you might not have thought of. It's a conversation starter, not financial advice.",
       },
       {
         q: "Is AI available for every group?",
-        a: "Only if your group admin enabled it when creating the group. If you don't see the AI tab, your group has it turned off.",
+        a: "Only if your group admin enabled it. If you don't see the AI tab, ask your admin to turn it on.",
       },
     ],
   },
