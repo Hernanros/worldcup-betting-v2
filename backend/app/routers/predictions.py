@@ -5,6 +5,7 @@ from app.database import get_db
 from app.deps import get_current_player
 from app.models import Match, Prediction
 from app.deep_cuts_config import WC2026_GROUPS
+from fastapi.responses import Response
 
 router = APIRouter()
 
@@ -111,3 +112,26 @@ async def save_prediction(data: dict, auth=Depends(get_current_player), db: Asyn
         "is_double": pred.is_double,
         "doubles_used": doubles_used_after,
     }
+
+
+@router.delete("/api/predictions/{match_id}")
+async def delete_prediction(match_id: int, auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    player, _ = auth
+    match = await db.get(Match, match_id)
+    if not match:
+        raise HTTPException(404, "match not found")
+    if match.status in ("finished", "locked"):
+        raise HTTPException(400, "cannot delete a prediction after the match has kicked off")
+
+    pred = (await db.execute(
+        select(Prediction).where(
+            Prediction.player_id == player.id,
+            Prediction.match_id  == match_id,
+        )
+    )).scalar_one_or_none()
+    if not pred:
+        raise HTTPException(404, "no prediction found for this match")
+
+    await db.delete(pred)
+    await db.commit()
+    return Response(status_code=204)

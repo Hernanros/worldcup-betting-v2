@@ -18,6 +18,7 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
   const [away, setAway] = useState(entry.my_prediction?.away_score_pred ?? "")
   const [isDouble, setIsDouble] = useState(entry.my_prediction?.is_double ?? false)
   const [saving, setSaving] = useState(false)
+  const [clearing, setClearing] = useState(false)
   const [msg, setMsg] = useState("")
   const awayRef = useRef(null)
 
@@ -31,6 +32,17 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
   const pred = entry.my_prediction
   const doublesLeft = 3 - doublesUsed
   const canDouble = isDouble || doublesLeft > 0
+
+  async function clear() {
+    setClearing(true); setMsg("")
+    try {
+      await api.delete(`/api/predictions/${entry.match_id}`)
+      setHome(""); setAway(""); setIsDouble(false)
+      setMsg("✓ Cleared")
+      onSaved?.()
+    } catch (err) { setMsg(`✗ ${err.message}`) }
+    finally { setClearing(false) }
+  }
 
   async function save() {
     if (home === "" || away === "") return setMsg("Enter both scores")
@@ -94,11 +106,19 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
             padding: "5px 8px", color: "#e2e8f0", fontSize: 14, textAlign: "center",
             cursor: locked ? "not-allowed" : "auto", opacity: locked ? 0.5 : 1 }} />
         {!locked && (
-          <button onClick={save} disabled={saving}
+          <button onClick={save} disabled={saving || clearing}
             style={{ background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
               border: "none", borderRadius: 6, padding: "5px 14px", fontSize: 12, fontWeight: 700,
               cursor: saving ? "not-allowed" : "pointer", opacity: saving ? 0.7 : 1 }}>
-            {saving ? "..." : "Save"}
+            {saving ? "..." : pred ? "Update" : "Save"}
+          </button>
+        )}
+        {!locked && pred && (
+          <button onClick={clear} disabled={clearing || saving}
+            style={{ background: "none", border: "1px solid #4b5563", borderRadius: 6,
+              padding: "5px 10px", fontSize: 11, color: "#6b7280",
+              cursor: clearing ? "not-allowed" : "pointer", opacity: clearing ? 0.6 : 1 }}>
+            {clearing ? "..." : "Clear"}
           </button>
         )}
         {msg && <span style={{ fontSize: 11, color: msg.startsWith("✓") ? "#4ade80" : "#f87171" }}>{msg}</span>}
