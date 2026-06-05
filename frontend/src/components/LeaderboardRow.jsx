@@ -23,8 +23,9 @@ export default function LeaderboardRow({ player, rank }) {
       }}>
         {rank === 1 ? "🥇" : rank === 2 ? "🥈" : rank === 3 ? "🥉" : `#${rank}`}
       </span>
-      <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0" }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{ fontWeight: 600, fontSize: 14, color: "#e2e8f0",
+          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {player.name}{isMe && " (you)"}
         </div>
         <div style={{ fontSize: 11, color: "#6b7280", marginTop: 2, display: "flex", gap: 8 }}>

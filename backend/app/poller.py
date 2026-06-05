@@ -108,6 +108,14 @@ def _evaluate_bet(bet_type, selection, match, result):
         return determine_totals_winner(selection, total)
     if bet_type == "handicap":
         return determine_handicap_winner(selection, match.home_team, hs, as_)
+    # ── Dare-only types ──────────────────────────────────────────────
+    if bet_type == "any_red_card":
+        total = (match.home_red_cards or 0) + (match.away_red_cards or 0)
+        return (total > 0) == (selection.strip().lower() == "yes")
+    if bet_type == "went_to_et":
+        return (match.went_to_et or False) == (selection.strip().lower() == "yes")
+    if bet_type == "went_to_pens":
+        return (match.went_to_pens or False) == (selection.strip().lower() == "yes")
     return False
 
 

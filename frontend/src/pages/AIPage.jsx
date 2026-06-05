@@ -58,7 +58,7 @@ export default function AIPage() {
     navigate(`/matches/${selectedMatch.id}`, {
       state: {
         prefill: {
-          bet_type: suggestion.bet_type || "1x2",
+          bet_type: suggestion.bet_type || "btts",
           my_pick: suggestion.my_pick,
           their_pick: suggestion.their_pick,
           my_odds: suggestion.my_odds,
@@ -142,18 +142,20 @@ export default function AIPage() {
               {s.title}
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-              <div style={{ textAlign: "center", flex: 1 }}>
+              <div style={{ textAlign: "center", flex: 1, minWidth: 0 }}>
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2, display: "flex", alignItems: "center", justifyContent: "center", gap: 2 }}>
                   Your pick
-                  <HelpTip text="The side of the bet you'd take. If you win, you receive stake × your odds in tokens." />
+                  <HelpTip text="The side of the dare you'd take. If you win, you receive stake × your odds in tokens." />
                 </div>
-                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14 }}>{s.my_pick}</div>
+                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.my_pick}</div>
                 <div style={{ color: "#4ade80", fontSize: 11 }}>{s.my_odds}x</div>
               </div>
-              <div style={{ color: "#2d2b55", fontSize: 16, alignSelf: "center" }}>vs</div>
-              <div style={{ textAlign: "center", flex: 1 }}>
+              <div style={{ color: "#2d2b55", fontSize: 16, alignSelf: "center", flexShrink: 0 }}>vs</div>
+              <div style={{ textAlign: "center", flex: 1, minWidth: 0 }}>
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>Their pick</div>
-                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14 }}>{s.their_pick}</div>
+                <div style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 14,
+                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{s.their_pick}</div>
                 <div style={{ color: "#f87171", fontSize: 11 }}>{s.their_odds}x</div>
               </div>
               <div style={{ textAlign: "center", flex: 1 }}>
@@ -169,7 +171,7 @@ export default function AIPage() {
               color: "#fff", border: "none", borderRadius: 8,
               padding: "9px", fontSize: 13, fontWeight: 700, cursor: "pointer",
             }}>
-              Issue This Challenge →
+              💥 Send This Dare →
             </button>
           </div>
         ))}

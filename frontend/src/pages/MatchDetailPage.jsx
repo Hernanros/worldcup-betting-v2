@@ -57,6 +57,16 @@ export default function MatchDetailPage() {
 
   useEffect(() => { load() }, [id])
 
+  // Auto-scroll to challenges section if ?tab=challenges in URL
+  useEffect(() => {
+    const params = new URLSearchParams(location.search)
+    if (params.get("tab") === "challenges") {
+      setTimeout(() => {
+        document.getElementById("challenges-panel")?.scrollIntoView({ behavior: "smooth", block: "start" })
+      }, 400)
+    }
+  }, [location.search, loading])
+
   if (loading) return <div style={{ padding: 24, color: "#6b7280", textAlign: "center" }}>Loading...</div>
   if (error) return (
     <div style={{ padding: 24, textAlign: "center" }}>
@@ -141,15 +151,17 @@ export default function MatchDetailPage() {
                 onBalanceChange?.(bal)
               }}
             />
-            <ChallengePanel
-              match={match}
-              challenges={match.open_challenges}
-              onUpdate={load}
-              onBalanceChange={onBalanceChange}
-              prefill={prefill}
-              playerStreak={playerStreak}
-              totalChallenges={totalChallenges}
-            />
+            <div id="challenges-panel">
+              <ChallengePanel
+                match={match}
+                challenges={match.open_challenges}
+                onUpdate={load}
+                onBalanceChange={onBalanceChange}
+                prefill={prefill}
+                playerStreak={playerStreak}
+                totalChallenges={totalChallenges}
+              />
+            </div>
           </>
         )}
 

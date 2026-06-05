@@ -54,12 +54,13 @@ function BetsTab() {
           </h3>
           {tournament.my_bets.map((b) => (
             <div key={b.id} style={{ ...CARD, padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                <div>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>
                     {b.bet_type.replaceAll("_", " ")}
                   </div>
-                  <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 14 }}>{b.selection}</div>
+                  <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 14,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.selection}</div>
                   <div style={{ color: "#6b7280", fontSize: 11, marginTop: 4 }}>
                     {b.stake} tokens @ {b.odds}x →{" "}
                     <span style={{ color: "#4ade80" }}>win {Math.floor(b.stake * b.odds).toLocaleString()}</span>

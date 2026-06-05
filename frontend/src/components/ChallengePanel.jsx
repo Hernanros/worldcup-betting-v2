@@ -2,24 +2,98 @@ import { useState } from "react"
 import { api } from "../api.js"
 import HelpTip from "./HelpTip.jsx"
 
+/* ── Dare types ────────────────────────────────────────────── */
+const DARE_TYPES = [
+  { key: "btts",         label: "🎯 Both Score?",  short: "Both Score",   yesNo: true,  hint: "Will both teams score at least one goal?" },
+  { key: "any_red_card", label: "🟥 Red Card?",    short: "Red Card",     yesNo: true,  hint: "Will there be at least one red card shown?" },
+  { key: "went_to_et",   label: "⏱ Extra Time?",   short: "Extra Time",   yesNo: true,  hint: "Will the match go to extra time? (knockout rounds only)" },
+  { key: "went_to_pens", label: "🥅 Penalties?",   short: "Penalties",    yesNo: true,  hint: "Will it go all the way to a penalty shootout?" },
+  { key: "totals",       label: "⚽ Goals Line",   short: "Goals",        yesNo: false, hint: "Over/Under total goals in the match",       presets: ["Over 1.5", "Over 2.5", "Over 3.5", "Under 2.5", "Under 3.5"] },
+  { key: "total_cards",  label: "🟨 Cards Line",   short: "Cards",        yesNo: false, hint: "Over/Under total cards (yellow + red)",     presets: ["Over 2.5", "Over 3.5", "Under 3.5", "Under 4.5"] },
+  { key: "corners",      label: "🔺 Corners Line", short: "Corners",      yesNo: false, hint: "Over/Under total corner kicks",             presets: ["Over 8.5", "Over 9.5", "Over 10.5", "Under 9.5"] },
+  { key: "offsides",     label: "🚩 Offsides Line",short: "Offsides",     yesNo: false, hint: "Over/Under total offside calls in the match", presets: ["Over 2.5", "Over 3.5", "Under 3.5"] },
+]
+
+function oppositeOf(type, sel) {
+  if (type.yesNo) return sel === "Yes" ? "No" : sel === "No" ? "Yes" : ""
+  if (sel?.startsWith("Over "))  return sel.replace("Over ", "Under ")
+  if (sel?.startsWith("Under ")) return sel.replace("Under ", "Over ")
+  return ""
+}
+
+/* ── YesNo picker ──────────────────────────────────────────── */
+function YesNoPicker({ value, onChange, label }) {
+  return (
+    <div>
+      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>{label}</div>
+      <div style={{ display: "flex", gap: 6 }}>
+        {["Yes", "No"].map(opt => (
+          <button key={opt} onClick={() => onChange(opt)} style={{
+            flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 12, fontWeight: 700,
+            cursor: "pointer", border: "1px solid",
+            background: value === opt ? (opt === "Yes" ? "rgba(74,222,128,0.15)" : "rgba(248,113,113,0.15)") : "transparent",
+            borderColor: value === opt ? (opt === "Yes" ? "rgba(74,222,128,0.5)" : "rgba(248,113,113,0.5)") : "#2d2b55",
+            color: value === opt ? (opt === "Yes" ? "#4ade80" : "#f87171") : "#6b7280",
+          }}>
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/* ── Preset chips ──────────────────────────────────────────── */
+function PresetChips({ presets, value, onChange }) {
+  return (
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 6 }}>
+      {presets.map(p => (
+        <button key={p} onClick={() => onChange(p)} style={{
+          padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700, cursor: "pointer", border: "1px solid",
+          background: value === p ? "rgba(168,85,247,0.2)" : "transparent",
+          borderColor: value === p ? "rgba(168,85,247,0.6)" : "#2d2b55",
+          color: value === p ? "#c4b5fd" : "#6b7280",
+        }}>
+          {p}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+/* ── Main ──────────────────────────────────────────────────── */
 export default function ChallengePanel({ match, challenges, onUpdate, onBalanceChange, prefill, playerStreak = 0, totalChallenges = 0 }) {
   const [issuerStake, setIssuerStake] = useState(prefill?.stake ?? 100)
-  const [issuerOdds, setIssuerOdds] = useState(prefill?.my_odds ?? 3.0)
-  const [acceptorOdds, setAcceptorOdds] = useState(prefill?.their_odds ?? 1.5)
+  const [issuerOdds, setIssuerOdds] = useState(prefill?.my_odds ?? 2.0)
+  const [acceptorOdds, setAcceptorOdds] = useState(prefill?.their_odds ?? 2.0)
   const [selection, setSelection] = useState(prefill?.my_pick ?? "")
   const [acceptorSelection, setAcceptorSelection] = useState(prefill?.their_pick ?? "")
-  const [betType, setBetType] = useState(prefill?.bet_type ?? "1x2")
+  const [betType, setBetType] = useState(prefill?.bet_type ?? "btts")
   const [loading, setLoading] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
   const [shareUrl, setShareUrl] = useState("")
 
+  const currentType = DARE_TYPES.find(t => t.key === betType) || DARE_TYPES[0]
+
   const acceptorStake = acceptorOdds > 0
     ? Math.max(1, Math.round(issuerStake * (issuerOdds / acceptorOdds)))
     : 0
 
-  async function issue() {
-    if (!selection || !acceptorSelection) return setMsg("Fill in both picks")
+  function handleMyPick(sel) {
+    setSelection(sel)
+    setAcceptorSelection(oppositeOf(currentType, sel))
+  }
+
+  function switchType(key) {
+    setBetType(key)
+    setSelection("")
+    setAcceptorSelection("")
+    setMsg("")
+  }
+
+  async function issueDare() {
+    if (!selection || !acceptorSelection) return setMsg("Pick your side first")
     if (!issuerStake || issuerStake <= 0) return setMsg("Stake must be positive")
     setLoading(true); setMsg("")
     try {
@@ -27,19 +101,20 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
         bet_type: betType, selection, acceptor_selection: acceptorSelection,
         issuer_stake: issuerStake, issuer_odds: issuerOdds, acceptor_odds: acceptorOdds,
       })
-      setMsg(`✓ Challenge issued! Balance: ${r.new_balance}`)
+      setMsg(`✓ Dare issued! Balance: ${r.new_balance}`)
       setShareUrl(`${window.location.origin}/matches/${match.id}`)
+      setSelection(""); setAcceptorSelection("")
       onBalanceChange?.(r.new_balance)
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
     finally { setLoading(false) }
   }
 
-  async function accept(challengeId) {
+  async function acceptDare(challengeId) {
     setAcceptingId(challengeId)
     try {
       const r = await api.post(`/api/challenges/${challengeId}/accept`, {})
-      setMsg(`✓ Challenge accepted! Balance: ${r.new_balance}`)
+      setMsg(`✓ Dare accepted! Balance: ${r.new_balance}`)
       onBalanceChange?.(r.new_balance)
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
@@ -50,163 +125,209 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const MILESTONES = [[5, 50], [10, 150], [20, 400]]
   const nextMilestone = MILESTONES.find(([t]) => totalChallenges < t)
   const milestoneText = nextMilestone
-    ? `${nextMilestone[0] - totalChallenges} more challenge${nextMilestone[0] - totalChallenges === 1 ? "" : "s"} → ${nextMilestone[1]} token bonus`
+    ? `${nextMilestone[0] - totalChallenges} more dare${nextMilestone[0] - totalChallenges === 1 ? "" : "s"} → ${nextMilestone[1]} token bonus`
     : null
 
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12, padding: 16, marginBottom: 12 }}>
-      <h3 style={{ color: "#a78bfa", fontWeight: 700, marginBottom: 12, fontSize: 14, display: "flex", alignItems: "center" }}>
-        Challenges
-        <HelpTip text="Head-to-head bets with specific friends. You pick your side and theirs, set the odds, and issue the challenge. They accept, the match settles, tokens move automatically." />
-      </h3>
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+        <h3 style={{ color: "#a78bfa", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
+          ⚔️ Dare a Friend
+          <HelpTip text="Pick a spicy outcome, set your stake, and dare a friend to take the other side. Covers things you can't bet on in the main panel — red cards, extra time, corners, offsides." />
+        </h3>
+        {playerStreak >= 3 && (
+          <div style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
+            borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#c4b5fd", fontWeight: 700 }}>
+            🔥 {playerStreak} streak{streakBonus ? ` — ${streakBonus} bonus` : ""}
+          </div>
+        )}
+      </div>
 
-      {(playerStreak > 0 || milestoneText) && (
-        <div style={{ display: "flex", gap: 6, marginBottom: 10, flexWrap: "wrap" }}>
-          {playerStreak > 0 && (
-            <div style={{
-              background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
-              borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#c4b5fd", fontWeight: 700,
-              display: "flex", alignItems: "center", gap: 2,
-            }}>
-              🔥 {playerStreak} streak{streakBonus ? ` — ${streakBonus} win bonus` : ""}
-              <HelpTip text="Win challenges in a row to boost your payout: 3-win streak = +10%, 4-win = +20%, 5+ win = +35%." />
-            </div>
-          )}
-          {milestoneText && (
-            <div style={{
-              background: "rgba(74,222,128,0.1)", border: "1px solid rgba(74,222,128,0.3)",
-              borderRadius: 999, padding: "3px 10px", fontSize: 10, color: "#4ade80", fontWeight: 700,
-              display: "flex", alignItems: "center", gap: 2,
-            }}>
-              🎯 {milestoneText}
-              <HelpTip text="Issue more challenges to unlock one-time token bonuses: 5 challenges → +50, 10 → +150, 20 → +400 tokens." />
-            </div>
-          )}
+      {milestoneText && (
+        <div style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.2)",
+          borderRadius: 8, padding: "6px 10px", fontSize: 10, color: "#4ade80", fontWeight: 600, marginBottom: 10 }}>
+          🎯 {milestoneText}
         </div>
       )}
 
       {/* Issue form */}
       <div style={{ background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 12 }}>
-        <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>Issue a new challenge</p>
 
-        {/* Bet type selector */}
-        <div style={{ display: "flex", gap: 4, marginBottom: 10, flexWrap: "wrap" }}>
-          {[
-            { key: "1x2",           label: "1×2",      hint: "Match result" },
-            { key: "correct_score", label: "Score",     hint: "Exact scoreline" },
-            { key: "btts",          label: "Both Score", hint: "Both teams score at least one goal each" },
-            { key: "totals",        label: "Goals",     hint: "Over / Under goals" },
-            { key: "corners",       label: "🔺 Corners",  hint: "Over / Under corners" },
-            { key: "offsides",      label: "🚩 Offsides", hint: "Over / Under offsides" },
-            { key: "total_cards",   label: "🟨 Cards",    hint: "Over / Under total cards (Y+R)" },
-          ].map(({ key, label, hint }) => (
-            <button
-              key={key}
-              title={hint}
-              onClick={() => { setBetType(key); setSelection(""); setAcceptorSelection("") }}
-              style={{
-                padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700,
-                cursor: "pointer", border: "1px solid",
-                background: betType === key ? "rgba(168,85,247,0.2)" : "transparent",
-                borderColor: betType === key ? "rgba(168,85,247,0.6)" : "#2d2b55",
-                color: betType === key ? "#c4b5fd" : "#6b7280",
-                transition: "all 0.1s",
-              }}
-            >
-              {label}
-            </button>
-          ))}
+        {/* Dare type pills */}
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 0.8, marginBottom: 6 }}>
+            What are you daring?
+          </div>
+          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+            {DARE_TYPES.map(({ key, label, hint }) => (
+              <button
+                key={key}
+                title={hint}
+                onClick={() => switchType(key)}
+                style={{
+                  padding: "4px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700,
+                  cursor: "pointer", border: "1px solid",
+                  background: betType === key ? "rgba(168,85,247,0.2)" : "transparent",
+                  borderColor: betType === key ? "rgba(168,85,247,0.6)" : "#2d2b55",
+                  color: betType === key ? "#c4b5fd" : "#6b7280",
+                  transition: "all 0.1s",
+                }}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Per-type pick hints */}
-        <p style={{ color: "#4b5563", fontSize: 10, marginBottom: 8 }}>
-          {betType === "1x2"           && "Your pick: team name or 'Draw'. Their pick: the opposing side."}
-          {betType === "correct_score" && "Format: '2-1' (home-away). E.g. your pick '2-1', their pick '1-2'."}
-          {betType === "btts"          && "Both Teams To Score: pick 'Yes' (both teams score) or 'No' (at least one team keeps a clean sheet). Their pick is the opposite."}
-          {betType === "totals"        && "E.g. 'Over 2.5' vs 'Under 2.5'. Agree on the line with your opponent."}
-          {betType === "corners"       && "E.g. 'Over 9.5' vs 'Under 9.5'. Total corners in the match."}
-          {betType === "offsides"      && "E.g. 'Over 3.5' vs 'Under 3.5'. Total offside calls in the match."}
-          {betType === "total_cards"   && "E.g. 'Over 3.5' vs 'Under 3.5'. Total yellow + red cards combined."}
+        {/* Hint */}
+        <p style={{ color: "#4b5563", fontSize: 10, marginBottom: 10, lineHeight: 1.4 }}>
+          {currentType.hint}
         </p>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <input placeholder="Your pick" value={selection} onChange={(e) => setSelection(e.target.value)}
-            style={{ flex: 1, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
-              padding: "6px 10px", color: "#e2e8f0", fontSize: 12 }} />
-          <input placeholder="Their pick" value={acceptorSelection} onChange={(e) => setAcceptorSelection(e.target.value)}
-            style={{ flex: 1, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
-              padding: "6px 10px", color: "#e2e8f0", fontSize: 12 }} />
+
+        {/* Pick section */}
+        {currentType.yesNo ? (
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+            <YesNoPicker label="Your call" value={selection} onChange={handleMyPick} />
+            <YesNoPicker label="Their call (auto)" value={acceptorSelection}
+              onChange={v => { setAcceptorSelection(v); setSelection(oppositeOf(currentType, v)) }} />
+          </div>
+        ) : (
+          <div style={{ marginBottom: 10 }}>
+            {currentType.presets && (
+              <>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>Your pick (tap to select)</div>
+                <PresetChips presets={currentType.presets} value={selection} onChange={handleMyPick} />
+              </>
+            )}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              <div>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Your pick</div>
+                <input value={selection} onChange={e => handleMyPick(e.target.value)} placeholder="e.g. Over 2.5"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
+                    borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 12 }} />
+              </div>
+              <div>
+                <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Their pick (auto)</div>
+                <input value={acceptorSelection} onChange={e => { setAcceptorSelection(e.target.value); setSelection(oppositeOf(currentType, e.target.value)) }}
+                  placeholder="e.g. Under 2.5"
+                  style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
+                    borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 12 }} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Stakes & odds */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>
+          <div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Your stake</div>
+            <input type="number" value={issuerStake} onChange={e => setIssuerStake(Number(e.target.value))}
+              style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
+                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 12 }} />
+          </div>
+          <div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Your odds</div>
+            <input type="number" step="0.1" value={issuerOdds} onChange={e => setIssuerOdds(Number(e.target.value))}
+              style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
+                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 12 }} />
+          </div>
+          <div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Their odds</div>
+            <input type="number" step="0.1" value={acceptorOdds} onChange={e => setAcceptorOdds(Number(e.target.value))}
+              style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
+                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 12 }} />
+          </div>
         </div>
-        <div style={{ display: "flex", gap: 8, marginBottom: 8, fontSize: 11, color: "#6b7280", alignItems: "center" }}>
-          <span>Your stake:</span>
-          <input type="number" value={issuerStake} onChange={(e) => setIssuerStake(Number(e.target.value))}
-            style={{ width: 70, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
-              padding: "4px 8px", color: "#e2e8f0", fontSize: 12 }} />
-          <span>Your odds:</span>
-          <input type="number" step="0.1" value={issuerOdds} onChange={(e) => setIssuerOdds(Number(e.target.value))}
-            style={{ width: 60, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
-              padding: "4px 8px", color: "#e2e8f0", fontSize: 12 }} />
-          <span>Their odds:</span>
-          <input type="number" step="0.1" value={acceptorOdds} onChange={(e) => setAcceptorOdds(Number(e.target.value))}
-            style={{ width: 60, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 6,
-              padding: "4px 8px", color: "#e2e8f0", fontSize: 12 }} />
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <p style={{ color: "#a78bfa", fontSize: 11, margin: 0 }}>
+            Their stake: <strong>{acceptorStake}</strong> tokens
+            <HelpTip text="Their stake = your stake × (your odds ÷ their odds). Equal odds = equal stakes." />
+          </p>
+          <button onClick={issueDare} disabled={loading} style={{
+            background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
+            border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 12, fontWeight: 700,
+            cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1,
+          }}>
+            {loading ? "..." : "💥 Send Dare"}
+          </button>
         </div>
-        <p style={{ color: "#a78bfa", fontSize: 11, marginBottom: 8, display: "flex", alignItems: "center", gap: 4 }}>
-          Their counter-stake: <strong>{acceptorStake}</strong> tokens
-          <HelpTip text="Their stake = your stake × (your odds ÷ their odds). Lower their odds means they put in more to balance the bet." />
-        </p>
-        <button onClick={issue} disabled={loading}
-          style={{ background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
-            border: "none", borderRadius: 6, padding: "7px 16px", fontSize: 12, fontWeight: 700, cursor: "pointer" }}>
-          Issue Challenge
-        </button>
       </div>
 
-      {/* Open challenges */}
+      {/* Incoming dares to accept */}
       {challenges?.length > 0 && (
         <div>
-          <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>Open challenges</p>
-          {challenges.map((c) => (
-            <div key={c.id} style={{ background: "#0c0c14", border: "1px solid #2d2b55",
-              borderRadius: 8, padding: 10, marginBottom: 6, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <div>
-                {c.issuer_name && (
-                  <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 2 }}>
-                    {c.issuer_name} challenges you
+          <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 0.8, marginBottom: 8 }}>
+            ⚔️ Dares waiting for you
+          </p>
+          {challenges.map((c) => {
+            const typeInfo = DARE_TYPES.find(t => t.key === c.bet_type)
+            return (
+              <div key={c.id} style={{
+                background: "linear-gradient(135deg, rgba(168,85,247,0.06), rgba(59,130,246,0.06))",
+                border: "1px solid rgba(168,85,247,0.25)",
+                borderRadius: 10, padding: "10px 12px", marginBottom: 6,
+                display: "flex", alignItems: "center", gap: 10,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  {c.issuer_name && (
+                    <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 3 }}>
+                      {c.issuer_name} dares you ⚔️
+                    </div>
+                  )}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
+                    <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 700 }}>
+                      {typeInfo?.short ?? c.bet_type}:
+                    </span>
+                    <span style={{ color: "#4ade80", fontSize: 12, fontWeight: 600,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
+                      {c.selection}
+                    </span>
+                    <span style={{ color: "#6b7280", fontSize: 11 }}>vs</span>
+                    <span style={{ color: "#f97316", fontSize: 12, fontWeight: 600,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
+                      {c.acceptor_selection}
+                    </span>
+                    <span style={{ color: "#fbbf24", fontSize: 10, whiteSpace: "nowrap" }}>
+                      · {c.issuer_stake} vs {c.acceptor_stake} 🪙
+                    </span>
                   </div>
-                )}
-                <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600 }}>{c.selection}</span>
-                <span style={{ color: "#6b7280", fontSize: 11 }}> vs </span>
-                <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600 }}>{c.acceptor_selection}</span>
-                <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>
-                  {c.issuer_stake} vs {c.acceptor_stake} tokens
                 </div>
+                <button
+                  onClick={() => acceptDare(c.id)}
+                  disabled={acceptingId === c.id}
+                  style={{
+                    flexShrink: 0,
+                    background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
+                    border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 11, fontWeight: 700,
+                    cursor: acceptingId === c.id ? "not-allowed" : "pointer",
+                    opacity: acceptingId === c.id ? 0.6 : 1,
+                  }}>
+                  {acceptingId === c.id ? "..." : "Accept ✓"}
+                </button>
               </div>
-              <button
-                onClick={() => accept(c.id)}
-                disabled={acceptingId === c.id}
-                style={{
-                  background: "#1e1b3a", color: "#a78bfa", border: "1px solid #2d2b55",
-                  borderRadius: 6, padding: "5px 12px", fontSize: 11, fontWeight: 700,
-                  cursor: acceptingId === c.id ? "not-allowed" : "pointer",
-                  opacity: acceptingId === c.id ? 0.6 : 1,
-                }}>
-                {acceptingId === c.id ? "..." : "Accept"}
-              </button>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
-      {msg && <p style={{ color: msg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 12, marginTop: 8 }}>{msg}</p>}
+      {msg && (
+        <p style={{ color: msg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 12, marginTop: 8 }}>{msg}</p>
+      )}
+
       {shareUrl && (
         <button
           onClick={() => {
-            const text = `⚽ I've challenged you on ${match.home_team} vs ${match.away_team}! Accept here: ${shareUrl}`
+            const type = DARE_TYPES.find(t => t.key === betType)
+            const text = `⚔️ I dared you on ${match.home_team} vs ${match.away_team} (${type?.short ?? betType})! Accept here: ${shareUrl}?tab=challenges`
             if (navigator.share) {
-              navigator.share({ title: "WC 2026 Challenge", text, url: shareUrl }).catch(() => {})
+              navigator.share({ title: "WC 2026 Dare", text, url: shareUrl }).catch(() => {})
             } else {
               navigator.clipboard.writeText(text)
-              setMsg("✓ Link copied — send it to your opponent!")
+              setMsg("✓ Link copied — send it to your friend!")
             }
           }}
           style={{
@@ -215,7 +336,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             color: "#a78bfa", cursor: "pointer", marginTop: 6,
           }}
         >
-          📤 Share challenge link
+          📤 Share dare link
         </button>
       )}
     </div>
