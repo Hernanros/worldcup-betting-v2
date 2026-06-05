@@ -20,6 +20,9 @@ const CARD = {
 }
 
 // ── BetsTab (existing tournament bets UX) ────────────────────────────────────
+const STATUS_LABEL = { pending: "OPEN", won: "WON", lost: "LOST" }
+const STATUS_COLOR_PRE = { pending: "#4ade80", won: "#4ade80", lost: "#f87171" }
+
 function BetsTab() {
   const [tournament, setTournament] = useState(null)
   const [error, setError] = useState(null)
@@ -49,29 +52,39 @@ function BetsTab() {
 
       {tournament && tournament.my_bets.length > 0 && (
         <div>
-          <h3 style={{ color: "#6b7280", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>
-            Your Tournament Bets
-          </h3>
-          {tournament.my_bets.map((b) => (
-            <div key={b.id} style={{ ...CARD, padding: 12 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>
-                    {b.bet_type.replaceAll("_", " ")}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+            <h3 style={{ color: "#6b7280", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, margin: 0 }}>
+              Your Tournament Bets
+            </h3>
+            {!tournament.locked && (
+              <span style={{ color: "#6b7280", fontSize: 10 }}>Place again to change your pick ↑</span>
+            )}
+          </div>
+          {tournament.my_bets.map((b) => {
+            const isPreLock = !tournament.locked && b.status === "pending"
+            const statusColor = isPreLock ? "#4ade80" : (STATUS_COLOR[b.status] || "#fbbf24")
+            const statusLabel = isPreLock ? "OPEN" : b.status.toUpperCase()
+            return (
+              <div key={b.id} style={{ ...CARD, padding: 12 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 2 }}>
+                      {b.bet_type.replaceAll("_", " ")}
+                    </div>
+                    <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 14,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.selection}</div>
+                    <div style={{ color: "#6b7280", fontSize: 11, marginTop: 4 }}>
+                      {b.stake} tokens @ {b.odds}x →{" "}
+                      <span style={{ color: "#4ade80" }}>win {Math.floor(b.stake * b.odds).toLocaleString()}</span>
+                    </div>
                   </div>
-                  <div style={{ color: "#e2e8f0", fontWeight: 600, fontSize: 14,
-                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{b.selection}</div>
-                  <div style={{ color: "#6b7280", fontSize: 11, marginTop: 4 }}>
-                    {b.stake} tokens @ {b.odds}x →{" "}
-                    <span style={{ color: "#4ade80" }}>win {Math.floor(b.stake * b.odds).toLocaleString()}</span>
-                  </div>
+                  <span style={{ color: statusColor, fontSize: 10, fontWeight: 700, background: "#0c0c14", padding: "3px 8px", borderRadius: 999, border: "1px solid #2d2b55" }}>
+                    {statusLabel}
+                  </span>
                 </div>
-                <span style={{ color: STATUS_COLOR[b.status] || "#fbbf24", fontSize: 10, fontWeight: 700, background: "#0c0c14", padding: "3px 8px", borderRadius: 999, border: "1px solid #2d2b55" }}>
-                  {b.status.toUpperCase()}
-                </span>
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 

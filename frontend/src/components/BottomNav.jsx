@@ -6,7 +6,7 @@ const BASE_TABS = [
   { to: "/matches",    icon: "⚽", label: "Matches" },
   { to: "/predict",    icon: "🎯", label: "Predict" },
   { to: "/ai",         icon: "🤖", label: "AI",       requiresAI: true },
-  { to: "/tournament", icon: "🏆", label: "Tournmt" },
+  { to: "/tournament", icon: "🏆", label: "Tournam" },
   { to: "/deep-cuts",  icon: "🔪", label: "Cuts" },
   { to: "/rankings",   icon: "📊", label: "Rankings" },
   { to: "/help",       icon: "❓", label: "Help" },

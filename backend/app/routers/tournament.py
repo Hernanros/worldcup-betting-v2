@@ -238,15 +238,46 @@ async def place_tournament_bet(data: dict, auth=Depends(get_current_player), db:
     odds = _resolve_tournament_odds(bet_type, selection)
 
     player = await db.get(Player, player.id)
+
+    # Upsert: if a pending bet of this type already exists, update it in place
+    # so users can change their pick before the tournament starts.
+    existing_bets = (await db.execute(
+        select(TournamentBet).where(
+            TournamentBet.player_id == player.id,
+            TournamentBet.bet_type  == bet_type,
+            TournamentBet.status    == "pending",
+        )
+    )).scalars().all()
+
+    if existing_bets:
+        # Refund all existing pending bets for this type (handles edge-case duplicates)
+        for old_bet in existing_bets:
+            player.token_balance += old_bet.stake
+            # Delete any insurance picks tied to the old bet
+            old_insurance = (await db.execute(
+                select(InsurancePick).where(InsurancePick.tournament_bet_id == old_bet.id)
+            )).scalar_one_or_none()
+            if old_insurance:
+                await db.delete(old_insurance)
+        # Keep the first one, delete the rest, then update selection/stake/odds
+        tbet = existing_bets[0]
+        for dup in existing_bets[1:]:
+            await db.delete(dup)
+        tbet.selection          = selection
+        tbet.stake              = stake
+        tbet.odds_at_placement  = odds
+    else:
+        tbet = TournamentBet(
+            player_id=player.id, bet_type=bet_type, selection=selection,
+            stake=stake, odds_at_placement=odds,
+        )
+        db.add(tbet)
+
     if player.token_balance < stake:
+        await db.rollback()
         raise HTTPException(400, "insufficient balance")
 
-    tbet = TournamentBet(
-        player_id=player.id, bet_type=bet_type, selection=selection,
-        stake=stake, odds_at_placement=odds,
-    )
     player.token_balance -= stake
-    db.add(tbet)
     await db.commit()
     await db.refresh(tbet)
     return {"id": tbet.id, "new_balance": player.token_balance, "odds": odds}
@@ -407,7 +438,7 @@ async def place_insurance_pick(
             TournamentBet.player_id == player.id,
             TournamentBet.bet_type  == bet_type,
             TournamentBet.status    == "pending",
-        )
+        ).limit(1)
     )).scalar_one_or_none()
     if not primary_bet:
         raise HTTPException(400, f"You must have a pending {bet_type} bet to add insurance")
