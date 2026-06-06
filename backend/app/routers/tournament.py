@@ -119,14 +119,11 @@ GOLDEN_BOOT_ODDS = [
 # refusing the bet.  Keeps the market open for surprise discoveries.
 GOLDEN_BOOT_UNKNOWN_ODDS = 101.0
 
-# Total goals over/under lines (WC avg ~2.5 goals/match × 64 matches = ~160)
+# Total goals — single line at 159.5 (WC avg ~2.5 goals/match × ~64 matches ≈ 160).
+# One clean over/under removes the "bracket vs floor" confusion from multi-line markets.
 TOTAL_GOALS_MARKETS = [
-    {"name": "Over 149.5",  "odds": 2.10},
-    {"name": "Under 149.5", "odds": 1.75},
     {"name": "Over 159.5",  "odds": 1.90},
     {"name": "Under 159.5", "odds": 1.90},
-    {"name": "Over 169.5",  "odds": 1.75},
-    {"name": "Under 169.5", "odds": 2.10},
 ]
 
 
@@ -178,8 +175,8 @@ async def get_tournament_markets(auth=Depends(get_current_player)):
                 "hint": "e.g. Mbappé, Vinicius Jr, Haaland",
             },
             "total_goals": {
-                "label": "⚽ Total Tournament Goals",
-                "description": "Total goals scored across all 64 matches.",
+                "label": "⚽ Total Goals",
+                "description": "Will the whole tournament produce more or fewer than 160 goals? Historic WC average is ~2.5 goals per match.",
                 "type": "pick",
                 "options": TOTAL_GOALS_MARKETS,
             },
