@@ -94,7 +94,8 @@ def _find_player_in_cache(name: str, cache: dict) -> dict | None:
     if norm in normalized_cache:
         return normalized_cache[norm]
     for key in normalized_cache:
-        if norm in key or key in norm:
+        # Match "l. messi" when lookup is "messi": key ends with " messi"
+        if key.endswith(" " + norm):
             return normalized_cache[key]
     return None
 
@@ -121,6 +122,8 @@ def determine_player_h2h_winner(
             return "void"
         issuer_player, issuer_stat = issuer_parts
         acceptor_player, acceptor_stat = acceptor_parts
+        if not issuer_player.strip() or not acceptor_player.strip():
+            return "void"
         if issuer_stat.lower() != acceptor_stat.lower():
             return "void"
         stat = issuer_stat.lower()
@@ -137,8 +140,8 @@ def determine_player_h2h_winner(
         if issuer_entry is None or acceptor_entry is None:
             return "void"
 
-        issuer_count = issuer_entry.get(stat, 0)
-        acceptor_count = acceptor_entry.get(stat, 0)
+        issuer_count = int(issuer_entry.get(stat, 0))
+        acceptor_count = int(acceptor_entry.get(stat, 0))
 
         if issuer_count > acceptor_count:
             return "issuer"

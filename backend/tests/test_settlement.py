@@ -180,3 +180,25 @@ def test_find_player_mixed_case_cache_key():
     # Admin override may store keys with non-normalized case
     cache = {"Messi": {"goals": 1, "assists": 0}}
     assert _find_player_in_cache("messi", cache) == {"goals": 1, "assists": 0}
+
+
+def test_find_player_no_false_substring_match():
+    """'Son' must not match 'anderson' — only matches 'h. son'."""
+    cache = {
+        "anderson": {"goals": 5, "assists": 0},
+        "h. son":   {"goals": 3, "assists": 0},
+    }
+    result = _find_player_in_cache("Son", cache)
+    assert result == {"goals": 3, "assists": 0}
+
+
+def test_determine_h2h_string_goals_in_cache_coerced():
+    """Cache values stored as strings still settle correctly."""
+    cache_json = '{"messi": {"goals": "2", "assists": "0"}, "mbappe": {"goals": "0", "assists": "0"}}'
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "issuer"
+
+
+def test_determine_h2h_empty_player_name_voids():
+    """Selection with empty player name (leading space) voids cleanly."""
+    cache_json = '{"messi": {"goals": 1, "assists": 0}}'
+    assert determine_player_h2h_winner(" goals", "Mbappé goals", cache_json) == "void"
