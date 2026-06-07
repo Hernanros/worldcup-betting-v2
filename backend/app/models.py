@@ -29,6 +29,8 @@ class Player(Base):
     total_challenges_issued = Column(Integer, nullable=False, default=0)
     volume_milestone_reached = Column(Integer, nullable=False, default=0)
     is_admin = Column(Boolean, nullable=False, default=False)
+    google_sub = Column(String(200), unique=True, nullable=True, index=True)
+    email = Column(String(200), nullable=True)
     league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)
     league    = relationship("League", back_populates="players")
 
