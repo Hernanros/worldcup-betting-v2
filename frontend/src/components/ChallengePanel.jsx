@@ -177,6 +177,9 @@ function HandicapPicker({ match, selection, onPick }) {
 /* ── Player H2H picker ─────────────────────────────────────────── */
 function PlayerH2HPicker({ match, selection, acceptorSelection, onPick }) {
   const pool = _teamPool(match)
+  // Selection format: "{player name} {stat}" — stat is always the last token.
+  // Multi-word names (e.g. "Enner Valencia goals") work correctly because
+  // "goals"/"assists" are the only valid last tokens.
   function parse(sel) {
     if (!sel) return { player: "", stat: "goals" }
     const parts = sel.split(" ")
@@ -211,12 +214,18 @@ function PlayerH2HPicker({ match, selection, acceptorSelection, onPick }) {
 
   return (
     <div style={{ marginBottom: 10 }}>
+      {pool.length === 0 && (
+        <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 8 }}>
+          No featured players for this match.
+        </div>
+      )}
       {/* Your player */}
       <div style={{ marginBottom: 8 }}>
         <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>Your player</div>
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {pool.map(p => (
             <button key={p} onClick={() => pickMy(p)} disabled={p === theirParsed.player}
+              title={p === theirParsed.player ? `${p} already picked by opponent` : p}
               style={{ ...chipStyle(p === myParsed.player), opacity: p === theirParsed.player ? 0.3 : 1 }}>
               {p}
             </button>
@@ -230,6 +239,7 @@ function PlayerH2HPicker({ match, selection, acceptorSelection, onPick }) {
         <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
           {pool.map(p => (
             <button key={p} onClick={() => pickTheir(p)} disabled={p === myParsed.player}
+              title={p === myParsed.player ? `${p} already picked by you` : p}
               style={{ ...chipStyle(p === theirParsed.player), opacity: p === myParsed.player ? 0.3 : 1 }}>
               {p}
             </button>
