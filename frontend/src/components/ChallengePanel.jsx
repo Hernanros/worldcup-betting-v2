@@ -14,7 +14,50 @@ const DARE_TYPES = [
   { key: "offsides",     label: "🚩 Offsides Line",short: "Offsides",     yesNo: false, hint: "Over/Under total offside calls in the match", presets: ["Over 2.5", "Over 3.5", "Under 3.5"] },
   { key: "handicap", label: "🎲 Handicap", short: "Handicap", yesNo: false, handicap: true,
     hint: "Give a team a head start: 'Argentina +1.5' wins even if they draw or lose by 1 goal" },
+  { key: "player_h2h", label: "⚽ Player H2H", short: "Player H2H", yesNo: false, playerH2H: true,
+    hint: "Dare on which player wins a stat duel — e.g. Messi vs Mbappé, who scores more goals?" },
 ]
+
+/* ── Star players by WC 2026 team ──────────────────────────────── */
+const STAR_PLAYERS = {
+  "Argentina":    ["Messi", "Di María", "Álvarez", "Mac Allister"],
+  "France":       ["Mbappé", "Griezmann", "Dembélé", "Camavinga"],
+  "Brazil":       ["Vini Jr", "Rodrygo", "Raphinha", "Paquetá"],
+  "England":      ["Bellingham", "Saka", "Foden", "Kane"],
+  "Portugal":     ["Ronaldo", "B. Silva", "Félix", "R. Leão"],
+  "Spain":        ["Pedri", "Yamal", "Morata", "Olmo"],
+  "Germany":      ["Müller", "Wirtz", "Gnabry", "Havertz"],
+  "Netherlands":  ["Van Dijk", "Gakpo", "Depay", "Simons"],
+  "Uruguay":      ["Núñez", "Valverde", "Araújo"],
+  "Colombia":     ["James", "Díaz", "Arias"],
+  "USA":          ["Pulisic", "Reyna", "Adams"],
+  "Mexico":       ["Lozano", "Guardado", "Raúl"],
+  "Morocco":      ["En-Nesyri", "Hakimi", "Ziyech"],
+  "Senegal":      ["Mané", "Dia", "Sarr"],
+  "Japan":        ["Mitoma", "Kubo", "Kamada"],
+  "South Korea":  ["Son", "Lee Kang-In", "Hwang"],
+  "Croatia":      ["Modrić", "Kovačić", "Gvardiol"],
+  "Belgium":      ["De Bruyne", "Lukaku", "Tielemans"],
+  "Italy":        ["Barella", "Tonali", "Scamacca"],
+  "Poland":       ["Lewandowski", "Zieliński", "Szymański"],
+  "Switzerland":  ["Xhaka", "Shaqiri", "Embolo"],
+  "Australia":    ["Hrustic", "Irvine", "Boyle"],
+  "Canada":       ["Davies", "David", "Buchanan"],
+  "Ecuador":      ["Caicedo", "Plata", "Enner Valencia"],
+  "Iran":         ["Taremi", "Jahanbakhsh", "Azmoun"],
+  "Saudi Arabia": ["Al-Dawsari", "Al-Shahrani", "Al-Malki"],
+  "Cameroon":     ["Onana", "Aboubakar", "Choupo-Moting"],
+  "Ghana":        ["Kudus", "Partey", "Ayew"],
+  "Nigeria":      ["Lookman", "Osimhen", "Iheanacho"],
+  "South Africa": ["Tau", "Dolly", "Zwane"],
+  "Qatar":        ["Al-Haydos", "Afif", "Al-Rawi"],
+}
+
+function _teamPool(match) {
+  const home = STAR_PLAYERS[match.home_team] || []
+  const away = STAR_PLAYERS[match.away_team] || []
+  return [...home, ...away]
+}
 
 function oppositeOf(type, sel) {
   if (type.yesNo) return sel === "Yes" ? "No" : sel === "No" ? "Yes" : ""
@@ -124,6 +167,101 @@ function HandicapPicker({ match, selection, onPick }) {
           </div>
           <div style={{ color: "#6b7280", fontSize: 10 }}>
             You win if {currentTeam} loses by fewer than {currentLine?.replace("+", "")} {currentLine === "+1" ? "goal" : "goals"}, draws, or wins outright.
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Player H2H picker ─────────────────────────────────────────── */
+function PlayerH2HPicker({ match, selection, acceptorSelection, onPick }) {
+  const pool = _teamPool(match)
+  function parse(sel) {
+    if (!sel) return { player: "", stat: "goals" }
+    const parts = sel.split(" ")
+    const stat = parts[parts.length - 1].toLowerCase()
+    const player = parts.slice(0, -1).join(" ")
+    return { player, stat: (stat === "goals" || stat === "assists") ? stat : "goals" }
+  }
+  const myParsed    = parse(selection)
+  const theirParsed = parse(acceptorSelection)
+  const currentStat = myParsed.stat || "goals"
+
+  function pickMy(player) {
+    onPick(`${player} ${currentStat}`, theirParsed.player ? `${theirParsed.player} ${currentStat}` : "")
+  }
+  function pickTheir(player) {
+    onPick(myParsed.player ? `${myParsed.player} ${currentStat}` : "", `${player} ${currentStat}`)
+  }
+  function pickStat(stat) {
+    onPick(
+      myParsed.player    ? `${myParsed.player} ${stat}`    : "",
+      theirParsed.player ? `${theirParsed.player} ${stat}` : "",
+    )
+  }
+
+  const chipStyle = (active) => ({
+    padding: "3px 10px", borderRadius: 999, fontSize: 10, fontWeight: 700,
+    cursor: "pointer", border: "1px solid",
+    background: active ? "rgba(168,85,247,0.2)" : "transparent",
+    borderColor: active ? "rgba(168,85,247,0.6)" : "#2d2b55",
+    color: active ? "#c4b5fd" : "#6b7280",
+  })
+
+  return (
+    <div style={{ marginBottom: 10 }}>
+      {/* Your player */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>Your player</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {pool.map(p => (
+            <button key={p} onClick={() => pickMy(p)} disabled={p === theirParsed.player}
+              style={{ ...chipStyle(p === myParsed.player), opacity: p === theirParsed.player ? 0.3 : 1 }}>
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Their player */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>Their player</div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
+          {pool.map(p => (
+            <button key={p} onClick={() => pickTheir(p)} disabled={p === myParsed.player}
+              style={{ ...chipStyle(p === theirParsed.player), opacity: p === myParsed.player ? 0.3 : 1 }}>
+              {p}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stat */}
+      <div style={{ marginBottom: 8 }}>
+        <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>Stat</div>
+        <div style={{ display: "flex", gap: 6 }}>
+          {["goals", "assists"].map(s => (
+            <button key={s} onClick={() => pickStat(s)} style={{
+              ...chipStyle(currentStat === s),
+              padding: "5px 16px", fontSize: 11,
+            }}>
+              {s === "goals" ? "⚽ Goals" : "🅰️ Assists"}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Summary pill */}
+      {myParsed.player && theirParsed.player && (
+        <div style={{ marginTop: 8, padding: "8px 10px",
+          background: "rgba(168,85,247,0.08)",
+          borderRadius: 8, border: "1px solid rgba(168,85,247,0.2)" }}>
+          <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 700 }}>
+            ⚔️ {myParsed.player} ({currentStat}) vs {theirParsed.player} ({currentStat})
+          </div>
+          <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>
+            You back {myParsed.player} · they back {theirParsed.player}. Tie = void (full refund).
           </div>
         </div>
       )}
@@ -263,6 +401,13 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             <YesNoPicker label="Their call (auto)" value={acceptorSelection}
               onChange={v => { setAcceptorSelection(v); setSelection(oppositeOf(currentType, v)) }} />
           </div>
+        ) : currentType.playerH2H ? (
+          <PlayerH2HPicker
+            match={match}
+            selection={selection}
+            acceptorSelection={acceptorSelection}
+            onPick={(sel, acceptSel) => { setSelection(sel); setAcceptorSelection(acceptSel) }}
+          />
         ) : currentType.handicap ? (
           <HandicapPicker
             match={match}
