@@ -1,3 +1,4 @@
+import json
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -5,8 +6,12 @@ from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
 from app.deps import get_admin
-from app.models import League, Player, Match, TournamentBet, InsurancePick
-from app.settlement import determine_totals_winner
+from app.models import League, Player, Match, TournamentBet, InsurancePick, Challenge
+from app.settlement import (
+    determine_totals_winner,
+    determine_player_h2h_winner,
+    _normalize_name,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -295,3 +300,82 @@ async def settle_tournament_bets(
         "golden_boot": golden_boot_player,
         "total_goals": total_goals,
     }
+
+
+@router.post("/api/admin/matches/{match_id}/player-stats", status_code=200)
+async def set_player_stats(
+    match_id: int,
+    data: dict,
+    _=Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Override player stats cache for a match and re-settle voided player_h2h challenges."""
+    # 1. Load match → 404 if not found
+    match = await db.get(Match, match_id)
+    if not match:
+        raise HTTPException(404, "match not found")
+
+    # 2. Validate player_stats is a non-empty dict
+    player_stats = data.get("player_stats")
+    if not player_stats or not isinstance(player_stats, dict):
+        raise HTTPException(400, "player_stats must be a non-empty dict")
+
+    # 3. Normalize all keys
+    normalised = {_normalize_name(k): v for k, v in player_stats.items()}
+
+    # 4. Write to match.player_stats_cache
+    match.player_stats_cache = json.dumps(normalised)
+
+    # 5. Commit
+    await db.commit()
+
+    # 6. Re-settle voided player_h2h challenges if match is finished
+    resettled = 0
+    if match.status == "finished":
+        voided_challenges = (await db.execute(
+            select(Challenge).where(
+                Challenge.match_id == match_id,
+                Challenge.bet_type == "player_h2h",
+                Challenge.status == "voided",
+            )
+        )).scalars().all()
+
+        # 7. Re-settlement logic
+        for ch in voided_challenges:
+            result = determine_player_h2h_winner(
+                ch.selection, ch.acceptor_selection, match.player_stats_cache
+            )
+
+            if result == "void":
+                # Still void — leave as voided
+                continue
+
+            if result == "issuer":
+                net_gain = int(ch.issuer_stake * ch.issuer_odds) - ch.issuer_stake
+                if net_gain > 0:
+                    issuer = await db.get(Player, ch.issuer_id)
+                    if issuer:
+                        issuer.token_balance += net_gain
+                if ch.acceptor_id:
+                    acceptor = await db.get(Player, ch.acceptor_id)
+                    if acceptor:
+                        acceptor.challenge_streak = 0
+
+            elif result == "acceptor":
+                net_gain = int(ch.acceptor_stake * ch.acceptor_odds) - ch.acceptor_stake
+                if net_gain > 0:
+                    acceptor = await db.get(Player, ch.acceptor_id)
+                    if acceptor:
+                        acceptor.token_balance += net_gain
+                issuer = await db.get(Player, ch.issuer_id)
+                if issuer:
+                    issuer.challenge_streak = 0
+
+            ch.status = "resolved"
+            resettled += 1
+
+        # 8. Commit re-settlements
+        await db.commit()
+
+    # 9. Return result
+    return {"updated": True, "resettled": resettled}
