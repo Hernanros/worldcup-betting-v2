@@ -117,6 +117,30 @@ async def _run_migrations():
             await db.rollback()
             raise
 
+        # players.google_sub  (Google OAuth stable user ID)
+        await db.execute(text(
+            "ALTER TABLE players ADD COLUMN IF NOT EXISTS "
+            "google_sub VARCHAR(200)"
+        ))
+        await db.commit()
+
+        # Unique index on google_sub (NULL values don't conflict)
+        try:
+            await db.execute(text(
+                "CREATE UNIQUE INDEX IF NOT EXISTS ix_players_google_sub "
+                "ON players (google_sub) WHERE google_sub IS NOT NULL"
+            ))
+            await db.commit()
+        except Exception:
+            await db.rollback()
+
+        # players.email
+        await db.execute(text(
+            "ALTER TABLE players ADD COLUMN IF NOT EXISTS "
+            "email VARCHAR(200)"
+        ))
+        await db.commit()
+
         # ── PHASE 2: DATA MIGRATIONS (ORM queries) ───────────────────────────
         # All columns exist now — autoflush is safe.
 
