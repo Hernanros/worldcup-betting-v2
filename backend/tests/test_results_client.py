@@ -68,11 +68,22 @@ def test_player_stats_empty_when_no_fixture_id():
 
 
 def test_existing_sub_goals_still_computed():
+    """Sub event at minute 60, goal at minute 10 → sub happened AFTER goal → sub_goals == 0."""
     events = [
         _sub("L. Messi", "Argentina", 60),
-        _goal("L. Messi"),
+        _goal("L. Messi"),   # elapsed=10 (set in _goal helper)
     ]
     with patch("app.results_client.requests.get", return_value=_make_response(events)):
         result = fetch_api_football_events(fixture_id=99, api_key="test-key")
-    assert "sub_goals" in result
-    assert "player_stats" in result
+    assert result["sub_goals"] == 0
+    assert result["player_stats"]["l. messi"]["goals"] == 1
+
+
+def test_goal_with_no_scorer_name_skipped():
+    """Events with empty player name should be ignored entirely."""
+    events = [{"type": "Goal", "detail": "Normal Goal", "player": {"name": ""},
+               "assist": {"name": "Di Maria"}, "team": {"name": "Argentina"},
+               "time": {"elapsed": 10}}]
+    with patch("app.results_client.requests.get", return_value=_make_response(events)):
+        result = fetch_api_football_events(fixture_id=99, api_key="test-key")
+    assert result["player_stats"] == {}  # assist not recorded when scorer unknown

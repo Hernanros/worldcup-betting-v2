@@ -198,7 +198,7 @@ def fetch_api_football_events(fixture_id: int, api_key: str) -> dict:
     Falls back to zeros/empty on any error.
     """
     base = {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0, "player_stats": {}}
-    if not fixture_id or not api_key:
+    if fixture_id is None or not api_key:
         return base
     try:
         resp = requests.get(
@@ -227,11 +227,12 @@ def fetch_api_football_events(fixture_id: int, api_key: str) -> dict:
             if e.get("type") != "Goal" or e.get("detail") == "Own Goal":
                 continue
             scorer_name = (e.get("player") or {}).get("name", "")
-            if scorer_name:
-                key = _normalize_name(scorer_name)
-                if key not in player_stats:
-                    player_stats[key] = {"goals": 0, "assists": 0}
-                player_stats[key]["goals"] += 1
+            if not scorer_name:
+                continue
+            key = _normalize_name(scorer_name)
+            if key not in player_stats:
+                player_stats[key] = {"goals": 0, "assists": 0}
+            player_stats[key]["goals"] += 1
             assist_name = (e.get("assist") or {}).get("name", "")
             if assist_name:
                 key = _normalize_name(assist_name)
