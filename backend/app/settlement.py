@@ -85,15 +85,17 @@ def _normalize_name(name: str) -> str:
 def _find_player_in_cache(name: str, cache: dict) -> dict | None:
     """Return the stat dict for `name` from `cache`, or None if not found.
 
-    Tries exact normalised match first, then substring containment to handle
-    API-Football abbreviations like 'L. Messi' when the chip stored 'Messi'.
+    Normalises both the lookup name and all cache keys so mixed-case keys
+    (e.g. from admin overrides) are handled correctly. Tries exact match first,
+    then substring containment for API-Football abbreviations ('L. Messi' vs 'Messi').
     """
     norm = _normalize_name(name)
-    if norm in cache:
-        return cache[norm]
-    for key in cache:
+    normalized_cache = {_normalize_name(k): v for k, v in cache.items()}
+    if norm in normalized_cache:
+        return normalized_cache[norm]
+    for key in normalized_cache:
         if norm in key or key in norm:
-            return cache[key]
+            return normalized_cache[key]
     return None
 
 

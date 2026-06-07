@@ -7,6 +7,9 @@ from app.settlement import (
     determine_handicap_winner,
     settle_challenge_issuer,
     settle_challenge_acceptor,
+    _normalize_name,
+    _find_player_in_cache,
+    determine_player_h2h_winner,
 )
 
 
@@ -115,9 +118,6 @@ def test_handicap_bad_format_returns_false():
     assert determine_handicap_winner("", "Argentina", 1, 0) is False
 
 
-from app.settlement import _normalize_name, _find_player_in_cache, determine_player_h2h_winner
-
-
 def test_normalize_strips_accents_and_lowercases():
     assert _normalize_name("Mbappé") == "mbappe"
     assert _normalize_name("L. Messi") == "l. messi"
@@ -174,3 +174,9 @@ def test_determine_h2h_abbreviated_api_name_in_cache():
     # API-Football gave us "l. messi" as the key; chip stored "Messi"
     cache_json = '{"l. messi": {"goals": 3, "assists": 0}, "k. mbappe": {"goals": 1, "assists": 0}}'
     assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "issuer"
+
+
+def test_find_player_mixed_case_cache_key():
+    # Admin override may store keys with non-normalized case
+    cache = {"Messi": {"goals": 1, "assists": 0}}
+    assert _find_player_in_cache("messi", cache) == {"goals": 1, "assists": 0}
