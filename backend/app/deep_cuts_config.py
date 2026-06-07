@@ -84,7 +84,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
             "settle":      "group_advance",
             "group":       g,
             "teams":       WC2026_GROUPS[g],
-            "default_odds": 32.0,
+            "default_odds": 4.0,
         }
         for g in "ABCDEFGHIJKL"
     },
