@@ -22,6 +22,12 @@ export default function AdminPage() {
   const [goldenBoot, setGoldenBoot] = useState("")
   const [tournamentSettleMsg, setTournamentSettleMsg] = useState("")
   const [tournamentLoading, setTournamentLoading] = useState(false)
+  // Player stats override
+  const [finishedMatches, setFinishedMatches] = useState([])
+  const [statsMatchId, setStatsMatchId] = useState("")
+  const [statsJson, setStatsJson] = useState("")
+  const [statsMsg, setStatsMsg] = useState("")
+  const [statsLoading, setStatsLoading] = useState(false)
 
   useEffect(() => { if (!player?.is_admin) navigate("/", { replace: true }) }, [])
 
@@ -35,7 +41,13 @@ export default function AdminPage() {
       setUnsettled(all.filter(m => m.status === "locked" || m.status === "upcoming"))
     } catch (_) {}
   }
-  useEffect(() => { load(); loadMatches() }, [])
+  async function loadFinishedMatches() {
+    try {
+      const all = await api.get("/api/matches")
+      setFinishedMatches(all.filter(m => m.status === "finished"))
+    } catch (_) {}
+  }
+  useEffect(() => { load(); loadMatches(); loadFinishedMatches() }, [])
 
   async function handleSettle(match) {
     const s = scores[match.id] || {}
@@ -95,6 +107,20 @@ export default function AdminPage() {
     } finally {
       setTournamentLoading(false)
     }
+  }
+
+  async function handleSetPlayerStats() {
+    if (!statsMatchId) return setStatsMsg("✗ Select a match")
+    let parsed
+    try { parsed = JSON.parse(statsJson) }
+    catch { return setStatsMsg("✗ Invalid JSON") }
+    setStatsLoading(true); setStatsMsg("")
+    try {
+      const r = await api.post(`/api/admin/matches/${statsMatchId}/player-stats`,
+                               { player_stats: parsed })
+      setStatsMsg(`✓ Saved. Re-settled ${r.resettled} challenge(s).`)
+    } catch (e) { setStatsMsg("✗ " + e.message) }
+    finally { setStatsLoading(false) }
   }
 
   const inputStyle = {
@@ -230,6 +256,72 @@ export default function AdminPage() {
             {tournamentLoading ? "Settling..." : "Settle tournament bets"}
           </button>
         </form>
+      </div>
+
+      {/* Player Stats Override */}
+      <div style={card}>
+        <h3 style={{ color: "#a78bfa", fontWeight: 700, fontSize: 14, marginBottom: 6 }}>
+          ⚽ Player Stats Override
+        </h3>
+        <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 10 }}>
+          Use when API-Football had no data and player H2H challenges were voided.
+          Paste the stats JSON — voided challenges re-settle automatically.
+        </p>
+
+        <div style={{ marginBottom: 8 }}>
+          <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 4 }}>Match</div>
+          <select
+            value={statsMatchId}
+            onChange={e => setStatsMatchId(e.target.value)}
+            style={{ ...inputStyle, width: "100%", boxSizing: "border-box" }}
+          >
+            <option value="">— select finished match —</option>
+            {finishedMatches.map(m => (
+              <option key={m.id} value={m.id}>
+                {m.home_team} vs {m.away_team}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ marginBottom: 10 }}>
+          <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 4 }}>
+            Player stats JSON  (lowercase keys: "messi", "mbappe")
+          </div>
+          <textarea
+            value={statsJson}
+            onChange={e => setStatsJson(e.target.value)}
+            placeholder={'{\n  "messi": {"goals": 2, "assists": 0},\n  "mbappe": {"goals": 1, "assists": 0}\n}'}
+            rows={6}
+            style={{
+              ...inputStyle, width: "100%", fontFamily: "monospace", fontSize: 11,
+              boxSizing: "border-box", resize: "vertical",
+            }}
+          />
+        </div>
+
+        <button
+          onClick={handleSetPlayerStats}
+          disabled={statsLoading}
+          style={{
+            background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
+            border: "none", borderRadius: 8, padding: "8px 18px",
+            fontSize: 12, fontWeight: 700,
+            cursor: statsLoading ? "not-allowed" : "pointer",
+            opacity: statsLoading ? 0.7 : 1,
+          }}
+        >
+          {statsLoading ? "Saving..." : "💾 Save & Settle"}
+        </button>
+
+        {statsMsg && (
+          <p style={{
+            color: statsMsg.startsWith("✓") ? "#4ade80" : "#f87171",
+            fontSize: 12, marginTop: 8,
+          }}>
+            {statsMsg}
+          </p>
+        )}
       </div>
 
       <div style={card}>
