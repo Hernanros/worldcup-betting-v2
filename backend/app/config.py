@@ -5,6 +5,7 @@ class Settings(BaseSettings):
     jwt_secret: str = "dev-secret"
     invite_code: str = "friends2026"
     admin_code: str = "admin"
+    google_client_id: str = ""
     odds_api_key: str = ""
     football_api_key: str = ""
     anthropic_api_key: str = ""
