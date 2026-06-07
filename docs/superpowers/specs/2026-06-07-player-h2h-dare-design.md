@@ -101,7 +101,10 @@ const STAR_PLAYERS = {
   "Senegal":    ["Mané", "Dia", "Sarr"],
   "Japan":      ["Mitoma", "Kubo", "Kamada"],
   "South Korea":["Son", "Lee Kang-In", "Hwang"],
-  // ... extend to full WC 2026 field
+  // Implementation note: extend to all 48 WC 2026 teams before go-live.
+  // Full team list is seeded in the matches table. Use Wikipedia's WC 2026 squad
+  // pages as source for names; prefer the surname or widely known short form
+  // that API-Football uses (check one real fixture event to confirm).
 }
 ```
 
@@ -315,7 +318,7 @@ Current cache:
 [Save & Settle]   → ✓ Settled 2 challenge(s)
 ```
 
-The dropdown is populated by filtering `GET /api/matches` for `status == "finished"` matches that have associated challenges of type `player_h2h`. Pre-fills textarea with current `player_stats_cache` or an empty template.
+The dropdown is populated from all finished matches (same source as the existing "Settle Match" section — `GET /api/matches` filtered to `status == "finished"`). Admin selects the relevant match. The textarea pre-fills with current `player_stats_cache` JSON or an empty template `{"player_name": {"goals": 0, "assists": 0}}`.
 
 ---
 
@@ -352,7 +355,7 @@ Known risk: two players with the same surname on the same team (rare in practice
 | `backend/app/results_client.py` | Extend `fetch_api_football_events()` to collect per-player goals + assists |
 | `backend/app/poller.py` | Store `player_stats_cache` in `_enrich_match_stats()`; add void branch in `_settle_challenges()` |
 | `backend/app/settlement.py` | Add `determine_player_h2h_winner()` + `_find_player_in_cache()` + `_normalize_name()` |
-| `backend/app/routers/matches.py` or new `admin.py` | Add `POST /api/admin/matches/{id}/player-stats` endpoint |
+| `backend/app/routers/leagues.py` | Add `POST /api/admin/matches/{id}/player-stats` endpoint (all admin endpoints live here) |
 | `frontend/src/pages/AdminPage.jsx` | Add Player Stats Override section |
 | `alembic/versions/` or migration script | `ALTER TABLE matches ADD COLUMN player_stats_cache TEXT` |
 
