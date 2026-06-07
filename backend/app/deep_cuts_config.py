@@ -71,7 +71,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "description":  "Player with the most total minutes played across the entire tournament.",
         "type":         "text_pick",
         "settle":       "most_exhausted",
-        "default_odds": 50.0,
+        "default_odds": 8.0,
     },
 
     # ── GROUP STAGE ──────────────────────────────────────────────────────────
@@ -84,7 +84,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
             "settle":      "group_advance",
             "group":       g,
             "teams":       WC2026_GROUPS[g],
-            "default_odds": 4.0,
+            "default_odds": 2.0,
         }
         for g in "ABCDEFGHIJKL"
     },
@@ -95,7 +95,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "team_pick",
         "settle":       "best_group_team",
         "pool":         "all_group_teams",
-        "default_odds": 48.0,
+        "default_odds": 6.0,
     },
     "total_corners": {
         "stage":       "group_stage",
@@ -142,7 +142,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "team_pick",
         "settle":       "top_goals_team",
         "pool":         "r32_teams",
-        "default_odds": 32.0,
+        "default_odds": 4.0,
     },
     "r32_most_violent": {
         "stage":        "r32",
@@ -151,7 +151,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "team_pick",
         "settle":       "top_red_cards_team",
         "pool":         "r32_teams",
-        "default_odds": 32.0,
+        "default_odds": 4.0,
     },
     "r32_extra_time": {
         "stage":   "r32",
@@ -183,7 +183,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "team_pick",
         "settle":       "min_conceded_team",
         "pool":         "r32_teams",
-        "default_odds": 32.0,
+        "default_odds": 4.0,
     },
 
     # ── ROUND OF 16 ──────────────────────────────────────────────────────────
@@ -217,7 +217,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "team_pick",
         "settle":       "max_conceded_team",
         "pool":         "r16_teams",
-        "default_odds": 16.0,
+        "default_odds": 3.0,
     },
     "r16_corner_machine": {
         "stage":        "r16",
@@ -226,7 +226,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "team_pick",
         "settle":       "top_corners_team",
         "pool":         "r16_teams",
-        "default_odds": 16.0,
+        "default_odds": 3.0,
     },
     "r16_high_scoring": {
         "stage":       "r16",
