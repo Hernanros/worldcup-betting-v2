@@ -113,3 +113,64 @@ def test_handicap_away_positive_loses():
 def test_handicap_bad_format_returns_false():
     assert determine_handicap_winner("NoHandicap", "Argentina", 1, 0) is False
     assert determine_handicap_winner("", "Argentina", 1, 0) is False
+
+
+from app.settlement import _normalize_name, _find_player_in_cache, determine_player_h2h_winner
+
+
+def test_normalize_strips_accents_and_lowercases():
+    assert _normalize_name("Mbappé") == "mbappe"
+    assert _normalize_name("L. Messi") == "l. messi"
+    assert _normalize_name("Di María") == "di maria"
+    assert _normalize_name("  KANE  ") == "kane"
+
+
+def test_find_player_exact_match():
+    cache = {"messi": {"goals": 2, "assists": 0}}
+    assert _find_player_in_cache("Messi", cache) == {"goals": 2, "assists": 0}
+
+
+def test_find_player_abbreviated_api_name():
+    # API-Football returns "L. Messi"; chip stores "Messi"
+    cache = {"l. messi": {"goals": 2, "assists": 0}}
+    assert _find_player_in_cache("Messi", cache) == {"goals": 2, "assists": 0}
+
+
+def test_find_player_not_found_returns_none():
+    cache = {"neymar": {"goals": 1, "assists": 0}}
+    assert _find_player_in_cache("Messi", cache) is None
+
+
+def test_determine_h2h_issuer_wins_on_goals():
+    cache_json = '{"messi": {"goals": 2, "assists": 0}, "mbappe": {"goals": 0, "assists": 1}}'
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "issuer"
+
+
+def test_determine_h2h_acceptor_wins_on_goals():
+    cache_json = '{"messi": {"goals": 0, "assists": 0}, "mbappe": {"goals": 1, "assists": 0}}'
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "acceptor"
+
+
+def test_determine_h2h_tie_returns_void():
+    cache_json = '{"messi": {"goals": 1, "assists": 0}, "mbappe": {"goals": 1, "assists": 0}}'
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "void"
+
+
+def test_determine_h2h_null_cache_returns_void():
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", None) == "void"
+
+
+def test_determine_h2h_missing_player_returns_void():
+    cache_json = '{"messi": {"goals": 1, "assists": 0}}'  # mbappe missing
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "void"
+
+
+def test_determine_h2h_assists_stat():
+    cache_json = '{"messi": {"goals": 0, "assists": 2}, "mbappe": {"goals": 1, "assists": 0}}'
+    assert determine_player_h2h_winner("Messi assists", "Mbappé assists", cache_json) == "issuer"
+
+
+def test_determine_h2h_abbreviated_api_name_in_cache():
+    # API-Football gave us "l. messi" as the key; chip stored "Messi"
+    cache_json = '{"l. messi": {"goals": 3, "assists": 0}, "k. mbappe": {"goals": 1, "assists": 0}}'
+    assert determine_player_h2h_winner("Messi goals", "Mbappé goals", cache_json) == "issuer"
