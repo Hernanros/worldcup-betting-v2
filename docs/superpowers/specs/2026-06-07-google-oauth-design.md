@@ -22,7 +22,7 @@ Players sign in with Google. New players are asked for an invite code once to jo
 
 - Existing `UniqueConstraint("name", "league_id")` stays. Name conflicts on Screen 2 return `400 "Name already taken in this group"` — user edits the pre-filled name field and retries.
 - `session_token`, `is_admin`, `league_id`, all other columns: unchanged.
-- One Alembic migration covers both columns.
+- Migration follows the app's existing pattern: two `ALTER TABLE players ADD COLUMN IF NOT EXISTS` blocks in `_run_migrations()` in `main.py`. The `google_sub` uniqueness is enforced via a partial unique index (`WHERE google_sub IS NOT NULL`) so NULL admin players don't conflict.
 
 ---
 
