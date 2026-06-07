@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
-from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -136,6 +135,8 @@ async def patch_me(
         await db.commit()
         return {"ok": True, "favorite_team": None}
 
+    if not isinstance(raw, str):
+        raise HTTPException(422, "unknown team")
     team = raw.strip()
     if team not in _WC2026_TEAMS:
         raise HTTPException(422, "unknown team")
