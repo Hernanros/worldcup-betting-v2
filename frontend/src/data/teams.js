@@ -110,3 +110,22 @@ export const GOLDEN_BOOT_PLAYERS = [
   "Joshua Kimmich",
   "Pedri",
 ]
+
+export const WC2026_GROUPS = {
+  A: ["Mexico", "Jamaica", "Venezuela", "Ecuador"],
+  B: ["USA", "Panama", "Costa Rica", "New Zealand"],
+  C: ["Morocco", "Belgium", "Canada", "Honduras"],
+  D: ["Brazil", "Croatia", "Japan", "Paraguay"],
+  E: ["Argentina", "Chile", "Australia", "Poland"],
+  F: ["Spain", "Portugal", "Egypt", "Algeria"],
+  G: ["France", "Nigeria", "DR Congo", "Slovenia"],
+  H: ["Germany", "Netherlands", "South Korea", "Iran"],
+  I: ["England", "Senegal", "Tunisia", "South Africa"],
+  J: ["Colombia", "Uruguay", "El Salvador", "Bolivia"],
+  K: ["Turkey", "Ukraine", "Saudi Arabia", "Ghana"],
+  L: ["Ivory Coast", "Norway", "Switzerland", "Czechia"],
+}
+
+export const TEAM_GROUP = Object.fromEntries(
+  Object.entries(WC2026_GROUPS).flatMap(([g, teams]) => teams.map(t => [t, g]))
+)
