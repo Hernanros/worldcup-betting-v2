@@ -7,6 +7,7 @@ from app.settlement import (
     settle_bet, settle_challenge_issuer, settle_challenge_acceptor,
     determine_h2h_winner, determine_correct_score_winner,
     determine_totals_winner, determine_btts_winner, determine_handicap_winner,
+    determine_player_h2h_winner,
 )
 from app.results_client import (
     fetch_espn_match_stats, fetch_api_football_events,
@@ -140,7 +141,20 @@ async def _settle_challenges(db, match, result):
         select(Challenge).where(Challenge.match_id == match.id, Challenge.status == "accepted")
     )).scalars().all()
     for ch in challenges:
-        issuer_won = _evaluate_bet(ch.bet_type, ch.selection, match, result)
+        if ch.bet_type == "player_h2h":
+            winner = determine_player_h2h_winner(
+                ch.selection, ch.acceptor_selection, match.player_stats_cache
+            )
+            if winner == "void":
+                issuer   = await db.get(Player, ch.issuer_id)
+                acceptor = await db.get(Player, ch.acceptor_id)
+                issuer.token_balance   += ch.issuer_stake
+                acceptor.token_balance += ch.acceptor_stake
+                ch.status = "voided"
+                continue
+            issuer_won = (winner == "issuer")
+        else:
+            issuer_won = _evaluate_bet(ch.bet_type, ch.selection, match, result)
         issuer   = await db.get(Player, ch.issuer_id)
         acceptor = await db.get(Player, ch.acceptor_id)
 
