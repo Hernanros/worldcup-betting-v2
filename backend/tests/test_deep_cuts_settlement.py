@@ -129,7 +129,7 @@ def test_fetch_api_football_events_no_key_returns_zeros():
     with patch("app.results_client.requests.get") as mock_get:
         result = fetch_api_football_events(12345, "")
     mock_get.assert_not_called()
-    assert result == {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0}
+    assert result == {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0, "player_stats": {}}
 
 
 import pytest_asyncio

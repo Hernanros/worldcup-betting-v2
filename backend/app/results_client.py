@@ -3,6 +3,8 @@ import requests
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
+from app.settlement import _normalize_name
+
 logger = logging.getLogger(__name__)
 
 # Normalize API team names → DB team names
@@ -192,10 +194,10 @@ def fetch_espn_match_stats(espn_event_id: str, league_slug: str = "fifa.world") 
 def fetch_api_football_events(fixture_id: int, api_key: str) -> dict:
     """
     Fetch goal + substitution events from API-Football for a completed match.
-    Returns own goal counts and sub_goals count.
-    Falls back to zeros on any error.
+    Returns own goal counts, sub_goals count, and per-player goals/assists.
+    Falls back to zeros/empty on any error.
     """
-    base = {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0}
+    base = {"home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0, "player_stats": {}}
     if not fixture_id or not api_key:
         return base
     try:
@@ -218,6 +220,26 @@ def fetch_api_football_events(fixture_id: int, api_key: str) -> dict:
         )
         base["home_own_goals"] = total_og
         base["away_own_goals"] = 0
+
+        # Per-player goals and assists (excludes own goals)
+        player_stats: dict[str, dict] = {}
+        for e in events:
+            if e.get("type") != "Goal" or e.get("detail") == "Own Goal":
+                continue
+            scorer_name = (e.get("player") or {}).get("name", "")
+            if scorer_name:
+                key = _normalize_name(scorer_name)
+                if key not in player_stats:
+                    player_stats[key] = {"goals": 0, "assists": 0}
+                player_stats[key]["goals"] += 1
+            assist_name = (e.get("assist") or {}).get("name", "")
+            if assist_name:
+                key = _normalize_name(assist_name)
+                if key not in player_stats:
+                    player_stats[key] = {"goals": 0, "assists": 0}
+                player_stats[key]["assists"] += 1
+        base["player_stats"] = player_stats
+
     except Exception as e:
         logger.warning("API-Football events fetch failed for fixture %s: %s", fixture_id, e)
     return base
