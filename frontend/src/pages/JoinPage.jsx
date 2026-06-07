@@ -58,6 +58,8 @@ export default function JoinPage() {
         setIdToken(credential)
         setDisplayName(data.google_name || "")
         setScreen("needs_invite")
+      } else {
+        setError("Unexpected response. Please try again.")
       }
     } catch (err) {
       setError(err.message)
@@ -261,7 +263,7 @@ export default function JoinPage() {
 
             <button
               type="button"
-              onClick={() => { setScreen("idle"); setIdToken(null); setError("") }}
+              onClick={() => { setScreen("idle"); setIdToken(null); setError(""); setInviteCode(""); setDisplayName("") }}
               style={{ background: "none", border: "none", color: "#6b7280", fontSize: 12, cursor: "pointer" }}
             >
               ← Use a different Google account
