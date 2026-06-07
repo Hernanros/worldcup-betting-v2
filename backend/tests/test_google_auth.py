@@ -11,6 +11,17 @@ def _fake_payload():
     return {"sub": FAKE_SUB, "email": FAKE_EMAIL, "name": FAKE_NAME}
 
 
+@pytest.fixture(autouse=True)
+def set_google_client_id(request):
+    """Ensure google_client_id is non-empty for all tests except the 503 test."""
+    if request.node.name == "test_google_auth_fails_when_client_id_not_configured":
+        yield
+        return
+    with patch("app.routers.auth.settings") as mock_settings:
+        mock_settings.google_client_id = "fake-client-id.apps.googleusercontent.com"
+        yield
+
+
 # ── New player — first call (no invite_code) ──────────────────────────────────
 
 async def test_google_new_player_returns_new_player_status(client):
@@ -111,3 +122,10 @@ async def test_google_name_conflict_returns_400(client):
         })
     assert resp.status_code == 400
     assert "taken" in resp.json()["detail"].lower()
+
+
+async def test_google_auth_fails_when_client_id_not_configured(client):
+    with patch("app.routers.auth.settings") as mock_settings:
+        mock_settings.google_client_id = ""
+        resp = await client.post("/api/auth/google", json={"id_token": "fake-token"})
+    assert resp.status_code == 503

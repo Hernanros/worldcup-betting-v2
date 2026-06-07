@@ -78,6 +78,10 @@ export default function JoinPage() {
         invite_code: inviteCode.trim(),
         display_name: displayName.trim(),
       })
+      if (data.status !== "ok") {
+        setError("Unexpected response. Please try again.")
+        return
+      }
       setAuth(data.token, data.player, data.league ?? null)
       navigate("/")
     } catch (err) {

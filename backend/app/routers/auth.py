@@ -114,6 +114,9 @@ async def me(auth=Depends(get_current_player)):
 
 @router.post("/api/auth/google")
 async def google_auth(data: dict, db: AsyncSession = Depends(get_db)):
+    if not settings.google_client_id:
+        raise HTTPException(503, "Google OAuth not configured on this server")
+
     raw_token = (data.get("id_token") or "").strip()
     invite_code = (data.get("invite_code") or "").strip() or None
     display_name = (data.get("display_name") or "").strip() or None
@@ -123,7 +126,7 @@ async def google_auth(data: dict, db: AsyncSession = Depends(get_db)):
         payload = id_token.verify_oauth2_token(
             raw_token,
             google_requests.Request(),
-            settings.google_client_id if settings.google_client_id else None,
+            settings.google_client_id,
         )
     except ValueError as exc:
         raise HTTPException(400, f"invalid google token: {exc}")
