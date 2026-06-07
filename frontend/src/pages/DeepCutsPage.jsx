@@ -50,7 +50,7 @@ export default function DeepCutsPage() {
   async function handlePlaceBet(market) {
     const sel = selections[market.key]
     if (!sel?.selection) { setError("Pick a selection first"); return }
-    const stake = stakes[market.key] || 100
+    const stake = stakes[market.key] ?? (market.type === "group_advance" ? 5 : 20)
     setLoading(true); setError(null)
     try {
       await api.post("/api/deep-cuts/bets", { market_key: market.key, stage: activeStage, selection: sel.selection, stake, odds: sel.odds })
@@ -98,7 +98,7 @@ export default function DeepCutsPage() {
       {markets.map(market => {
         const existingBet = myBets.find(b => b.market_key === market.key)
         const sel = selections[market.key]
-        const stake = stakes[market.key] || 100
+        const stake = stakes[market.key] ?? (market.type === "group_advance" ? 5 : 20)
         return (
           <div key={market.key} style={{ background: "#111827", borderRadius: 10, padding: 14, marginBottom: 12, border: "1px solid #1f2937" }}>
             <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>{market.label}</div>
