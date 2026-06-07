@@ -150,6 +150,7 @@ async def _settle_challenges(db, match, result):
                 acceptor = await db.get(Player, ch.acceptor_id)
                 issuer.token_balance   += ch.issuer_stake
                 acceptor.token_balance += ch.acceptor_stake
+                # Void: stakes refunded. Streaks preserved — a void is not a loss.
                 ch.status = "voided"
                 continue
             issuer_won = (winner == "issuer")

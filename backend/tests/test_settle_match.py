@@ -580,7 +580,7 @@ async def test_match_has_player_stats_cache_column(db):
 # Task 4: player_stats_cache stored from API-Football events
 # ─────────────────────────────────────────────────────────────────────────────
 
-import json as json_lib
+import json
 from unittest.mock import patch
 
 
@@ -604,7 +604,7 @@ async def test_enrich_stores_player_stats_cache(db):
 
     await db.refresh(m)
     assert m.player_stats_cache is not None
-    cache = json_lib.loads(m.player_stats_cache)
+    cache = json.loads(m.player_stats_cache)
     assert cache["l. messi"]["goals"] == 2
     assert cache["di maria"]["assists"] == 1
 
@@ -632,7 +632,7 @@ async def test_player_h2h_issuer_wins(db):
     from sqlalchemy import select as sa_select
     from app.models import Challenge as Chal
     m = await make_match(db)
-    m.player_stats_cache = json_lib.dumps({"messi": {"goals": 2, "assists": 0}, "mbappe": {"goals": 0, "assists": 0}})
+    m.player_stats_cache = json.dumps({"messi": {"goals": 2, "assists": 0}, "mbappe": {"goals": 0, "assists": 0}})
     await db.commit()
     alice = await make_player(db, "AliceH2", balance=1000)
     bob   = await make_player(db, "BobH2", balance=1000)
@@ -648,7 +648,7 @@ async def test_player_h2h_acceptor_wins(db):
     from sqlalchemy import select as sa_select
     from app.models import Challenge as Chal
     m = await make_match(db)
-    m.player_stats_cache = json_lib.dumps({"messi": {"goals": 0, "assists": 0}, "mbappe": {"goals": 1, "assists": 0}})
+    m.player_stats_cache = json.dumps({"messi": {"goals": 0, "assists": 0}, "mbappe": {"goals": 1, "assists": 0}})
     await db.commit()
     alice = await make_player(db, "AliceH3", balance=1000)
     bob   = await make_player(db, "BobH3", balance=1000)
@@ -657,16 +657,19 @@ async def test_player_h2h_acceptor_wins(db):
     await db.refresh(alice); await db.refresh(bob)
     assert alice.token_balance == 900
     assert bob.token_balance == 1100
+    ch = (await db.execute(sa_select(Chal).where(Chal.match_id == m.id))).scalar_one()
+    assert ch.status == "resolved"
 
 async def test_player_h2h_tie_voids(db):
     from sqlalchemy import select as sa_select
     from app.models import Challenge as Chal
     m = await make_match(db)
-    m.player_stats_cache = json_lib.dumps({"messi": {"goals": 1, "assists": 0}, "mbappe": {"goals": 1, "assists": 0}})
+    m.player_stats_cache = json.dumps({"messi": {"goals": 1, "assists": 0}, "mbappe": {"goals": 1, "assists": 0}})
     await db.commit()
     alice = await make_player(db, "AliceH4", balance=1000)
     bob   = await make_player(db, "BobH4", balance=1000)
-    await _challenge(db, alice, bob, m, "player_h2h", "Messi goals", "Mbappé goals")
+    await _challenge(db, alice, bob, m, "player_h2h", "Messi goals", "Mbappé goals",
+                     istake=100, iodds=2.0, aodds=2.0)
     await settle_match(db, m, _result(1, 1))
     await db.refresh(alice); await db.refresh(bob)
     assert alice.token_balance == 1000
