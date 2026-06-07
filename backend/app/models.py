@@ -31,6 +31,7 @@ class Player(Base):
     is_admin = Column(Boolean, nullable=False, default=False)
     google_sub = Column(String(200), unique=True, nullable=True, index=True)
     email = Column(String(200), nullable=True)
+    favorite_team = Column(String(50), nullable=True)
     league_id = Column(Integer, ForeignKey("leagues.id"), nullable=True)
     league    = relationship("League", back_populates="players")
 

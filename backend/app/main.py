@@ -141,6 +141,13 @@ async def _run_migrations():
         ))
         await db.commit()
 
+        # players.favorite_team
+        await db.execute(text(
+            "ALTER TABLE players ADD COLUMN IF NOT EXISTS "
+            "favorite_team VARCHAR(50)"
+        ))
+        await db.commit()
+
         # ── PHASE 2: DATA MIGRATIONS (ORM queries) ───────────────────────────
         # All columns exist now — autoflush is safe.
 

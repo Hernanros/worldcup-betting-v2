@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
+from typing import Optional
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.database import get_db
@@ -103,7 +104,45 @@ async def get_me(auth=Depends(get_current_player), db: AsyncSession = Depends(ge
         "total_challenges_issued": p.total_challenges_issued,
         "volume_milestone_reached": p.volume_milestone_reached,
         "wildcards_used": wildcards_used,
+        "favorite_team": p.favorite_team,
     }
+
+
+_WC2026_TEAMS = {
+    "Mexico", "Jamaica", "Venezuela", "Ecuador", "USA", "Panama", "Costa Rica",
+    "New Zealand", "Morocco", "Belgium", "Canada", "Honduras", "Brazil",
+    "Croatia", "Japan", "Paraguay", "Argentina", "Chile", "Australia", "Poland",
+    "Spain", "Portugal", "Egypt", "Algeria", "France", "Nigeria", "DR Congo",
+    "Slovenia", "Germany", "Netherlands", "South Korea", "Iran", "England",
+    "Senegal", "Tunisia", "South Africa", "Colombia", "Uruguay", "El Salvador",
+    "Bolivia", "Turkey", "Ukraine", "Saudi Arabia", "Ghana", "Ivory Coast",
+    "Norway", "Switzerland", "Czechia",
+}
+
+
+@router.patch("/api/me")
+async def patch_me(
+    data: dict,
+    auth=Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
+    player, _ = auth
+    p = await db.get(Player, player.id)
+
+    raw = data.get("favorite_team")
+    # Normalize: treat None, empty string, or whitespace-only as clearing
+    if raw is None or (isinstance(raw, str) and raw.strip() == ""):
+        p.favorite_team = None
+        await db.commit()
+        return {"ok": True, "favorite_team": None}
+
+    team = raw.strip()
+    if team not in _WC2026_TEAMS:
+        raise HTTPException(422, "unknown team")
+
+    p.favorite_team = team
+    await db.commit()
+    return {"ok": True, "favorite_team": team}
 
 
 @router.get("/api/players/me")
