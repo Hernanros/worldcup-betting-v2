@@ -70,6 +70,7 @@ class Match(Base):
     sub_goals          = Column(Integer, nullable=False, default=0)
     went_to_et         = Column(Boolean, nullable=False, default=False)
     went_to_pens       = Column(Boolean, nullable=False, default=False)
+    player_stats_cache = Column(Text, nullable=True)
 
     bets = relationship("Bet", back_populates="match")
     challenges = relationship("Challenge", back_populates="match")

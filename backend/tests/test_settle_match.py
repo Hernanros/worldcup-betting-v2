@@ -563,3 +563,10 @@ async def test_winner_propagated_to_next_match_away_slot(db):
     await db.refresh(next_m)
     assert next_m.away_team == "Japan"
     assert next_m.away_team_confirmed is True
+
+
+async def test_match_has_player_stats_cache_column(db):
+    """Match model exposes the player_stats_cache column."""
+    m = await make_match(db)
+    assert hasattr(m, "player_stats_cache")
+    assert m.player_stats_cache is None
