@@ -41,12 +41,8 @@ async def run():
             print("  ✓ player_stats_cache column added (or already exists)")
         except Exception as e:
             await db.rollback()
-            err = str(e).lower()
-            if "already exists" in err or "duplicate column" in err:
-                print("  ✓ column already exists — skipping")
-            else:
-                print(f"  ✗ Error: {e}")
-                raise
+            print(f"  ✗ Error: {e}")
+            raise
 
     await engine.dispose()
     print("✅  Migration complete.")

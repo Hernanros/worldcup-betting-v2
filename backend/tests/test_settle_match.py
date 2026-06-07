@@ -502,7 +502,7 @@ async def test_multiple_bets_on_same_match_all_settled(db):
     bob    = await make_player(db, "Bob")
     carlos = await make_player(db, "Carlos")
     await _bet(db, alice,  m, "1x2",    "Argentina", stake=100, odds=2.0)  # wins
-    await _bet(db, bob,    m, "1x2",    "Away",      stake=100, odds=4.0)  # loses
+    await _bet(db, bob,    m, "1x2",    "Brazil",    stake=100, odds=4.0)  # loses
     await _bet(db, carlos, m, "totals", "Over 1.5",  stake=100, odds=1.7)  # wins (2-0)
     a_start = alice.token_balance
     b_start = bob.token_balance
@@ -566,7 +566,11 @@ async def test_winner_propagated_to_next_match_away_slot(db):
 
 
 async def test_match_has_player_stats_cache_column(db):
-    """Match model exposes the player_stats_cache column."""
+    """Match model exposes the player_stats_cache column with correct round-trip."""
     m = await make_match(db)
-    assert hasattr(m, "player_stats_cache")
     assert m.player_stats_cache is None
+    # write→read round-trip
+    m.player_stats_cache = '{"messi": {"goals": 2}}'
+    await db.commit()
+    await db.refresh(m)
+    assert m.player_stats_cache == '{"messi": {"goals": 2}}'
