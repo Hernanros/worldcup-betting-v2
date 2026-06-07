@@ -338,12 +338,27 @@ function NextMatchHero({ match, navigate }) {
 
 /* ── Team picker modal ──────────────────────────────────── */
 function TeamPickerModal({ onPick, onClose, saving }) {
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = "hidden"
+    function onKey(e) { if (e.key === "Escape") onClose() }
+    document.addEventListener("keydown", onKey)
+    return () => {
+      document.body.style.overflow = prev
+      document.removeEventListener("keydown", onKey)
+    }
+  }, [onClose])
+
   return (
-    <div style={{
-      position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
-      zIndex: 1000, overflowY: "auto",
-    }}>
-      <div style={{ padding: "16px 16px 80px", maxWidth: 480, margin: "0 auto" }}>
+    <div
+      role="dialog" aria-modal="true" aria-label="Pick your team"
+      onClick={onClose}
+      style={{
+        position: "fixed", inset: 0, background: "rgba(0,0,0,0.85)",
+        zIndex: 1000, overflowY: "auto",
+      }}
+    >
+      <div onClick={e => e.stopPropagation()} style={{ padding: "16px 16px 80px", maxWidth: 480, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
           <div style={{ color: "#e2e8f0", fontSize: 16, fontWeight: 800 }}>Pick your team</div>
           <button onClick={onClose} style={{
@@ -461,11 +476,13 @@ export default function HomePage() {
   const [openChallenges, setOpenChallenges] = useState({ my_open: [], for_me: [] })
   const [tournamentBets, setTournamentBets] = useState([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
   const [favoriteTeam, setFavoriteTeam] = useState(null)
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [savingTeam, setSavingTeam] = useState(false)
 
   const load = useCallback(async () => {
+    setLoadError(null)
     try {
       const [allMatches, tournamentData, lb, challengeData, me] = await Promise.all([
         api.get("/api/matches"),
@@ -481,6 +498,8 @@ export default function HomePage() {
       setOpenChallenges(challengeData)
       setLeaderboard(lb)
       setFavoriteTeam(me?.favorite_team ?? null)
+    } catch {
+      setLoadError("Failed to load — tap to retry")
     } finally {
       setLoading(false)
     }
@@ -515,42 +534,58 @@ export default function HomePage() {
       <PageBackground momentKey="rotating" />
       <div style={{ padding: "16px 16px 80px" }}>
 
-        {/* Smart banner */}
-        {!loading && (
-          <SmartBanner state={bannerState} nextMatch={nextMatch} navigate={navigate} />
-        )}
-
-        {/* Deep Cuts teaser */}
-        {!loading && <DeepCutsBanner />}
-
-        {/* Next match hero */}
-        {!loading && <NextMatchHero match={nextMatch} navigate={navigate} />}
-
-        {/* Two-column: My team + Rankings */}
-        {!loading && (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
-            <MyTeamCard
-              favoriteTeam={favoriteTeam}
-              matches={matches}
-              onPickTeam={() => setShowTeamPicker(true)}
-            />
-            <TopThreeMini leaderboard={leaderboard} myEntry={myEntry} navigate={navigate} />
+        {/* Error retry card */}
+        {loadError && !loading && (
+          <div style={{ padding: 24, textAlign: "center" }}>
+            <div style={{ color: "#f87171", fontSize: 13, marginBottom: 12 }}>{loadError}</div>
+            <button onClick={load} style={{
+              background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
+              border: "none", borderRadius: 10, padding: "10px 24px",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+            }}>Retry</button>
           </div>
         )}
 
-        {/* Loading skeleton */}
-        {loading && (
-          <div style={{ height: 180, background: "#13131f", borderRadius: 16, marginBottom: 14,
-            display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <span style={{ color: "#6b7280", fontSize: 13 }}>Loading…</span>
-          </div>
+        {!loadError && (
+          <>
+            {/* Smart banner */}
+            {!loading && (
+              <SmartBanner state={bannerState} nextMatch={nextMatch} navigate={navigate} />
+            )}
+
+            {/* Deep Cuts teaser */}
+            {!loading && <DeepCutsBanner />}
+
+            {/* Next match hero */}
+            {!loading && <NextMatchHero match={nextMatch} navigate={navigate} />}
+
+            {/* Two-column: My team + Rankings */}
+            {!loading && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 14 }}>
+                <MyTeamCard
+                  favoriteTeam={favoriteTeam}
+                  matches={matches}
+                  onPickTeam={() => setShowTeamPicker(true)}
+                />
+                <TopThreeMini leaderboard={leaderboard} myEntry={myEntry} navigate={navigate} />
+              </div>
+            )}
+
+            {/* Loading skeleton */}
+            {loading && (
+              <div style={{ height: 180, background: "#13131f", borderRadius: 16, marginBottom: 14,
+                display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <span style={{ color: "#6b7280", fontSize: 13 }}>Loading…</span>
+              </div>
+            )}
+
+            {/* Dares for me */}
+            {!loading && <DaresForMe dares={openChallenges.for_me} navigate={navigate} />}
+
+            {/* My open dares */}
+            {!loading && <MyOpenDares dares={openChallenges.my_open} onCancel={cancelDare} />}
+          </>
         )}
-
-        {/* Dares for me */}
-        {!loading && <DaresForMe dares={openChallenges.for_me} navigate={navigate} />}
-
-        {/* My open dares */}
-        {!loading && <MyOpenDares dares={openChallenges.my_open} onCancel={cancelDare} />}
 
       </div>
 
