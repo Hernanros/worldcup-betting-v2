@@ -79,7 +79,9 @@ export const TEAM_ISO = {
 export function flagUrl(teamName, size = 40) {
   const iso = TEAM_ISO[teamName]
   if (!iso) return null
-  return `https://flagcdn.com/w${size}/${iso}.png`
+  const BUCKETS = [20, 40, 80, 160, 320, 640]
+  const bucket = BUCKETS.find(b => b >= size) ?? 640
+  return `https://flagcdn.com/w${bucket}/${iso}.png`
 }
 
 // Top-25 Golden Boot contenders for the dropdown
