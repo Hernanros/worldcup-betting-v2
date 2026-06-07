@@ -1,3 +1,4 @@
+import json
 import logging
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,7 +56,10 @@ async def _enrich_match_stats(db: AsyncSession, match: Match) -> None:
                 settings.football_api_key,
             )
             for key, val in af_stats.items():
-                setattr(match, key, val)
+                if key == "player_stats":
+                    match.player_stats_cache = json.dumps(val)
+                else:
+                    setattr(match, key, val)
 
         await db.commit()
     except Exception as e:

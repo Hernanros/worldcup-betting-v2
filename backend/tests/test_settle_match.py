@@ -574,3 +574,36 @@ async def test_match_has_player_stats_cache_column(db):
     await db.commit()
     await db.refresh(m)
     assert m.player_stats_cache == '{"messi": {"goals": 2}}'
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Task 4: player_stats_cache stored from API-Football events
+# ─────────────────────────────────────────────────────────────────────────────
+
+import json as json_lib
+from unittest.mock import patch
+
+
+async def test_enrich_stores_player_stats_cache(db):
+    """When api_fixture_id is set, settle_match populates player_stats_cache."""
+    m = await make_match(db)
+    m.api_fixture_id = 12345
+    await db.commit()
+
+    fake_af = {
+        "home_own_goals": 0, "away_own_goals": 0, "sub_goals": 0,
+        "player_stats": {
+            "l. messi": {"goals": 2, "assists": 0},
+            "di maria":  {"goals": 0, "assists": 1},
+        }
+    }
+    with patch("app.poller.fetch_api_football_events", return_value=fake_af), \
+         patch("app.poller.fetch_espn_match_stats", return_value={}), \
+         patch("app.poller.fetch_espn_event_id_from_scoreboard", return_value=None):
+        await settle_match(db, m, _result(2, 0))
+
+    await db.refresh(m)
+    assert m.player_stats_cache is not None
+    cache = json_lib.loads(m.player_stats_cache)
+    assert cache["l. messi"]["goals"] == 2
+    assert cache["di maria"]["assists"] == 1
