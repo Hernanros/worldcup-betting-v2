@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { flagUrl } from "../data/teams.js"
+import { ilDateTime } from "../utils/time.js"
 
 function TeamFlag({ name, size = 36 }) {
   const url = flagUrl(name, 40)
@@ -18,9 +19,7 @@ function TeamFlag({ name, size = 36 }) {
 }
 
 function formatKickoff(iso) {
-  const d = new Date(iso)
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
-    " · " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false })
+  return ilDateTime(iso)
 }
 
 export default function MatchCard({ match }) {

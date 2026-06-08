@@ -410,8 +410,8 @@ async def seed_bot(
         if not league:
             raise HTTPException(400, "no leagues exist yet")
 
-    BOT_NAME = "🎲 Lucky Guess"
-    BOT_SUB  = f"bot_lucky_guess_{league.id}"
+    BOT_NAME = "🎲 Dummy"
+    BOT_SUB  = f"bot_dummy_{league.id}"
 
     # Find or create the bot player
     bot = (await db.execute(

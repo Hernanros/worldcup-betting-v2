@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import { flagUrl } from "../data/teams.js"
+import { ilTime } from "../utils/time.js"
 
 function Flag({ name, size = 16 }) {
   const url = flagUrl(name, 32)
@@ -42,7 +43,7 @@ function MatchResult({ match }) {
         ) : (
           <span style={{ fontSize: 10, color: "#6b7280" }}>
             {match.kickoff_time
-              ? new Date(match.kickoff_time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })
+              ? ilTime(match.kickoff_time)
               : "—"}
           </span>
         )}
@@ -122,8 +123,30 @@ export default function DailyFeed() {
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
+    // Try today's feed; if no matches today fall back to showing next match day
     api.get("/api/feed/today")
-      .then(d => { setData(d); setLoading(false) })
+      .then(async d => {
+        if (!d.matches?.length) {
+          // No matches today — show next upcoming match day from /api/matches
+          try {
+            const all = await api.get("/api/matches")
+            const upcoming = all.filter(m => m.status === "upcoming")
+            if (upcoming.length) {
+              // Find the first match day
+              const firstKey = new Date(upcoming[0].kickoff_time)
+                .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" })
+              const nextDayMatches = upcoming
+                .filter(m => new Date(m.kickoff_time)
+                  .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }) === firstKey)
+                .map(m => ({ id: m.id, home: m.home_team, away: m.away_team,
+                  kickoff_time: m.kickoff_time, status: m.status,
+                  home_score: m.home_score, away_score: m.away_score }))
+              d = { ...d, matches: nextDayMatches, _isFuture: true }
+            }
+          } catch (_) {}
+        }
+        setData(d); setLoading(false)
+      })
       .catch(() => setLoading(false))
   }, [])
 
@@ -167,7 +190,7 @@ export default function DailyFeed() {
       >
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <span style={{ fontSize: 14 }}>📅</span>
-          <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 800 }}>Today</span>
+          <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 800 }}>{data._isFuture ? "Coming Up" : "Today"}</span>
           <span style={{
             fontSize: 9, fontWeight: 700, color: dayStatus.color,
             background: `${dayStatus.color}22`, border: `1px solid ${dayStatus.color}44`,

@@ -20,7 +20,7 @@ router = APIRouter()
 
 
 def _iso(dt: datetime) -> str:
-    return dt.isoformat() if dt else None
+    return dt.replace(tzinfo=timezone.utc).isoformat() if dt else None
 
 
 @router.get("/api/feed/today")

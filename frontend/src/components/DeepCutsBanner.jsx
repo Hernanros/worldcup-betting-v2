@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { api } from "../api.js"
+import { ilDateTime } from "../utils/time.js"
 
 export default function DeepCutsBanner() {
   const navigate = useNavigate()
@@ -28,7 +29,7 @@ export default function DeepCutsBanner() {
   }
 
   const lockStr = stage.lock_time
-    ? new Date(stage.lock_time).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })
+    ? ilDateTime(stage.lock_time)
     : null
 
   return (

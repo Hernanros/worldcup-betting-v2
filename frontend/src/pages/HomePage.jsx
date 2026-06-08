@@ -7,6 +7,7 @@ import PageBackground from "../components/PageBackground.jsx"
 import { flagUrl, WC2026_GROUPS, TEAM_GROUP } from "../data/teams.js"
 import DeepCutsBanner from "../components/DeepCutsBanner.jsx"
 import DailyFeed from "../components/DailyFeed.jsx"
+import { ilDateTimeFull, ilDateTime } from "../utils/time.js"
 
 /* ── helpers ────────────────────────────────────────────── */
 function flagImg(name, size = 28) {
@@ -290,12 +291,7 @@ function ordinal(n) {
 /* ── Next match hero (full-width) ───────────────────────── */
 function NextMatchHero({ match, navigate }) {
   const countdown = useCountdown(match?.kickoff_time)
-  const kickoffStr = match?.kickoff_time
-    ? new Date(match.kickoff_time).toLocaleString(undefined, {
-        weekday: "short", month: "short", day: "numeric",
-        hour: "2-digit", minute: "2-digit",
-      })
-    : null
+  const kickoffStr = match?.kickoff_time ? ilDateTimeFull(match.kickoff_time) : null
   if (!match) return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
       padding: 20, marginBottom: 14, textAlign: "center" }}>
@@ -466,10 +462,7 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam }) {
           </div>
           {teamNext?.kickoff_time && (
             <div style={{ color: "#6b7280", fontSize: 9 }}>
-              {new Date(teamNext.kickoff_time).toLocaleString(undefined, {
-                weekday: "short", month: "short", day: "numeric",
-                hour: "2-digit", minute: "2-digit",
-              })}
+              {ilDateTimeFull(teamNext.kickoff_time)}
             </div>
           )}
         </div>

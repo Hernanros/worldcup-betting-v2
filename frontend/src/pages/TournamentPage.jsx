@@ -3,6 +3,7 @@ import { api } from "../api.js"
 import { flagUrl } from "../data/teams.js"
 import TournamentBetPanel from "../components/TournamentBetPanel.jsx"
 import PageBackground from "../components/PageBackground.jsx"
+import { ilDateTime } from "../utils/time.js"
 import HelpTip from "../components/HelpTip.jsx"
 
 const STATUS_COLOR = { pending: "#fbbf24", won: "#4ade80", lost: "#f87171" }
@@ -269,7 +270,7 @@ function BracketMatch({ m }) {
     <div style={{ border: "1px solid #2d2b55", borderRadius: 8, overflow: "hidden", marginBottom: 8, background: "#13131f" }}>
       {ko && (
         <div style={{ fontSize: 9, color: "#6b7280", padding: "3px 10px", background: "#0c0c14", borderBottom: "1px solid #2d2b55", textTransform: "uppercase", letterSpacing: 0.5 }}>
-          {ko.toLocaleDateString(undefined, { month: "short", day: "numeric" })} · {ko.toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+          {ilDateTime(m.kickoff_time)}
           {m.status === "finished" && <span style={{ marginLeft: 6, color: "#888" }}>FT</span>}
           {m.status === "upcoming" && <span style={{ marginLeft: 6, color: "#fbbf24" }}>Upcoming</span>}
         </div>

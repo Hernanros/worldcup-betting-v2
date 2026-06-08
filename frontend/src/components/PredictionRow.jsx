@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { api } from "../api.js"
 import { flagUrl } from "../data/teams.js"
+import { ilTime } from "../utils/time.js"
 
 function Flag({ name, size = 20 }) {
   const url = flagUrl(name, 40)
@@ -161,7 +162,7 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {entry.kickoff_time && (
               <span style={{ fontSize: 9, color: "#6b7280" }}>
-                {new Date(entry.kickoff_time).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit" })}
+                {ilTime(entry.kickoff_time)}
               </span>
             )}
             {entry.group && (

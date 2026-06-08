@@ -1,3 +1,4 @@
+from datetime import timezone
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -29,7 +30,7 @@ async def get_predictions(auth=Depends(get_current_player), db: AsyncSession = D
         pred = my_preds.get(m.id)
         result.append({
             "match_id": m.id, "home_team": m.home_team, "away_team": m.away_team,
-            "kickoff_time": m.kickoff_time.isoformat(), "status": m.status,
+            "kickoff_time": m.kickoff_time.replace(tzinfo=timezone.utc).isoformat(), "status": m.status,
             "round": m.round,
             "group": _TEAM_TO_GROUP.get(m.home_team) if m.round == "group" else None,
             "home_team_confirmed": m.home_team_confirmed,

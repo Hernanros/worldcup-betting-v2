@@ -2,23 +2,13 @@ import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import PredictionRow from "../components/PredictionRow.jsx"
 import PageBackground from "../components/PageBackground.jsx"
-
-/* ── Day label helper ──────────────────────────────────────── */
-function dayLabel(isoStr) {
-  const d = new Date(isoStr)
-  const today = new Date(); today.setHours(0, 0, 0, 0)
-  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
-  const matchDay = new Date(d); matchDay.setHours(0, 0, 0, 0)
-  if (matchDay.getTime() === today.getTime()) return "Today"
-  if (matchDay.getTime() === tomorrow.getTime()) return "Tomorrow"
-  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
-}
+import { ilDayLabel } from "../utils/time.js"
 
 /* Group entries by date */
 function groupByDay(entries) {
   const map = new Map()
   for (const e of entries) {
-    const label = dayLabel(e.kickoff_time)
+    const label = ilDayLabel(e.kickoff_time)
     if (!map.has(label)) map.set(label, [])
     map.get(label).push(e)
   }
