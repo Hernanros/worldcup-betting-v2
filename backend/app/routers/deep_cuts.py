@@ -8,8 +8,11 @@ from app.deps import get_current_player
 from app.models import Match, SpicyBet, SpicyDismissal, Player
 from app.deep_cuts_config import (
     DEEP_CUTS_MARKETS, STAGE_ROUNDS, markets_for_stage,
-    get_stage_lock_time,
+    get_stage_lock_time, WC2026_GROUPS,
 )
+
+# Flat sorted list of all 48 WC 2026 teams — used for pool-based team_pick markets
+_ALL_GROUP_TEAMS = sorted({t for teams in WC2026_GROUPS.values() for t in teams})
 from app.deep_cuts_settlement import get_stage_lock_time_from_db
 
 router = APIRouter()
@@ -139,6 +142,8 @@ async def get_markets(
             entry["default_odds"] = m.get("default_odds", 10.0)
             if m.get("teams"):
                 entry["teams"] = m["teams"]
+            elif m.get("pool") == "all_group_teams":
+                entry["teams"] = _ALL_GROUP_TEAMS
             if m.get("players"):
                 entry["players"] = m["players"]
         elif m["type"] == "group_advance":
