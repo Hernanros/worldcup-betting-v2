@@ -19,16 +19,18 @@ export default function GroupSwitcher({ open, onClose }) {
   const currentPlayer = getPlayer()
   const [sessions, setSessions] = useState(getSessions)
 
-  // "list" | "join"
-  const [view, setView]           = useState("list")
-  const [name, setName]           = useState("")
+  // "list" | "join" | "admin"
+  const [view, setView]             = useState("list")
+  const [name, setName]             = useState("")
   const [inviteCode, setInviteCode] = useState("")
-  const [error, setError]         = useState("")
-  const [loading, setLoading]     = useState(false)
+  const [adminName, setAdminName]   = useState("")
+  const [adminCode, setAdminCode]   = useState("")
+  const [error, setError]           = useState("")
+  const [loading, setLoading]       = useState(false)
 
   function handleClose() {
     setView("list")
-    setName(""); setInviteCode(""); setError("")
+    setName(""); setInviteCode(""); setAdminName(""); setAdminCode(""); setError("")
     onClose()
   }
 
@@ -62,6 +64,25 @@ export default function GroupSwitcher({ open, onClose }) {
       window.location.href = "/"
     } catch (err) {
       setError(err.message || "Invalid invite code or name")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleAdminSubmit(e) {
+    e.preventDefault()
+    setError("")
+    setLoading(true)
+    try {
+      const data = await api.post("/api/auth/join", {
+        name: adminName.trim(),
+        code: adminCode.trim(),
+        mode: "join",
+      })
+      setAuth(data.token, data.player, data.league ?? null)
+      window.location.href = "/"
+    } catch (err) {
+      setError(err.message || "Invalid admin code")
     } finally {
       setLoading(false)
     }
@@ -111,7 +132,7 @@ export default function GroupSwitcher({ open, onClose }) {
               borderBottom: "1px solid #1e1b3a",
             }}>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                {view === "join" && (
+                {(view === "join" || view === "admin") && (
                   <button
                     onClick={() => { setView("list"); setError("") }}
                     style={{ background: "none", border: "none", color: "#6b7280", fontSize: 18, cursor: "pointer", padding: "2px 4px", lineHeight: 1 }}
@@ -120,7 +141,7 @@ export default function GroupSwitcher({ open, onClose }) {
                   </button>
                 )}
                 <span style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 15 }}>
-                  {view === "join" ? "Join a Group" : "⇄ Switch Group"}
+                  {view === "join" ? "Join a Group" : view === "admin" ? "Admin Login" : "⇄ Switch Group"}
                 </span>
               </div>
               <button
@@ -266,6 +287,44 @@ export default function GroupSwitcher({ open, onClose }) {
                   }}
                 >
                   {loading ? "Joining…" : "Join group →"}
+                </button>
+
+                <div style={{ borderTop: "1px solid #1e1b3a", paddingTop: 12, textAlign: "center" }}>
+                  <button
+                    type="button"
+                    onClick={() => { setView("admin"); setError("") }}
+                    style={{ background: "none", border: "none", color: "#4b5563", fontSize: 12, cursor: "pointer", textDecoration: "underline" }}
+                  >
+                    Admin login →
+                  </button>
+                </div>
+              </form>
+            )}
+
+            {/* ── Admin form ── */}
+            {view === "admin" && (
+              <form onSubmit={handleAdminSubmit} style={{ padding: "16px 16px 0", display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Name</div>
+                  <input value={adminName} onChange={e => setAdminName(e.target.value)} placeholder="Your name" required maxLength={50} style={INPUT_STYLE} />
+                </div>
+                <div>
+                  <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Admin code</div>
+                  <input value={adminCode} onChange={e => setAdminCode(e.target.value)} placeholder="Admin code" type="password" required maxLength={30} style={INPUT_STYLE} />
+                </div>
+                {error && <p style={{ color: "#f87171", fontSize: 13, margin: 0 }}>⚠ {error}</p>}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  style={{
+                    background: loading ? "#1e1b3a" : "linear-gradient(135deg,#a855f7,#3b82f6)",
+                    color: loading ? "#6b7280" : "#fff",
+                    border: "none", borderRadius: 10, padding: "12px",
+                    fontSize: 14, fontWeight: 700,
+                    cursor: loading ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {loading ? "Signing in…" : "Sign in as admin →"}
                 </button>
               </form>
             )}
