@@ -6,6 +6,7 @@ import { getPlayer } from "../auth.js"
 import PageBackground from "../components/PageBackground.jsx"
 import { flagUrl, WC2026_GROUPS, TEAM_GROUP } from "../data/teams.js"
 import DeepCutsBanner from "../components/DeepCutsBanner.jsx"
+import DailyFeed from "../components/DailyFeed.jsx"
 
 /* ── helpers ────────────────────────────────────────────── */
 function flagImg(name, size = 28) {
@@ -575,6 +576,9 @@ export default function HomePage() {
 
             {/* Next match hero */}
             {!loading && <NextMatchHero match={nextMatch} navigate={navigate} />}
+
+            {/* Daily group feed */}
+            {!loading && <DailyFeed />}
 
             {/* Two-column: My team + Rankings */}
             {!loading && (

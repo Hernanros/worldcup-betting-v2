@@ -1,13 +1,130 @@
 import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import PredictionRow from "../components/PredictionRow.jsx"
-import HelpTip from "../components/HelpTip.jsx"
 import PageBackground from "../components/PageBackground.jsx"
 
+/* ── Day label helper ──────────────────────────────────────── */
+function dayLabel(isoStr) {
+  const d = new Date(isoStr)
+  const today = new Date(); today.setHours(0, 0, 0, 0)
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1)
+  const matchDay = new Date(d); matchDay.setHours(0, 0, 0, 0)
+  if (matchDay.getTime() === today.getTime()) return "Today"
+  if (matchDay.getTime() === tomorrow.getTime()) return "Tomorrow"
+  return d.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })
+}
+
+/* Group entries by date */
+function groupByDay(entries) {
+  const map = new Map()
+  for (const e of entries) {
+    const label = dayLabel(e.kickoff_time)
+    if (!map.has(label)) map.set(label, [])
+    map.get(label).push(e)
+  }
+  return [...map.entries()] // [[label, entries], ...]
+}
+
+/* Group entries by group letter (group-stage only), others go into "Knockout" */
+function groupByGroup(entries) {
+  const map = new Map()
+  for (const e of entries) {
+    const key = e.group ? `Group ${e.group}` : (e.round ? e.round.charAt(0).toUpperCase() + e.round.slice(1) : "Other")
+    if (!map.has(key)) map.set(key, [])
+    map.get(key).push(e)
+  }
+  // Sort: Group A, B, C... then Knockout
+  return [...map.entries()].sort(([a], [b]) => {
+    const aIsGroup = a.startsWith("Group ")
+    const bIsGroup = b.startsWith("Group ")
+    if (aIsGroup && bIsGroup) return a < b ? -1 : 1
+    if (aIsGroup) return -1
+    if (bIsGroup) return 1
+    return a < b ? -1 : 1
+  })
+}
+
+/* ── Day section header ──────────────────────────────────────── */
+function DayHeader({ label }) {
+  const isToday = label === "Today"
+  const isTomorrow = label === "Tomorrow"
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 6px" }}>
+      <span style={{
+        fontSize: 10, fontWeight: 800,
+        color: isToday ? "#60a5fa" : "#6b7280",
+        textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap",
+      }}>
+        {label}
+      </span>
+      {(isToday || isTomorrow) && (
+        <span style={{
+          background: isToday ? "rgba(96,165,250,0.15)" : "rgba(156,163,175,0.08)",
+          border: `1px solid ${isToday ? "rgba(96,165,250,0.3)" : "rgba(156,163,175,0.2)"}`,
+          borderRadius: 4, padding: "1px 6px",
+          fontSize: 8, color: isToday ? "#60a5fa" : "#9ca3af", fontWeight: 700,
+        }}>
+          {new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+        </span>
+      )}
+      <div style={{ flex: 1, height: 1, background: "#1f2937" }} />
+    </div>
+  )
+}
+
+/* ── Group section (collapsible) ─────────────────────────────── */
+function GroupSection({ label, entries, doublesUsed, onSaved }) {
+  const [open, setOpen] = useState(true)
+  const predicted = entries.filter(e => e.my_prediction).length
+  const total = entries.length
+
+  return (
+    <div style={{ marginBottom: 8 }}>
+      <button
+        onClick={() => setOpen(v => !v)}
+        style={{
+          width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+          background: "#1a1a2e", border: "none",
+          borderRadius: open ? "8px 8px 0 0" : 8,
+          padding: "8px 12px", cursor: "pointer",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 10, fontWeight: 800, color: "#a78bfa", textTransform: "uppercase", letterSpacing: 1 }}>
+            {label}
+          </span>
+          <span style={{ fontSize: 9, color: "#4b5563" }}>
+            {predicted}/{total} predicted
+          </span>
+        </div>
+        <span style={{
+          color: "#4b5563", fontSize: 12,
+          transform: open ? "rotate(180deg)" : "none",
+          transition: "transform 0.15s",
+          display: "block",
+        }}>▾</span>
+      </button>
+      {open && (
+        <div style={{
+          border: "1px solid #2d2b55", borderTop: "none",
+          borderRadius: "0 0 8px 8px", padding: 6,
+          background: "#13131f",
+        }}>
+          {entries.map(e => (
+            <PredictionRow key={e.match_id} entry={e} doublesUsed={doublesUsed} onSaved={onSaved} />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Main page ───────────────────────────────────────────────── */
 export default function PredictionsPage() {
   const [entries, setEntries] = useState([])
   const [doublesUsed, setDoublesUsed] = useState(0)
   const [error, setError] = useState(null)
+  const [view, setView] = useState("chrono") // "chrono" | "group"
 
   const totalPoints = entries.reduce((acc, e) => acc + (e.my_prediction?.points_awarded || 0), 0)
 
@@ -27,42 +144,91 @@ export default function PredictionsPage() {
 
   useEffect(() => { load() }, [])
 
+  const chronoGroups = groupByDay(entries)
+  const groupGroups  = groupByGroup(entries)
+
   return (
     <div>
       <PageBackground momentKey="italy_2006" />
-      <div style={{ padding: "16px 16px 8px" }}>
-        <div style={{ fontSize: 24 }}>🎯</div>
-        <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 20, marginTop: 4 }}>Predictions</div>
-      </div>
-      <div style={{ padding: 16 }}>
+      <div style={{ padding: "16px 16px 80px" }}>
+
+        {/* Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <span style={{ fontSize: 22 }}>🎯</span>
+            <span style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 19 }}>Predictions</span>
+          </div>
+          {totalPoints > 0 && (
+            <span style={{
+              background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",
+              borderRadius: 999, padding: "3px 11px",
+              fontSize: 11, color: "#a78bfa", fontWeight: 700,
+            }}>
+              {totalPoints} pts
+            </span>
+          )}
+        </div>
+
+        {/* View toggle */}
+        <div style={{
+          display: "flex", background: "#1a1a2e", borderRadius: 8, padding: 3, gap: 2, marginBottom: 12,
+        }}>
+          {[
+            { id: "chrono", label: "📅 By Date" },
+            { id: "group",  label: "🗂 By Group" },
+          ].map(({ id, label }) => (
+            <button key={id} onClick={() => setView(id)} style={{
+              flex: 1, padding: "6px 0", borderRadius: 6, border: "none",
+              background: view === id ? "#2d2b55" : "transparent",
+              color: view === id ? "#e2e8f0" : "#6b7280",
+              fontSize: 11, fontWeight: 700, cursor: "pointer",
+              transition: "all 0.15s",
+            }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Doubles pill */}
+        <div style={{
+          display: "flex", justifyContent: "flex-end", marginBottom: 6,
+        }}>
+          <span style={{ fontSize: 10, color: doublesUsed >= 3 ? "#f59e0b" : "#4b5563" }}>
+            ⚡ {doublesUsed}/3 doubles used
+          </span>
+        </div>
+
         {error && <p style={{ color: "#f87171", textAlign: "center", fontSize: 13 }}>⚠ {error}</p>}
-        <div style={{
-          background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10,
-          padding: "10px 16px", marginBottom: 10,
-          display: "flex", justifyContent: "space-between",
-        }}>
-          <span style={{ color: "#6b7280", fontSize: 13, display: "flex", alignItems: "center", gap: 4 }}>
-            Your total points
-            <HelpTip text="Prediction points are separate from tokens. Exact score = 3 pts, correct outcome = 1 pt. Points appear on the Predictions leaderboard tab." />
-          </span>
-          <span className="gradient-text" style={{ fontWeight: 800, fontSize: 18 }}>{totalPoints} pts</span>
-        </div>
-        <div style={{
-          background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 8,
-          padding: "7px 12px", marginBottom: 16,
-          display: "flex", justifyContent: "space-between", alignItems: "center",
-        }}>
-          <span style={{ color: "#6b7280", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}>
-            ⚡ Double picks used
-            <HelpTip text="Mark up to 3 predictions as Double Points before the match starts. Correct double = 6 pts (exact) or 2 pts (outcome)." />
-          </span>
-          <span style={{ color: doublesUsed >= 3 ? "#f59e0b" : "#4ade80", fontWeight: 700, fontSize: 13 }}>
-            {doublesUsed} / 3
-          </span>
-        </div>
-        {entries.map((e) => (
-          <PredictionRow key={e.match_id} entry={e} onSaved={handleRowSaved} doublesUsed={doublesUsed} />
-        ))}
+
+        {/* ── Chrono view ── */}
+        {view === "chrono" && (
+          <>
+            {chronoGroups.map(([label, dayEntries]) => (
+              <div key={label}>
+                <DayHeader label={label} />
+                {dayEntries.map(e => (
+                  <PredictionRow key={e.match_id} entry={e} doublesUsed={doublesUsed} onSaved={handleRowSaved} />
+                ))}
+              </div>
+            ))}
+          </>
+        )}
+
+        {/* ── Group view ── */}
+        {view === "group" && (
+          <>
+            {groupGroups.map(([label, groupEntries]) => (
+              <GroupSection
+                key={label}
+                label={label}
+                entries={groupEntries}
+                doublesUsed={doublesUsed}
+                onSaved={handleRowSaved}
+              />
+            ))}
+          </>
+        )}
+
       </div>
     </div>
   )
