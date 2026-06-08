@@ -92,7 +92,7 @@ export default function AdminPage() {
       setTournamentSettleMsg("✗ Both fields are required")
       return
     }
-    if (!confirm(`Settle all tournament bets?\nWinner: ${tournamentWinner}\nGolden Boot: ${goldenBoot}\n\nThis cannot be undone.`)) return
+    if (!confirm(`Settle all tournament picks?\nWinner: ${tournamentWinner}\nGolden Boot: ${goldenBoot}\n\nThis cannot be undone.`)) return
     setTournamentLoading(true)
     try {
       const result = await api.post("/api/admin/tournament/settle", {
@@ -100,7 +100,7 @@ export default function AdminPage() {
         golden_boot: goldenBoot.trim(),
       })
       setTournamentSettleMsg(
-        `✓ Settled ${result.settled} bet(s). Winner: ${result.winner}, Golden Boot: ${result.golden_boot}, Total Goals: ${result.total_goals}`
+        `✓ Settled ${result.settled} pick(s). Winner: ${result.winner}, Golden Boot: ${result.golden_boot}, Total Goals: ${result.total_goals}`
       )
     } catch (e) {
       setTournamentSettleMsg("✗ " + e.message)
@@ -222,9 +222,9 @@ export default function AdminPage() {
 
       {/* Tournament settlement */}
       <div style={card}>
-        <h3 style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>🏆 Settle tournament bets</h3>
+        <h3 style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginBottom: 4 }}>🏆 Settle tournament picks</h3>
         <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>
-          Run once after the final. Pays out all pending winner / golden boot / total goals bets.
+          Run once after the final. Pays out all pending winner / golden boot / total goals picks.
         </p>
         {tournamentSettleMsg && (
           <p style={{
@@ -253,7 +253,7 @@ export default function AdminPage() {
             cursor: tournamentLoading ? "not-allowed" : "pointer",
             opacity: tournamentLoading ? 0.7 : 1,
           }}>
-            {tournamentLoading ? "Settling..." : "Settle tournament bets"}
+            {tournamentLoading ? "Settling..." : "Settle tournament picks"}
           </button>
         </form>
       </div>

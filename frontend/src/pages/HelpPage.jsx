@@ -18,7 +18,7 @@ const SECTIONS = [
       },
       {
         q: "What are tokens?",
-        a: "Tokens are in-game currency — not real money. Win dares and tournament bets to earn more; lose them and they're gone. Your token balance is your score on the leaderboard.",
+        a: "Tokens are in-game currency — not real money. Win dares and tournament picks to earn more; lose them and they're gone. Your token balance is your score on the leaderboard.",
       },
       {
         q: "How do I switch groups?",
@@ -87,19 +87,19 @@ const SECTIONS = [
   {
     id: "tournament",
     emoji: "🏆",
-    title: "Tournament bets",
+    title: "Tournament picks",
     items: [
       {
-        q: "What are tournament bets?",
-        a: "Long-range bets on the whole tournament: who wins it, who scores the most goals (Golden Boot), and total goals across all 64 matches. These lock at the first whistle (June 11) and settle when the tournament ends.",
+        q: "What are tournament picks?",
+        a: "Long-range predictions on the whole tournament: who wins it, who scores the most goals (Golden Boot), and total goals across all 64 matches. These lock at the first whistle (June 11) and settle when the tournament ends.",
       },
       {
         q: "What is an insurance pick?",
-        a: "After placing a Winner or Golden Boot bet, you can add a free insurance pick — a second choice at no cost. If your main bet loses but your insurance is correct, you get back 50% of what the main bet would have paid.",
+        a: "After locking in a Winner or Golden Boot pick, you can add a free insurance pick — a second choice at no cost. If your main pick loses but your insurance is correct, you get back 50% of what the main pick would have paid.",
       },
       {
         q: "Why are some Golden Boot players not in the list?",
-        a: "The list covers main contenders. Type any name in the search box to bet on unlisted players — you'll get 101× odds on them.",
+        a: "The list covers main contenders. Type any name in the search box to predict unlisted players — you'll get 101× odds on them.",
       },
     ],
   },
@@ -110,11 +110,11 @@ const SECTIONS = [
     items: [
       {
         q: "What are Deep Cuts?",
-        a: "Stage-specific prop bets that unlock round by round: Group Stage, Round of 32, Quarter-Finals, etc. Each round has unique markets — things like 'Will any group game end 0–0?' or 'Which team advances from Group A?'",
+        a: "Stage-specific props that unlock round by round: Group Stage, Round of 32, Quarter-Finals, etc. Each round has unique markets — things like 'Will any group game end 0–0?' or 'Which team advances from Group A?'",
       },
       {
         q: "When do Deep Cuts lock?",
-        a: "Each stage's markets lock when that stage begins. Check the badge — Open (green) means you can still bet, Locked (red) means that stage has started.",
+        a: "Each stage's markets lock when that stage begins. Check the badge — Open (green) means you can still predict, Locked (red) means that stage has started.",
       },
     ],
   },
@@ -215,7 +215,7 @@ export default function HelpPage() {
             Ready to play?
           </div>
           <div style={{ color: "#6b7280", fontSize: 12, marginBottom: 12 }}>
-            Check the upcoming matches and place your first bet.
+            Check the upcoming matches and make your first prediction.
           </div>
           <button
             onClick={() => navigate("/")}

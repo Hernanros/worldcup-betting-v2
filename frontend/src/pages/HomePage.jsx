@@ -72,7 +72,7 @@ function SmartBanner({ state, nextMatch, navigate }) {
         World Cup hasn't started yet
       </div>
       <div style={{ color: "#9ca3af", fontSize: 12, lineHeight: 1.5, marginBottom: 14 }}>
-        First match {countdown}. Lock in who lifts the trophy and who wins the Golden Boot — these bets close the moment the whistle blows.
+        First match {countdown}. Lock in who lifts the trophy and who wins the Golden Boot — these picks close the moment the whistle blows.
       </div>
       <button onClick={() => navigate("/tournament")} style={{
         background: "linear-gradient(135deg,#f59e0b,#fbbf24)", color: "#1a1a00",

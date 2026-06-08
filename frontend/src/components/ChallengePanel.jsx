@@ -352,7 +352,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
         <h3 style={{ color: "#a78bfa", fontWeight: 700, fontSize: 14, display: "flex", alignItems: "center", gap: 6, margin: 0 }}>
           ⚔️ Dare a Friend
-          <HelpTip text="Pick a spicy outcome, set your stake, and dare a friend to take the other side. Covers things you can't bet on in the main panel — red cards, extra time, corners, offsides." />
+          <HelpTip text="Pick a spicy outcome, set your stake, and dare a friend to take the other side. Covers things you can't predict in the main section — red cards, extra time, corners, offsides." />
         </h3>
         {playerStreak >= 3 && (
           <div style={{ background: "rgba(168,85,247,0.15)", border: "1px solid rgba(168,85,247,0.4)",

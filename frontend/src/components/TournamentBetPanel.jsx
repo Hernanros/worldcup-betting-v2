@@ -253,7 +253,7 @@ export default function TournamentBetPanel({ onBetPlaced }) {
               cursor: loading || !effectiveSelection ? "not-allowed" : "pointer",
             }}
           >
-            {loading ? "Placing…" : `Place ${MARKET_ICONS[activeMarket]} Bet`}
+            {loading ? "Locking in…" : `Lock In ${MARKET_ICONS[activeMarket]} Pick`}
           </motion.button>
         </>
       )}
@@ -263,7 +263,7 @@ export default function TournamentBetPanel({ onBetPlaced }) {
         <div style={{ marginTop: 16, background: "#0c1a0c", border: "1px solid #16a34a", borderRadius: 10, padding: 14 }}>
           <div style={{ color: "#4ade80", fontWeight: 700, fontSize: 13, marginBottom: 6, display: "flex", alignItems: "center", gap: 6 }}>
             🛡️ Add a free insurance pick
-            <HelpTip text={`Insurance is free — no tokens charged. If your primary ${justPlacedBetType} bet loses but your insurance pick is correct, you win ${insurancePotentialWin ?? "half the primary payout"} tokens. If your primary bet wins, insurance is ignored.`} />
+            <HelpTip text={`Insurance is free — no tokens charged. If your primary ${justPlacedBetType} pick loses but your insurance pick is correct, you win ${insurancePotentialWin ?? "half the primary payout"} tokens. If your primary pick wins, insurance is ignored.`} />
           </div>
           <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 10 }}>
             Pick a different {justPlacedBetType === "winner" ? "team" : "player"} as your backup.

@@ -136,7 +136,7 @@ export default function MatchDetailPage() {
             padding: "10px 8px", cursor: "pointer", textAlign: "center",
           }}>
             <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>🔪 Deep Cuts</div>
-            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>Prop bets for this stage</div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>Prop picks for this stage</div>
           </button>
         </div>
 

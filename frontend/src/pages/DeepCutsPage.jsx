@@ -58,7 +58,7 @@ export default function DeepCutsPage() {
       setMyBets(updated.bets || [])
       setSelections(prev => { const n = {...prev}; delete n[market.key]; return n })
     } catch (e) {
-      setError(e.message || "Bet failed")
+      setError(e.message || "Prediction failed")
     } finally { setLoading(false) }
   }
 
@@ -70,9 +70,9 @@ export default function DeepCutsPage() {
       <div style={{ marginBottom: 16 }}>
         <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1abc9c", display: "flex", alignItems: "center" }}>
           🔪 Deep Cuts
-          <HelpTip text="Prop bets scoped to each tournament stage — from group stage all the way to the final. Each round has unique markets. Bets lock when that stage starts and settle when it ends." />
+          <HelpTip text="Prop predictions scoped to each tournament stage — from group stage all the way to the final. Each round has unique markets. Picks lock when that stage starts and settle when it ends." />
         </h2>
-        <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>Stage-specific proposition bets · unique markets each round</p>
+        <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>Stage-specific props · unique markets each round</p>
       </div>
 
       <div style={{ display: "flex", gap: 4, overflowX: "auto", marginBottom: 16, paddingBottom: 4 }}>
@@ -92,7 +92,7 @@ export default function DeepCutsPage() {
         })}
       </div>
 
-      {isLocked && <div style={{ padding: "10px 14px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #e74c3c", color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>🔒 This stage is locked — the matches have started, so no new bets are accepted. Your existing bets will settle when the stage ends.</div>}
+      {isLocked && <div style={{ padding: "10px 14px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #e74c3c", color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>🔒 This stage is locked — the matches have started, so no new picks are accepted. Your existing picks will settle when the stage ends.</div>}
       {error && <div style={{ padding: "10px 14px", background: "#2d0a0a", borderRadius: 8, color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>{error}</div>}
 
       {markets.map(market => {
@@ -105,7 +105,7 @@ export default function DeepCutsPage() {
             <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>{market.description}</div>
             {existingBet ? (
               <div style={{ padding: "8px 10px", background: "#0d1117", borderRadius: 6, fontSize: 12, color: "#1abc9c" }}>
-                ✓ Your bet: <strong>{existingBet.selection}</strong> · {existingBet.stake} tokens @ {existingBet.odds}
+                ✓ Your pick: <strong>{existingBet.selection}</strong> · {existingBet.stake} tokens @ {existingBet.odds}
                 <span style={{ marginLeft: 6, color: existingBet.status === "won" ? "#1abc9c" : existingBet.status === "lost" ? "#e74c3c" : "#888" }}>[{existingBet.status}]</span>
               </div>
             ) : (
@@ -121,7 +121,7 @@ export default function DeepCutsPage() {
                     <input type="number" min={1} value={stake} onChange={e => setStakes(prev => ({...prev, [market.key]: parseInt(e.target.value) || 1}))} style={{ width: 80, padding: "6px 8px", borderRadius: 6, border: "1px solid #2d2b55", background: "#0d1117", color: "#fff", fontSize: 13 }} />
                     <span style={{ fontSize: 11, color: "#888" }}>tokens</span>
                     <span style={{ fontSize: 11, color: "#1abc9c" }}>→ win {Math.round(stake * sel.odds)} if correct</span>
-                    <button onClick={() => handlePlaceBet(market)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 6, background: "#1abc9c", border: "none", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>Place Bet</button>
+                    <button onClick={() => handlePlaceBet(market)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 6, background: "#1abc9c", border: "none", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>Lock In</button>
                   </div>
                 )}
               </>

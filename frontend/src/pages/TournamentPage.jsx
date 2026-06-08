@@ -8,7 +8,7 @@ import HelpTip from "../components/HelpTip.jsx"
 const STATUS_COLOR = { pending: "#fbbf24", won: "#4ade80", lost: "#f87171" }
 
 const TABS = [
-  { key: "bets",     label: "🏆 Bets" },
+  { key: "bets",     label: "🏆 Picks" },
   { key: "groups",   label: "📊 Groups" },
   { key: "bracket",  label: "🗺 Bracket" },
 ]
@@ -33,7 +33,7 @@ function BetsTab() {
       const t = await api.get("/api/tournament/bets")
       setTournament(t)
     } catch (err) {
-      setError(err.message || "Failed to load tournament bets")
+      setError(err.message || "Failed to load tournament picks")
     }
   }
 
@@ -45,7 +45,7 @@ function BetsTab() {
 
       <div style={CARD}>
         <h3 style={{ color: "#a78bfa", fontWeight: 700, fontSize: 14, marginBottom: 12 }}>
-          Place a Long-Term Bet
+          Make a Long-Term Pick
         </h3>
         <TournamentBetPanel onBetPlaced={load} />
       </div>
@@ -54,7 +54,7 @@ function BetsTab() {
         <div>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
             <h3 style={{ color: "#6b7280", fontSize: 12, fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, margin: 0 }}>
-              Your Tournament Bets
+              Your Tournament Picks
             </h3>
             {!tournament.locked && (
               <span style={{ color: "#6b7280", fontSize: 10 }}>Place again to change your pick ↑</span>
@@ -90,7 +90,7 @@ function BetsTab() {
 
       {tournament && tournament.my_bets.length === 0 && (
         <p style={{ color: "#6b7280", textAlign: "center", fontSize: 13, marginTop: 8 }}>
-          No tournament bets yet — pick one above! 👆
+          No tournament picks yet — make one above! 👆
         </p>
       )}
     </div>

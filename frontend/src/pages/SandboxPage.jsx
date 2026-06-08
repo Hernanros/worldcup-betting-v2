@@ -170,7 +170,7 @@ export default function SandboxPage() {
                 ))}
               </div>
               {/* Outcome toggle */}
-              <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 6 }}>My bet on</p>
+              <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 6 }}>My pick on</p>
               <div style={{ display: "flex", gap: 6 }}>
                 {OUTCOME_OPTS.map((o) => (
                   <button key={o.value} onClick={() => setOutcome(o.value)}
@@ -197,7 +197,7 @@ export default function SandboxPage() {
                 </span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>
-                <span style={{ color: "#6b7280" }}>Bet odds</span>
+                <span style={{ color: "#6b7280" }}>Odds</span>
                 <span style={{ color: "#a78bfa", fontWeight: 700 }}>{preview.oddsValue}x</span>
               </div>
               <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6, fontSize: 12 }}>

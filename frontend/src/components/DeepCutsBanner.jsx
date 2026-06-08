@@ -48,7 +48,7 @@ export default function DeepCutsBanner() {
         </div>
       </div>
       <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" }}>
-        Bet now →
+        Pick now →
       </div>
       <button onClick={handleDismiss} style={{ position: "absolute", top: 6, right: 6, background: "none", border: "none", color: "rgba(255,255,255,0.7)", fontSize: 16, cursor: "pointer", lineHeight: 1, padding: "2px 4px" }} aria-label="Dismiss">×</button>
     </div>
