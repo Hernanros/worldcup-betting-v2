@@ -36,20 +36,172 @@ WC2026_GROUPS = {
 ALL_GROUP_TEAMS = [t for teams in WC2026_GROUPS.values() for t in teams]
 
 # ── Known players for Most Exhausted Player market ───────────────────────────
-# Mirrors the golden boot list so users can't pick their cat.
-# Unknown names typed manually still work (101× fallback odds on server).
-EXHAUSTED_PLAYER_LIST = [
-    "Kylian Mbappé", "Vinicius Jr", "Erling Haaland", "Harry Kane",
-    "Lionel Messi", "Cristiano Ronaldo", "Bukayo Saka", "Jude Bellingham",
-    "Lamine Yamal", "Pedri", "Julián Álvarez", "Álvaro Morata",
-    "Rafael Leão", "Bernardo Silva", "Antoine Griezmann", "Neymar Jr",
-    "Rodri", "Robert Lewandowski", "Darwin Núñez", "Richarlison",
-    "Cody Gakpo", "Marcus Rashford", "João Félix", "Karim Adeyemi",
-    "Son Heung-min", "Ousmane Dembélé", "Phil Foden", "Ferran Torres",
-    "Ángel Di María", "Rasmus Højlund", "Christopher Nkunku",
-    "Casemiro", "Serhou Guirassy", "Oliver Giroud", "Lautaro Martínez",
-    "Ismaël Bennacer", "Achraf Hakimi", "Youssef En-Nesyri", "Sadio Mané",
-]
+# Wide list covering all positions (GKs, defenders, midfielders, forwards)
+# across all 48 WC 2026 nations — because minutes are won by workhorses,
+# not just strikers. Unknown names typed manually still accepted at server.
+EXHAUSTED_PLAYER_LIST = sorted([
+    # ── ARGENTINA ────────────────────────────────────────────────────────────
+    "Lionel Messi", "Julián Álvarez", "Lautaro Martínez", "Ángel Di María",
+    "Rodrigo De Paul", "Enzo Fernández", "Mac Allister", "Cristian Romero",
+    "Lisandro Martínez", "Nahuel Molina", "Nicolás Tagliafico", "Emiliano Martínez",
+
+    # ── BRAZIL ───────────────────────────────────────────────────────────────
+    "Vinicius Jr", "Neymar Jr", "Richarlison", "Rodrygo", "Endrick",
+    "Casemiro", "Bruno Guimarães", "Lucas Paquetá", "Gerson",
+    "Marquinhos", "Éder Militão", "Alisson", "Ederson",
+
+    # ── FRANCE ───────────────────────────────────────────────────────────────
+    "Kylian Mbappé", "Antoine Griezmann", "Oliver Giroud", "Marcus Thuram",
+    "Ousmane Dembélé", "Kingsley Coman", "Christopher Nkunku",
+    "Aurélien Tchouaméni", "Eduardo Camavinga", "Adrien Rabiot",
+    "William Saliba", "Dayot Upamecano", "Théo Hernández", "Benjamin Pavard",
+    "Mike Maignan",
+
+    # ── SPAIN ────────────────────────────────────────────────────────────────
+    "Pedri", "Gavi", "Rodri", "Dani Olmo", "Lamine Yamal",
+    "Álvaro Morata", "Ferran Torres", "Nico Williams",
+    "Dani Carvajal", "Aymeric Laporte", "Robin Le Normand", "Alejandro Balde",
+    "Unai Simón",
+
+    # ── PORTUGAL ─────────────────────────────────────────────────────────────
+    "Cristiano Ronaldo", "Bruno Fernandes", "Bernardo Silva",
+    "Rafael Leão", "João Félix", "Diogo Jota", "Gonçalo Ramos",
+    "Rúben Dias", "João Cancelo", "Nuno Mendes", "Vitinha",
+    "Diogo Costa", "Rui Patrício",
+
+    # ── ENGLAND ──────────────────────────────────────────────────────────────
+    "Harry Kane", "Bukayo Saka", "Jude Bellingham", "Phil Foden",
+    "Marcus Rashford", "Raheem Sterling", "Jack Grealish",
+    "Declan Rice", "Trent Alexander-Arnold", "Kyle Walker",
+    "John Stones", "Harry Maguire", "Jordan Pickford",
+
+    # ── GERMANY ──────────────────────────────────────────────────────────────
+    "Karim Adeyemi", "Rasmus Højlund", "Leroy Sané", "Serge Gnabry",
+    "Florian Wirtz", "Kai Havertz", "Thomas Müller",
+    "Joshua Kimmich", "Leon Goretzka", "Ilkay Gündoğan",
+    "Antonio Rüdiger", "Nico Schlotterbeck", "Marc-André ter Stegen",
+
+    # ── NETHERLANDS ──────────────────────────────────────────────────────────
+    "Cody Gakpo", "Memphis Depay", "Wout Weghorst",
+    "Frenkie de Jong", "Teun Koopmeiners", "Tijjani Reijnders",
+    "Virgil van Dijk", "Nathan Aké", "Denzel Dumfries", "Daley Blind",
+
+    # ── CROATIA ──────────────────────────────────────────────────────────────
+    "Luka Modrić", "Mateo Kovačić", "Marcelo Brozović",
+    "Ivan Perišić", "Andrej Kramarić", "Bruno Petković",
+    "Joško Gvardiol", "Dejan Lovren", "Dominik Livaković",
+
+    # ── BELGIUM ──────────────────────────────────────────────────────────────
+    "Kevin De Bruyne", "Romelu Lukaku", "Dries Mertens",
+    "Yannick Carrasco", "Youri Tielemans", "Axel Witsel",
+    "Toby Alderweireld", "Jan Vertonghen", "Thibaut Courtois",
+
+    # ── NORWAY ───────────────────────────────────────────────────────────────
+    "Erling Haaland", "Martin Ødegaard", "Alexander Sørloth",
+    "Josh King", "Sander Berge",
+
+    # ── MOROCCO ──────────────────────────────────────────────────────────────
+    "Achraf Hakimi", "Hakim Ziyech", "Youssef En-Nesyri",
+    "Noussair Mazraoui", "Sofyan Amrabat", "Romain Saïss", "Nayef Aguerd",
+
+    # ── SENEGAL ──────────────────────────────────────────────────────────────
+    "Sadio Mané", "Idrissa Gueye", "Cheikhou Kouyaté",
+    "Ismaïla Sarr", "Formose Mendy", "Edouard Mendy",
+
+    # ── NIGERIA ──────────────────────────────────────────────────────────────
+    "Victor Osimhen", "Alex Iwobi", "Ademola Lookman",
+    "Wilfred Ndidi", "Taiwo Awoniyi", "Samuel Chukwueze",
+
+    # ── EGYPT ────────────────────────────────────────────────────────────────
+    "Mohamed Salah", "Mohamed Elneny", "Mostafa Mohamed", "Trezeguet",
+
+    # ── ALGERIA ──────────────────────────────────────────────────────────────
+    "Riyad Mahrez", "Ismaël Bennacer", "Yacine Brahimi", "Islam Slimani",
+    "Andy Delort", "Houssem Aouar",
+
+    # ── IVORY COAST ──────────────────────────────────────────────────────────
+    "Sébastien Haller", "Franck Kessié", "Nicolas Pépé",
+    "Jean-Philippe Gbamin", "Serge Aurier", "Wilfried Zaha",
+
+    # ── GHANA ────────────────────────────────────────────────────────────────
+    "Thomas Partey", "Mohammed Kudus", "André Ayew", "Jordan Ayew",
+    "Antoine Semenyo",
+
+    # ── TURKEY ───────────────────────────────────────────────────────────────
+    "Hakan Çalhanoğlu", "Arda Güler", "Kerem Aktürkoğlu",
+    "Kenan Yıldız", "Baris Alper Yilmaz", "Zeki Çelik",
+
+    # ── UKRAINE ──────────────────────────────────────────────────────────────
+    "Andriy Yarmolenko", "Mykhailo Mudryk", "Viktor Tsygankov",
+    "Oleksandr Zinchenko", "Sergiy Sydorchuk", "Andriy Lunin",
+
+    # ── SOUTH KOREA ──────────────────────────────────────────────────────────
+    "Son Heung-min", "Lee Kang-in", "Hwang Hee-chan",
+    "Hwang In-beom", "Kim Min-jae", "Cho Gue-sung",
+
+    # ── JAPAN ────────────────────────────────────────────────────────────────
+    "Takumi Minamino", "Daichi Kamada", "Ritsu Doan", "Kaoru Mitoma",
+    "Wataru Endo", "Hidemasa Morita", "Maya Yoshida",
+
+    # ── USA ──────────────────────────────────────────────────────────────────
+    "Christian Pulisic", "Weston McKennie", "Tyler Adams",
+    "Giovanni Reyna", "Yunus Musah", "Folarin Balogun", "Timothy Weah",
+    "Sergiño Dest", "Miles Robinson",
+
+    # ── MEXICO ───────────────────────────────────────────────────────────────
+    "Raúl Jiménez", "Hirving Lozano", "Alexis Vega",
+    "Edson Álvarez", "Carlos Rodríguez", "Héctor Moreno",
+
+    # ── COLOMBIA ─────────────────────────────────────────────────────────────
+    "James Rodríguez", "Luis Díaz", "Rafael Santos Borré",
+    "Juan Cuadrado", "Wilmar Barrios", "Davinson Sánchez",
+
+    # ── URUGUAY ──────────────────────────────────────────────────────────────
+    "Darwin Núñez", "Federico Valverde", "Rodrigo Bentancur",
+    "Luis Suárez", "Edinson Cavani", "Giorgian De Arrascaeta",
+
+    # ── ECUADOR ──────────────────────────────────────────────────────────────
+    "Moisés Caicedo", "Enner Valencia", "Jeremy Sarmiento",
+    "Ángel Mena", "Piero Hincapié",
+
+    # ── POLAND ───────────────────────────────────────────────────────────────
+    "Robert Lewandowski", "Piotr Zieliński", "Sebastian Szymański",
+    "Arkadiusz Milik", "Wojciech Szczęsny", "Jan Bednarek",
+
+    # ── SWITZERLAND ──────────────────────────────────────────────────────────
+    "Granit Xhaka", "Xherdan Shaqiri", "Breel Embolo",
+    "Remo Freuler", "Yann Sommer", "Manuel Akanji",
+
+    # ── AUSTRALIA ────────────────────────────────────────────────────────────
+    "Mathew Leckie", "Ajdin Hrustic", "Aaron Mooy",
+    "Mitchell Duke", "Aziz Behich", "Mat Ryan",
+
+    # ── CHILE ────────────────────────────────────────────────────────────────
+    "Alexis Sánchez", "Ben Brereton Díaz", "Gary Medel",
+    "Arturo Vidal", "Charles Aránguiz",
+
+    # ── PARAGUAY ─────────────────────────────────────────────────────────────
+    "Miguel Almirón", "Antonio Sanabria", "Ángel Romero",
+    "Gustavo Gómez",
+
+    # ── SAUDI ARABIA ─────────────────────────────────────────────────────────
+    "Salem Al-Dawsari", "Mohammed Kanno", "Firas Al-Buraikan",
+    "Yasser Al-Shahrani",
+
+    # ── IRAN ─────────────────────────────────────────────────────────────────
+    "Sardar Azmoun", "Mehdi Taremi", "Ali Gholizadeh",
+    "Alireza Jahanbakhsh",
+
+    # ── SERBIA (not in WC but commonly picked) — skip ────────────────────────
+    # ── CANADA ───────────────────────────────────────────────────────────────
+    "Alphonso Davies", "Jonathan David", "Tajon Buchanan",
+    "Cyle Larin", "Junior Hoilett", "Atiba Hutchinson",
+
+    # ── CHRISTOPHER NKUNKU already in France ─────────────────────────────────
+    # ── Serhou Guirassy already covered ──────────────────────────────────────
+    "Serhou Guirassy",
+])
+
 
 def get_stage_lock_time(stage: str, db) -> Optional[datetime]:
     """
