@@ -18,16 +18,21 @@ function TeamFlag({ name }) {
 }
 
 export default function GroupAdvanceMarket({ market, onSelect, selected }) {
-  const picked = selected ? selected.split(",").map(s => s.trim()) : []
+  // Use local state so intermediate picks (1 team) don't reset button highlights.
+  // Parent only receives a value when 2 teams are chosen (a valid selection).
+  const [localPicked, setLocalPicked] = useState(
+    selected ? selected.split(",").map(s => s.trim()) : []
+  )
   const teams = market.teams || []
 
   function toggle(team) {
     let next
-    if (picked.includes(team)) next = picked.filter(t => t !== team)
-    else if (picked.length < 2) next = [...picked, team]
-    else next = [picked[1], team]
+    if (localPicked.includes(team)) next = localPicked.filter(t => t !== team)
+    else if (localPicked.length < 2) next = [...localPicked, team]
+    else next = [localPicked[1], team]
+    setLocalPicked(next)
     if (next.length === 2) onSelect([...next].sort().join(","), market.default_odds)
-    else onSelect("", market.default_odds)
+    else onSelect("", market.default_odds) // clears parent lock-in button until 2 picked
   }
 
   return (
@@ -37,7 +42,7 @@ export default function GroupAdvanceMarket({ market, onSelect, selected }) {
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
         {teams.map(team => {
-          const isSelected = picked.includes(team)
+          const isSelected = localPicked.includes(team)
           return (
             <button key={team} onClick={() => toggle(team)} style={{
               padding: "8px 12px", borderRadius: 6, cursor: "pointer",
@@ -53,9 +58,14 @@ export default function GroupAdvanceMarket({ market, onSelect, selected }) {
           )
         })}
       </div>
-      {picked.length === 2 && (
+      {localPicked.length === 1 && (
+        <div style={{ marginTop: 8, fontSize: 11, color: "#f59e0b" }}>
+          Pick one more team to advance ↑
+        </div>
+      )}
+      {localPicked.length === 2 && (
         <div style={{ marginTop: 8, fontSize: 11, color: "#1abc9c" }}>
-          ✓ Advancing: {picked.join(" + ")}
+          ✓ Advancing: {localPicked.join(" + ")}
         </div>
       )}
     </div>

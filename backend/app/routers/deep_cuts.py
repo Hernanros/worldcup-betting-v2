@@ -139,6 +139,8 @@ async def get_markets(
             entry["default_odds"] = m.get("default_odds", 10.0)
             if m.get("teams"):
                 entry["teams"] = m["teams"]
+            if m.get("players"):
+                entry["players"] = m["players"]
         elif m["type"] == "group_advance":
             entry["teams"]        = m["teams"]
             entry["group"]        = m["group"]

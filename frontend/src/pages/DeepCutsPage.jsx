@@ -8,6 +8,7 @@ import YesNoMarket        from "../components/markets/YesNoMarket.jsx"
 import TeamPickMarket     from "../components/markets/TeamPickMarket.jsx"
 import TextPickMarket     from "../components/markets/TextPickMarket.jsx"
 import GroupAdvanceMarket from "../components/markets/GroupAdvanceMarket.jsx"
+import PlayerPickMarket   from "../components/markets/PlayerPickMarket.jsx"
 
 const STAGE_LABELS = {
   tournament: "🏆 Tournament", group_stage: "🗓️ Group Stage", r32: "⚔️ Round of 32",
@@ -114,7 +115,8 @@ export default function DeepCutsPage() {
                 {market.type === "exact_count" && <ExactCountMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
                 {market.type === "yes_no" && <YesNoMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
                 {market.type === "team_pick" && <TeamPickMarket market={market} teams={market.teams || []} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "text_pick" && <TextPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+                {market.type === "text_pick" && market.players && <PlayerPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+                {market.type === "text_pick" && !market.players && <TextPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
                 {market.type === "group_advance" && <GroupAdvanceMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
                 {sel?.selection && !isLocked && (
                   <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>

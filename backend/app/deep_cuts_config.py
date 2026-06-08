@@ -35,6 +35,22 @@ WC2026_GROUPS = {
 
 ALL_GROUP_TEAMS = [t for teams in WC2026_GROUPS.values() for t in teams]
 
+# ── Known players for Most Exhausted Player market ───────────────────────────
+# Mirrors the golden boot list so users can't pick their cat.
+# Unknown names typed manually still work (101× fallback odds on server).
+EXHAUSTED_PLAYER_LIST = [
+    "Kylian Mbappé", "Vinicius Jr", "Erling Haaland", "Harry Kane",
+    "Lionel Messi", "Cristiano Ronaldo", "Bukayo Saka", "Jude Bellingham",
+    "Lamine Yamal", "Pedri", "Julián Álvarez", "Álvaro Morata",
+    "Rafael Leão", "Bernardo Silva", "Antoine Griezmann", "Neymar Jr",
+    "Rodri", "Robert Lewandowski", "Darwin Núñez", "Richarlison",
+    "Cody Gakpo", "Marcus Rashford", "João Félix", "Karim Adeyemi",
+    "Son Heung-min", "Ousmane Dembélé", "Phil Foden", "Ferran Torres",
+    "Ángel Di María", "Rasmus Højlund", "Christopher Nkunku",
+    "Casemiro", "Serhou Guirassy", "Oliver Giroud", "Lautaro Martínez",
+    "Ismaël Bennacer", "Achraf Hakimi", "Youssef En-Nesyri", "Sadio Mané",
+]
+
 def get_stage_lock_time(stage: str, db) -> Optional[datetime]:
     """
     Returns the lock time for a stage.
@@ -72,6 +88,7 @@ DEEP_CUTS_MARKETS: dict[str, dict] = {
         "type":         "text_pick",
         "settle":       "most_exhausted",
         "default_odds": 50.0,
+        "players":      EXHAUSTED_PLAYER_LIST,
     },
 
     # ── GROUP STAGE ──────────────────────────────────────────────────────────

@@ -289,6 +289,12 @@ function ordinal(n) {
 /* ── Next match hero (full-width) ───────────────────────── */
 function NextMatchHero({ match, navigate }) {
   const countdown = useCountdown(match?.kickoff_time)
+  const kickoffStr = match?.kickoff_time
+    ? new Date(match.kickoff_time).toLocaleString(undefined, {
+        weekday: "short", month: "short", day: "numeric",
+        hour: "2-digit", minute: "2-digit",
+      })
+    : null
   if (!match) return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
       padding: 20, marginBottom: 14, textAlign: "center" }}>
@@ -298,11 +304,14 @@ function NextMatchHero({ match, navigate }) {
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
       padding: "16px 16px 14px", marginBottom: 14 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700,
           textTransform: "uppercase", letterSpacing: 0.8 }}>⏱ Next match</div>
         <div style={{ color: "#6b7280", fontSize: 11 }}>{countdown}</div>
       </div>
+      {kickoffStr && (
+        <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>{kickoffStr}</div>
+      )}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginBottom: 16 }}>
         <div style={{ textAlign: "center", flex: 1 }}>
           {flagImg(match.home_team, 48)}
@@ -450,10 +459,18 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam }) {
         <div style={{ borderTop: "1px solid #1e1e3a", paddingTop: 8 }}>
           <div style={{ color: "#6b7280", fontSize: 9, textTransform: "uppercase",
             letterSpacing: 0.8, marginBottom: 4 }}>Next up</div>
-          <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 3 }}>
             {flagImg(opponent, 16)}
             <span style={{ color: "#9ca3af", fontSize: 10 }}>vs {opponent}</span>
           </div>
+          {teamNext?.kickoff_time && (
+            <div style={{ color: "#6b7280", fontSize: 9 }}>
+              {new Date(teamNext.kickoff_time).toLocaleString(undefined, {
+                weekday: "short", month: "short", day: "numeric",
+                hour: "2-digit", minute: "2-digit",
+              })}
+            </div>
+          )}
         </div>
       )}
       {!opponent && (
