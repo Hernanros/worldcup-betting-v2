@@ -1,16 +1,44 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 
 /**
  * Tap-to-reveal help tooltip. Shows a `?` badge inline; clicking it
  * opens a floating card above the icon. Clicking anywhere else dismisses it.
+ *
+ * Smart alignment: detects if the tooltip would overflow the viewport edges
+ * and shifts it left (right-anchored) or right (left-anchored) accordingly.
  */
 export default function HelpTip({ text }) {
   const [show, setShow] = useState(false)
+  // "center" | "left" | "right"
+  const [align, setAlign] = useState("center")
+  const btnRef = useRef(null)
+
+  function toggle(e) {
+    e.stopPropagation()
+    if (!show && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect()
+      const btnCenterX = rect.left + rect.width / 2
+      const halfTip = 135 // half of maxWidth 270
+      const margin = 8
+      const overflowsRight = btnCenterX + halfTip > window.innerWidth - margin
+      const overflowsLeft  = btnCenterX - halfTip < margin
+      if (overflowsRight && !overflowsLeft)      setAlign("right")
+      else if (overflowsLeft && !overflowsRight) setAlign("left")
+      else                                        setAlign("center")
+    }
+    setShow(v => !v)
+  }
+
+  const alignStyle =
+    align === "right"  ? { right: 0, left: "auto", transform: "none" } :
+    align === "left"   ? { left: 0,  transform: "none" } :
+                         { left: "50%", transform: "translateX(-50%)" }
 
   return (
     <span style={{ position: "relative", display: "inline-block", marginLeft: 4, verticalAlign: "middle" }}>
       <button
-        onClick={(e) => { e.stopPropagation(); setShow(v => !v) }}
+        ref={btnRef}
+        onClick={toggle}
         style={{
           cursor: "pointer",
           color: show ? "#a78bfa" : "#6b7280",
@@ -43,9 +71,8 @@ export default function HelpTip({ text }) {
           <div style={{
             position: "absolute",
             bottom: "calc(100% + 8px)",
-            left: "50%",
-            transform: "translateX(-50%)",
-            minWidth: 210,
+            ...alignStyle,
+            minWidth: 180,
             maxWidth: 270,
             background: "#1a1a2e",
             border: "1px solid #3d3b6e",

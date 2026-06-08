@@ -109,15 +109,18 @@ export default function LeaderboardPage() {
 
         <div style={{ display: "flex", gap: 8, marginBottom: 16, overflowX: "auto" }}>
           {TABS.map((t) => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              style={{
-                background: tab === t.id ? "linear-gradient(135deg,#a855f7,#3b82f6)" : "#1e1b3a",
-                color: tab === t.id ? "#fff" : "#6b7280", border: "none",
-                borderRadius: 999, padding: "5px 16px", fontSize: 12, fontWeight: 600,
-                cursor: "pointer", whiteSpace: "nowrap", display: "inline-flex", alignItems: "center", gap: 4,
-              }}>
-              {t.label} <HelpTip text={t.tip} />
-            </button>
+            <div key={t.id} style={{ display: "inline-flex", alignItems: "center", gap: 4, flexShrink: 0 }}>
+              <button onClick={() => setTab(t.id)}
+                style={{
+                  background: tab === t.id ? "linear-gradient(135deg,#a855f7,#3b82f6)" : "#1e1b3a",
+                  color: tab === t.id ? "#fff" : "#6b7280", border: "none",
+                  borderRadius: 999, padding: "5px 16px", fontSize: 12, fontWeight: 600,
+                  cursor: "pointer", whiteSpace: "nowrap",
+                }}>
+                {t.label}
+              </button>
+              <HelpTip text={t.tip} />
+            </div>
           ))}
         </div>
 
@@ -143,14 +146,24 @@ export default function LeaderboardPage() {
           </>
         )}
 
-        {tab === "red-cards" && redCards.map((r) => (
-          <div key={r.team} style={{ background: "#13131f", border: "1px solid #2d2b55",
-            borderRadius: 10, padding: "10px 16px", marginBottom: 8,
-            display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-            <span style={{ color: "#e2e8f0", fontWeight: 600 }}>#{r.rank} {r.team}</span>
-            <span style={{ color: "#ef4444", fontWeight: 700 }}>{r.red_cards} 🟥</span>
-          </div>
-        ))}
+        {tab === "red-cards" && (
+          <>
+            {redCards.length === 0 ? (
+              <p style={{ color: "#6b7280", textAlign: "center", fontSize: 13 }}>
+                No red cards yet — check back after matches start 🟥
+              </p>
+            ) : (
+              redCards.map((r) => (
+                <div key={r.team} style={{ background: "#13131f", border: "1px solid #2d2b55",
+                  borderRadius: 10, padding: "10px 16px", marginBottom: 8,
+                  display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>#{r.rank} {r.team}</span>
+                  <span style={{ color: "#ef4444", fontWeight: 700 }}>{r.red_cards} 🟥</span>
+                </div>
+              ))
+            )}
+          </>
+        )}
       </div>
     </div>
   )

@@ -123,31 +123,43 @@ export default function DailyFeed() {
   const [collapsed, setCollapsed] = useState(false)
 
   useEffect(() => {
+    // Shared helper: build a "Coming Up" payload from /api/matches upcoming list
+    async function fallbackToUpcoming(base = {}) {
+      const all = await api.get("/api/matches")
+      const upcoming = all.filter(m => m.status === "upcoming")
+      if (!upcoming.length) return null
+      const firstKey = new Date(upcoming[0].kickoff_time)
+        .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" })
+      const nextDayMatches = upcoming
+        .filter(m => new Date(m.kickoff_time)
+          .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }) === firstKey)
+        .map(m => ({ id: m.id, home: m.home_team, away: m.away_team,
+          kickoff_time: m.kickoff_time, status: m.status,
+          home_score: m.home_score, away_score: m.away_score }))
+      return { matches: nextDayMatches, moments: [], top_scorers: [], has_activity: false, _isFuture: true, ...base }
+    }
+
     // Try today's feed; if no matches today fall back to showing next match day
     api.get("/api/feed/today")
       .then(async d => {
         if (!d.matches?.length) {
           // No matches today — show next upcoming match day from /api/matches
           try {
-            const all = await api.get("/api/matches")
-            const upcoming = all.filter(m => m.status === "upcoming")
-            if (upcoming.length) {
-              // Find the first match day
-              const firstKey = new Date(upcoming[0].kickoff_time)
-                .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" })
-              const nextDayMatches = upcoming
-                .filter(m => new Date(m.kickoff_time)
-                  .toLocaleDateString("en-CA", { timeZone: "Asia/Jerusalem" }) === firstKey)
-                .map(m => ({ id: m.id, home: m.home_team, away: m.away_team,
-                  kickoff_time: m.kickoff_time, status: m.status,
-                  home_score: m.home_score, away_score: m.away_score }))
-              d = { ...d, matches: nextDayMatches, _isFuture: true }
-            }
+            const fb = await fallbackToUpcoming(d)
+            if (fb) d = fb
           } catch (_) {}
         }
         setData(d); setLoading(false)
       })
-      .catch(() => setLoading(false))
+      .catch(async (err) => {
+        // Feed endpoint failed (e.g. 500 on cold start) — fall back gracefully
+        console.error("[DailyFeed] /api/feed/today error:", err?.message ?? err)
+        try {
+          const fb = await fallbackToUpcoming()
+          if (fb) setData(fb)
+        } catch (_) {}
+        setLoading(false)
+      })
   }, [])
 
   if (loading || !data) return null
