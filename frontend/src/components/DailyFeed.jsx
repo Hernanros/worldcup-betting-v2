@@ -136,7 +136,8 @@ export default function DailyFeed() {
         .map(m => ({ id: m.id, home: m.home_team, away: m.away_team,
           kickoff_time: m.kickoff_time, status: m.status,
           home_score: m.home_score, away_score: m.away_score }))
-      return { matches: nextDayMatches, moments: [], top_scorers: [], has_activity: false, _isFuture: true, ...base }
+      // base fields (moments, top_scorers, etc.) are preserved; matches + _isFuture always come from fallback
+      return { moments: [], top_scorers: [], has_activity: false, ...base, matches: nextDayMatches, _isFuture: true }
     }
 
     // Try today's feed; if no matches today fall back to showing next match day
