@@ -29,6 +29,7 @@ class Player(Base):
     total_challenges_issued = Column(Integer, nullable=False, default=0)
     volume_milestone_reached = Column(Integer, nullable=False, default=0)
     is_admin = Column(Boolean, nullable=False, default=False)
+    is_bot = Column(Boolean, nullable=False, default=False)
     google_sub = Column(String(200), unique=True, nullable=True, index=True)
     email = Column(String(200), nullable=True)
     favorite_team = Column(String(50), nullable=True)

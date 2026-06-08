@@ -48,6 +48,7 @@ async def leaderboard(
             "challenge_streak": p.challenge_streak,
             "rank": rank,
             "prediction_pts": pts_map.get(p.id, 0),
+            "is_bot": getattr(p, "is_bot", False),
         })
     return result
 
@@ -86,6 +87,7 @@ async def predictions_leaderboard(
             "challenge_streak": p.challenge_streak,
             "rank": rank,
             "prediction_pts": int(pts),
+            "is_bot": getattr(p, "is_bot", False),
         })
     return result
 

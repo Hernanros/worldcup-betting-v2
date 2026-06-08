@@ -148,6 +148,13 @@ async def _run_migrations():
         ))
         await db.commit()
 
+        # players.is_bot (benchmark random guesser)
+        await db.execute(text(
+            "ALTER TABLE players ADD COLUMN IF NOT EXISTS "
+            "is_bot BOOLEAN NOT NULL DEFAULT FALSE"
+        ))
+        await db.commit()
+
         # ── PHASE 2: DATA MIGRATIONS (ORM queries) ───────────────────────────
         # All columns exist now — autoflush is safe.
 

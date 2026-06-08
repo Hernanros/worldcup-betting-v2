@@ -379,3 +379,96 @@ async def set_player_stats(
 
     # 9. Return result
     return {"updated": True, "resettled": resettled}
+
+
+# ── Bot seeding ────────────────────────────────────────────────────────────────
+
+@router.post("/api/admin/seed-bot")
+async def seed_bot(
+    data: dict = {},
+    auth=Depends(get_admin),
+    db: AsyncSession = Depends(get_db),
+):
+    """Create (or refresh) the 🎲 Lucky Guess benchmark bot in a league.
+
+    The bot makes random score predictions for every upcoming match and
+    appears on the leaderboard with is_bot=True for visual distinction.
+    Accepts: { "league_id": <int> }   (defaults to first league if omitted)
+    """
+    import random
+    from app.models import Prediction
+
+    league_id = data.get("league_id")
+
+    # Resolve league
+    if league_id:
+        league = await db.get(League, league_id)
+        if not league:
+            raise HTTPException(404, "league not found")
+    else:
+        league = (await db.execute(select(League).order_by(League.id))).scalars().first()
+        if not league:
+            raise HTTPException(400, "no leagues exist yet")
+
+    BOT_NAME = "🎲 Lucky Guess"
+    BOT_SUB  = f"bot_lucky_guess_{league.id}"
+
+    # Find or create the bot player
+    bot = (await db.execute(
+        select(Player).where(Player.google_sub == BOT_SUB)
+    )).scalar_one_or_none()
+
+    if not bot:
+        bot = Player(
+            name=BOT_NAME,
+            token_balance=1000,
+            is_bot=True,
+            league_id=league.id,
+            google_sub=BOT_SUB,
+        )
+        db.add(bot)
+        await db.flush()  # get bot.id
+
+    # Fetch all upcoming matches
+    upcoming = (
+        await db.execute(
+            select(Match)
+            .where(Match.status == "upcoming", Match.home_team_confirmed.is_(True), Match.away_team_confirmed.is_(True))
+            .order_by(Match.kickoff_time)
+        )
+    ).scalars().all()
+
+    seeded = 0
+    for m in upcoming:
+        existing = (await db.execute(
+            select(Prediction).where(
+                Prediction.player_id == bot.id,
+                Prediction.match_id  == m.id,
+            )
+        )).scalar_one_or_none()
+
+        if existing:
+            continue  # don't re-randomise already-seeded matches
+
+        # Realistic WC score distribution: ~70% of scores are 0–2 per team
+        home_g = random.choices([0, 1, 2, 3, 4], weights=[25, 35, 25, 10, 5])[0]
+        away_g = random.choices([0, 1, 2, 3, 4], weights=[25, 35, 25, 10, 5])[0]
+
+        db.add(Prediction(
+            player_id=bot.id,
+            match_id=m.id,
+            home_score_pred=home_g,
+            away_score_pred=away_g,
+            is_double=False,
+        ))
+        seeded += 1
+
+    await db.commit()
+
+    return {
+        "bot_id": bot.id,
+        "bot_name": bot.name,
+        "league_id": league.id,
+        "league_name": league.name,
+        "predictions_seeded": seeded,
+    }

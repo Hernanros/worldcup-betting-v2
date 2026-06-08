@@ -28,6 +28,9 @@ export default function AdminPage() {
   const [statsJson, setStatsJson] = useState("")
   const [statsMsg, setStatsMsg] = useState("")
   const [statsLoading, setStatsLoading] = useState(false)
+  // Bot seeding
+  const [botMsg, setBotMsg] = useState("")
+  const [botLoading, setBotLoading] = useState(false)
 
   useEffect(() => { if (!player?.is_admin) navigate("/", { replace: true }) }, [])
 
@@ -322,6 +325,42 @@ export default function AdminPage() {
             {statsMsg}
           </p>
         )}
+      </div>
+
+      {/* Bot seeding */}
+      <div style={card}>
+        <h3 style={{ color: "#a78bfa", fontWeight: 700, fontSize: 14, marginBottom: 4 }}>
+          🎲 Lucky Guess benchmark
+        </h3>
+        <p style={{ color: "#6b7280", fontSize: 11, marginBottom: 10 }}>
+          Seeds a random-guesser bot in a group. Shows on the leaderboard as a benchmark — if you beat 🎲, you're beating random chance.
+        </p>
+        {leagues.length > 0 && (
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {leagues.map(lg => (
+              <button
+                key={lg.id}
+                disabled={botLoading}
+                onClick={async () => {
+                  setBotLoading(true); setBotMsg("")
+                  try {
+                    const r = await api.post("/api/admin/seed-bot", { league_id: lg.id })
+                    setBotMsg(`✓ ${r.bot_name} seeded in "${r.league_name}" — ${r.predictions_seeded} predictions added`)
+                  } catch (e) { setBotMsg(`✗ ${e.message}`) }
+                  finally { setBotLoading(false) }
+                }}
+                style={{
+                  background: "none", border: "1px solid #2d2b55", borderRadius: 8,
+                  color: "#a78bfa", fontSize: 11, fontWeight: 700,
+                  padding: "5px 12px", cursor: "pointer",
+                }}
+              >
+                {botLoading ? "Seeding…" : `Seed → ${lg.name}`}
+              </button>
+            ))}
+          </div>
+        )}
+        {botMsg && <p style={{ color: botMsg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 11, marginTop: 8 }}>{botMsg}</p>}
       </div>
 
       <div style={card}>
