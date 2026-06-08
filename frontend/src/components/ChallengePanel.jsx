@@ -499,45 +499,63 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             return (
               <div key={c.id} style={{
                 background: "linear-gradient(135deg, rgba(168,85,247,0.06), rgba(59,130,246,0.06))",
-                border: "1px solid rgba(168,85,247,0.25)",
-                borderRadius: 10, padding: "10px 12px", marginBottom: 6,
-                display: "flex", alignItems: "center", gap: 10,
+                border: "1px solid rgba(168,85,247,0.3)",
+                borderRadius: 12, padding: "12px", marginBottom: 8,
               }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  {c.issuer_name && (
-                    <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 3 }}>
-                      {c.issuer_name} dares you ⚔️
+                {/* Header */}
+                <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 10 }}>
+                  ⚔️ {c.issuer_name || "Someone"} dares you
+                  {typeInfo && <span style={{ color: "#4b5563", fontWeight: 400 }}> · {typeInfo.short}</span>}
+                </div>
+
+                {/* Two sides */}
+                <div style={{ display: "flex", gap: 8, alignItems: "stretch", marginBottom: 10 }}>
+                  {/* Their pick */}
+                  <div style={{ flex: 1, background: "rgba(107,114,128,0.1)", border: "1px solid #2d2b55", borderRadius: 8, padding: "8px 10px" }}>
+                    <div style={{ color: "#6b7280", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+                      Their pick
                     </div>
-                  )}
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                    <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 700 }}>
-                      {typeInfo?.short ?? c.bet_type}:
-                    </span>
-                    <span style={{ color: "#4ade80", fontSize: 12, fontWeight: 600,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
+                    <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {c.selection}
-                    </span>
-                    <span style={{ color: "#6b7280", fontSize: 11 }}>vs</span>
-                    <span style={{ color: "#f97316", fontSize: 12, fontWeight: 600,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 80 }}>
+                    </div>
+                    <div style={{ color: "#fbbf24", fontSize: 11, marginTop: 3 }}>
+                      {c.issuer_stake} 🪙 · {c.issuer_odds}×
+                    </div>
+                  </div>
+
+                  <div style={{ display: "flex", alignItems: "center", color: "#4b5563", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>
+                    vs
+                  </div>
+
+                  {/* Your side */}
+                  <div style={{ flex: 1, background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.35)", borderRadius: 8, padding: "8px 10px" }}>
+                    <div style={{ color: "#4ade80", fontSize: 9, fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 4 }}>
+                      Your side ✓
+                    </div>
+                    <div style={{ color: "#4ade80", fontSize: 13, fontWeight: 700,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                       {c.acceptor_selection}
-                    </span>
-                    <span style={{ color: "#fbbf24", fontSize: 10, whiteSpace: "nowrap" }}>
-                      · {c.issuer_stake} vs {c.acceptor_stake} 🪙
-                    </span>
+                    </div>
+                    <div style={{ color: "#fbbf24", fontSize: 11, marginTop: 3 }}>
+                      {c.acceptor_stake} 🪙 · {c.acceptor_odds}×
+                    </div>
                   </div>
                 </div>
+
+                {/* Accept button */}
                 <button
                   onClick={() => acceptDare(c.id)}
                   disabled={acceptingId === c.id}
                   style={{
-                    flexShrink: 0,
-                    background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
-                    border: "none", borderRadius: 8, padding: "6px 14px", fontSize: 11, fontWeight: 700,
+                    width: "100%",
+                    background: acceptingId === c.id ? "#1e1b3a" : "linear-gradient(135deg,#a855f7,#3b82f6)",
+                    color: acceptingId === c.id ? "#6b7280" : "#fff",
+                    border: "none", borderRadius: 8, padding: "8px",
+                    fontSize: 12, fontWeight: 700,
                     cursor: acceptingId === c.id ? "not-allowed" : "pointer",
-                    opacity: acceptingId === c.id ? 0.6 : 1,
                   }}>
-                  {acceptingId === c.id ? "..." : "Accept ✓"}
+                  {acceptingId === c.id ? "Accepting…" : "Accept dare ✓"}
                 </button>
               </div>
             )

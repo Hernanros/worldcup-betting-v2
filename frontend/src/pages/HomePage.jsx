@@ -218,6 +218,11 @@ function DaresForMe({ dares, navigate }) {
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {c.match_home_team} vs {c.match_away_team} · {c.bet_type?.replace(/_/g, " ")}
             </div>
+            {c.acceptor_selection && (
+              <div style={{ color: "#4ade80", fontSize: 11, marginTop: 2, fontWeight: 600 }}>
+                Your side: {c.acceptor_selection} · {c.acceptor_stake} 🪙
+              </div>
+            )}
           </div>
           <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, flexShrink: 0 }}>Accept →</span>
         </button>

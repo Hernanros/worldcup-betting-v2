@@ -138,11 +138,18 @@ async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession 
 
     open_challenges = (await db.execute(open_q)).scalars().all()
 
-    match_ids = list({c.match_id for c in open_challenges})
+    match_ids  = list({c.match_id  for c in open_challenges})
+    issuer_ids = list({c.issuer_id for c in open_challenges})
+
     matches: dict[int, Match] = {}
     if match_ids:
         match_rows = (await db.execute(select(Match).where(Match.id.in_(match_ids)))).scalars().all()
         matches = {m.id: m for m in match_rows}
+
+    player_names: dict[int, str] = {}
+    if issuer_ids:
+        name_rows = (await db.execute(select(Player.id, Player.name).where(Player.id.in_(issuer_ids)))).all()
+        player_names = {row.id: row.name for row in name_rows}
 
     my_open = []
     for_me = []
@@ -159,6 +166,9 @@ async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession 
             "acceptor_selection": c.acceptor_selection,
             "issuer_stake": c.issuer_stake,
             "acceptor_stake": c.acceptor_stake,
+            "issuer_odds": c.issuer_odds,
+            "acceptor_odds": c.acceptor_odds,
+            "issuer_name": player_names.get(c.issuer_id, ""),
         }
         if c.issuer_id == player.id:
             my_open.append(entry)
