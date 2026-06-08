@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { subscribe } from "../ws.js"
 import { api } from "../api.js"
-import { getPlayer, getLeague, clearAuth } from "../auth.js"
+import { getPlayer, getLeague } from "../auth.js"
 import GroupSwitcher from "./GroupSwitcher.jsx"
 
 export default function TopBar({ balance, onBalanceChange }) {
@@ -11,6 +11,7 @@ export default function TopBar({ balance, onBalanceChange }) {
   useEffect(() => { onBalanceChangeRef.current = onBalanceChange })
 
   const [showSwitcher, setShowSwitcher] = useState(false)
+  const closeSwitcher = () => setShowSwitcher(false)
 
   useEffect(() => {
     const unsub = subscribe(async (event) => {
@@ -24,12 +25,6 @@ export default function TopBar({ balance, onBalanceChange }) {
 
   const player = getPlayer()
   const league = getLeague()
-
-  function handleJoinNew() {
-    setShowSwitcher(false)
-    clearAuth()
-    navigate("/join", { replace: true })
-  }
 
   return (
     <>
@@ -114,8 +109,7 @@ export default function TopBar({ balance, onBalanceChange }) {
 
       <GroupSwitcher
         open={showSwitcher}
-        onClose={() => setShowSwitcher(false)}
-        onJoinNew={handleJoinNew}
+        onClose={closeSwitcher}
       />
     </>
   )
