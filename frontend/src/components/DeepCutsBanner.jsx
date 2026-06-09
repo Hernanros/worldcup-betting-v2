@@ -28,25 +28,36 @@ export default function DeepCutsBanner() {
     setStage(null)
   }
 
-  const lockStr = stage.lock_time
-    ? ilDateTime(stage.lock_time)
+  const lockStr = stage.lock_time ? ilDateTime(stage.lock_time) : null
+
+  // Urgency-aware copy
+  const hoursLeft = stage.lock_time
+    ? Math.max(0, (new Date(stage.lock_time) - Date.now()) / 3_600_000)
     : null
+  const isUrgent = hoursLeft !== null && hoursLeft < 24
+  const headline = isUrgent
+    ? `⏰ Last call — ${STAGE_LABELS[stage.stage]} picks close in ${Math.ceil(hoursLeft)}h`
+    : `🔪 ${stage.market_count} ${STAGE_LABELS[stage.stage]} props to pick`
+  const subline = isUrgent
+    ? `Locks ${lockStr} · don't miss out`
+    : lockStr
+      ? `Closes ${lockStr} · spicy stage-specific bets`
+      : `Spicy stage-specific bets — open now`
 
   return (
     <div onClick={() => navigate(`/deep-cuts?stage=${stage.stage}`)} style={{
-      background: "linear-gradient(135deg, #1abc9c 0%, #0e8a6e 100%)",
+      background: isUrgent
+        ? "linear-gradient(135deg, #e74c3c 0%, #1abc9c 100%)"
+        : "linear-gradient(135deg, #1abc9c 0%, #0e8a6e 100%)",
       borderRadius: 10, padding: "12px 14px", margin: "0 0 16px",
       display: "flex", alignItems: "center", gap: 12, cursor: "pointer",
-      boxShadow: "0 4px 15px rgba(26,188,156,0.3)", position: "relative",
+      boxShadow: `0 4px 15px rgba(${isUrgent ? "231,76,60" : "26,188,156"},0.3)`,
+      position: "relative",
     }}>
       <span style={{ fontSize: 28 }}>🔪</span>
       <div style={{ flex: 1 }}>
-        <div style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>
-          {STAGE_LABELS[stage.stage]} Deep Cuts are open!
-        </div>
-        <div style={{ fontSize: 12, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>
-          {stage.market_count} markets{lockStr ? ` · Locks ${lockStr}` : ""}
-        </div>
+        <div style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{headline}</div>
+        <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{subline}</div>
       </div>
       <div style={{ background: "rgba(255,255,255,0.2)", borderRadius: 6, padding: "5px 10px", fontSize: 12, fontWeight: 700, color: "#fff", whiteSpace: "nowrap" }}>
         Pick now →

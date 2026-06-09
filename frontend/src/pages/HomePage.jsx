@@ -11,13 +11,20 @@ import { ilDateTimeFull, ilDateTime } from "../utils/time.js"
 
 /* ── helpers ────────────────────────────────────────────── */
 function flagImg(name, size = 28) {
-  const url = flagUrl(name, size)
+  const url = flagUrl(name, size * 2) // 2× for retina
   if (!url) return null
   return (
-    <img src={url} alt={name} width={size} height={Math.round(size * 0.67)}
-      style={{ objectFit: "cover", borderRadius: 2, display: "inline-block", verticalAlign: "middle" }}
-      onError={e => { e.target.style.display = "none" }}
-    />
+    <div style={{
+      width: size, height: size,
+      borderRadius: "50%", overflow: "hidden", flexShrink: 0,
+      border: "1.5px solid rgba(255,255,255,0.12)",
+      display: "inline-block", verticalAlign: "middle",
+    }}>
+      <img src={url} alt={name}
+        style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
+        onError={e => { e.target.parentElement.style.display = "none" }}
+      />
+    </div>
   )
 }
 
@@ -65,20 +72,22 @@ function SmartBanner({ state, nextMatch, navigate }) {
 
   if (state === "PRE_TOURNAMENT") return (
     <div style={{
-      background: "linear-gradient(135deg, rgba(251,191,36,0.15), rgba(245,158,11,0.08))",
-      border: "1px solid rgba(251,191,36,0.5)", borderRadius: 16,
-      padding: "18px 16px", marginBottom: 14, textAlign: "center",
+      background: "linear-gradient(145deg, rgba(251,191,36,0.18), rgba(245,158,11,0.1))",
+      border: "1.5px solid rgba(251,191,36,0.6)", borderRadius: 20,
+      padding: "28px 20px", marginBottom: 14, textAlign: "center",
+      boxShadow: "0 8px 32px rgba(251,191,36,0.12)",
     }}>
-      <div style={{ fontSize: 32, marginBottom: 6 }}>🏆</div>
-      <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 17, marginBottom: 4 }}>
-        World Cup hasn't started yet
+      <div style={{ fontSize: 52, marginBottom: 8, lineHeight: 1 }}>🏆</div>
+      <div style={{ color: "#fbbf24", fontWeight: 900, fontSize: 22, marginBottom: 8, letterSpacing: -0.5 }}>
+        World Cup starts {countdown}
       </div>
-      <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.5, marginBottom: 14 }}>
-        First match {countdown}. Lock in who lifts the trophy and who wins the Golden Boot — these picks close the moment the whistle blows.
+      <div style={{ color: "#d1a040", fontSize: 14, lineHeight: 1.6, marginBottom: 18 }}>
+        Lock in who lifts the trophy and who tops the Golden Boot — these picks close at kickoff.
       </div>
       <button onClick={() => navigate("/tournament")} style={{
-        background: "linear-gradient(135deg,#f59e0b,#fbbf24)", color: "#1a1a00",
-        border: "none", borderRadius: 10, padding: "10px 24px", fontSize: 13, fontWeight: 800, cursor: "pointer",
+        background: "linear-gradient(135deg,#f59e0b,#fbbf24)", color: "#1a0f00",
+        border: "none", borderRadius: 12, padding: "13px 32px", fontSize: 15, fontWeight: 900, cursor: "pointer",
+        boxShadow: "0 4px 16px rgba(251,191,36,0.35)",
       }}>
         🏅 Pick Winner + Golden Boot →
       </button>
@@ -88,60 +97,49 @@ function SmartBanner({ state, nextMatch, navigate }) {
   if (state === "NEEDS_PICKS") return (
     <button onClick={() => navigate("/tournament")} style={{
       width: "100%", textAlign: "left", cursor: "pointer",
-      background: "linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.06))",
-      border: "1px solid rgba(251,191,36,0.4)",
-      borderRadius: 14, padding: "14px 16px", marginBottom: 14,
+      background: "linear-gradient(145deg, rgba(251,191,36,0.14), rgba(245,158,11,0.07))",
+      border: "1.5px solid rgba(251,191,36,0.5)",
+      borderRadius: 16, padding: "18px 18px", marginBottom: 14,
       display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+      boxShadow: "0 4px 20px rgba(251,191,36,0.08)",
     }}>
       <div>
-        <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 15, marginBottom: 2 }}>
+        <div style={{ color: "#fbbf24", fontWeight: 900, fontSize: 17, marginBottom: 3 }}>
           🏆 Who wins WC 2026?
         </div>
-        <div style={{ color: "#9ca3af", fontSize: 13 }}>
-          Pick your winner + Golden Boot — still open
+        <div style={{ color: "#d1a040", fontSize: 13, lineHeight: 1.4 }}>
+          Tournament is live — pick the winner &amp; Golden Boot now
         </div>
       </div>
-      <span style={{ color: "#fbbf24", fontSize: 18, flexShrink: 0 }}>→</span>
+      <span style={{ color: "#fbbf24", fontSize: 22, flexShrink: 0 }}>→</span>
     </button>
   )
 
   if (state === "IMMINENT" && nextMatch) return (
-    <div style={{
-      background: "linear-gradient(135deg, rgba(239,68,68,0.12), rgba(168,85,247,0.12))",
-      border: "1px solid rgba(239,68,68,0.4)", borderRadius: 16,
-      padding: "18px 16px", marginBottom: 14, textAlign: "center",
+    <button onClick={() => navigate(`/matches/${nextMatch.id}`)} style={{
+      width: "100%", textAlign: "left", cursor: "pointer",
+      background: "linear-gradient(145deg, rgba(239,68,68,0.14), rgba(168,85,247,0.14))",
+      border: "1.5px solid rgba(239,68,68,0.45)", borderRadius: 20,
+      padding: "22px 18px", marginBottom: 14,
+      boxShadow: "0 6px 24px rgba(239,68,68,0.12)",
     }}>
       <div style={{ color: "#f87171", fontSize: 11, fontWeight: 700,
-        textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>
+        textTransform: "uppercase", letterSpacing: 1, marginBottom: 10 }}>
         🔥 Kicks off {countdown}
       </div>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, marginBottom: 14 }}>
-        {flagImg(nextMatch.home_team, 32)}
-        <span style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 15 }}>
-          {nextMatch.home_team}
-        </span>
-        <span style={{ color: "#4b5563", fontWeight: 800 }}>vs</span>
-        <span style={{ color: "#e2e8f0", fontWeight: 700, fontSize: 15 }}>
-          {nextMatch.away_team}
-        </span>
-        {flagImg(nextMatch.away_team, 32)}
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+        {flagImg(nextMatch.home_team, 44)}
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 16 }}>{nextMatch.home_team}</div>
+        </div>
+        <div style={{ color: "#4b5563", fontWeight: 800, fontSize: 14 }}>vs</div>
+        <div style={{ textAlign: "center", flex: 1 }}>
+          <div style={{ color: "#e2e8f0", fontWeight: 800, fontSize: 16 }}>{nextMatch.away_team}</div>
+        </div>
+        {flagImg(nextMatch.away_team, 44)}
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <button onClick={() => navigate(`/matches/${nextMatch.id}?tab=challenges`)} style={{
-          background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
-          border: "none", borderRadius: 10, padding: "10px 8px", fontSize: 13, fontWeight: 700, cursor: "pointer",
-        }}>
-          ⚔️ Send a Dare
-        </button>
-        <button onClick={() => navigate("/predict")} style={{
-          background: "#13131f", border: "1px solid #2d2b55",
-          borderRadius: 10, padding: "10px 8px", fontSize: 13, fontWeight: 700,
-          color: "#e2e8f0", cursor: "pointer",
-        }}>
-          🎯 Predict Score
-        </button>
-      </div>
-    </div>
+      <div style={{ color: "#6b7280", fontSize: 11, textAlign: "center", marginTop: 10 }}>Tap to bet, predict &amp; dare →</div>
+    </button>
   )
 
   // NORMAL and TOURNAMENT_OVER don't show a top banner — the two-column row serves instead
@@ -415,11 +413,10 @@ function HeroScorePicker({ entry, onSaved, onCollapse }) {
   )
 }
 
-/* ── Next match hero (full-width) ───────────────────────── */
-function NextMatchHero({ match, navigate, myPrediction, onPredSaved }) {
+/* ── Next match hero (full-width, entirely tappable) ─────── */
+function NextMatchHero({ match, navigate, myPrediction }) {
   const countdown = useCountdown(match?.kickoff_time)
   const kickoffStr = match?.kickoff_time ? ilDateTimeFull(match.kickoff_time) : null
-  const [predExpanded, setPredExpanded] = useState(false)
 
   if (!match) return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
@@ -429,79 +426,78 @@ function NextMatchHero({ match, navigate, myPrediction, onPredSaved }) {
   )
 
   const hasPred = myPrediction != null
-  const predLabel = hasPred
-    ? `🎯 ${myPrediction.home_score_pred}–${myPrediction.away_score_pred} · change`
-    : "🎯 Predict"
-
-  const pickerEntry = {
-    match_id: match.id,
-    home_team: match.home_team,
-    away_team: match.away_team,
-    kickoff_time: match.kickoff_time,
-    status: "upcoming",
-    my_prediction: myPrediction || null,
-  }
 
   return (
-    <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
-      padding: "16px 16px 14px", marginBottom: 14 }}>
+    <button onClick={() => navigate(`/matches/${match.id}`)} style={{
+      width: "100%", textAlign: "left", cursor: "pointer",
+      background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
+      padding: "18px 16px 16px", marginBottom: 14,
+      display: "block",
+    }}>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700,
           textTransform: "uppercase", letterSpacing: 0.8 }}>⏱ Next match</div>
         <div style={{ color: "#6b7280", fontSize: 11 }}>{countdown}</div>
       </div>
       {kickoffStr && (
-        <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 12 }}>{kickoffStr}</div>
+        <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 14 }}>{kickoffStr}</div>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginBottom: 16 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginBottom: hasPred ? 12 : 6 }}>
         <div style={{ textAlign: "center", flex: 1 }}>
-          {flagImg(match.home_team, 48)}
-          <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700, marginTop: 6,
+          {flagImg(match.home_team, 52)}
+          <div style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginTop: 8,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {match.home_team}
           </div>
         </div>
-        <div style={{ color: "#4b5563", fontWeight: 800, fontSize: 18, padding: "0 8px" }}>vs</div>
+        <div style={{ color: "#4b5563", fontWeight: 800, fontSize: 20, padding: "0 8px" }}>vs</div>
         <div style={{ textAlign: "center", flex: 1 }}>
-          {flagImg(match.away_team, 48)}
-          <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700, marginTop: 6,
+          {flagImg(match.away_team, 52)}
+          <div style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginTop: 8,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {match.away_team}
           </div>
         </div>
       </div>
-
-      {predExpanded && (
-        <HeroScorePicker
-          entry={pickerEntry}
-          onSaved={(doublesCount) => { onPredSaved?.(doublesCount); setPredExpanded(false) }}
-          onCollapse={() => setPredExpanded(false)}
-        />
+      {hasPred && (
+        <div style={{ textAlign: "center", fontSize: 11, color: "#22d3ee", fontWeight: 600 }}>
+          🎯 Your pick: {myPrediction.home_score_pred}–{myPrediction.away_score_pred} · tap to change
+        </div>
       )}
+      {!hasPred && (
+        <div style={{ textAlign: "center", fontSize: 11, color: "#4b5563" }}>
+          Tap to predict, bet &amp; dare →
+        </div>
+      )}
+    </button>
+  )
+}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-        <button onClick={() => navigate(`/matches/${match.id}?tab=challenges`)} style={{
-          background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
-          border: "none", borderRadius: 10, padding: "10px 0",
-          fontSize: 13, fontWeight: 700, cursor: "pointer",
-        }}>⚔️ Dare friends</button>
-        {predExpanded ? (
-          <button onClick={() => setPredExpanded(false)} style={{
-            background: "none", border: "1px solid #4b5563", borderRadius: 10,
-            padding: "10px 0", fontSize: 13, fontWeight: 700,
-            color: "#6b7280", cursor: "pointer",
-          }}>✕ Cancel</button>
-        ) : (
-          <button onClick={() => setPredExpanded(true)} style={{
-            background: "none",
-            border: `1px solid ${hasPred ? "#22d3ee" : "#2d2b55"}`,
-            borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 700,
-            color: hasPred ? "#22d3ee" : "#e2e8f0", cursor: "pointer",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            paddingLeft: 4, paddingRight: 4,
-          }}>{predLabel}</button>
-        )}
-      </div>
+/* ── Challenge a friend card ────────────────────────────── */
+function ChallengeFriendCard({ matches, navigate }) {
+  const upcoming = matches.filter(m => m.status === "upcoming").slice(0, 3)
+  if (!upcoming.length) return null
+  return (
+    <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
+      padding: "14px 14px 10px", marginBottom: 14 }}>
+      <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+        letterSpacing: 0.8, marginBottom: 10 }}>⚔️ Challenge a friend</div>
+      {upcoming.map(m => (
+        <button key={m.id} onClick={() => navigate(`/matches/${m.id}?tab=challenges`)} style={{
+          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+          background: "rgba(168,85,247,0.04)", border: "1px solid #2d2b55", borderRadius: 10,
+          padding: "10px 12px", cursor: "pointer", marginBottom: 6,
+        }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {flagImg(m.home_team, 22)}
+            <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>{m.home_team}</span>
+            <span style={{ color: "#4b5563", fontSize: 11 }}>vs</span>
+            <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>{m.away_team}</span>
+            {flagImg(m.away_team, 22)}
+          </div>
+          <span style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>Dare →</span>
+        </button>
+      ))}
     </div>
   )
 }
@@ -700,18 +696,6 @@ export default function HomePage() {
     } catch (e) { alert(e.message || "Cancel failed") }
   }
 
-  async function handlePredSaved() {
-    try {
-      const predictions = await api.get("/api/predictions")
-      const nextPred = nextMatch
-        ? (predictions.find(p => p.match_id === nextMatch.id)?.my_prediction ?? null)
-        : null
-      setMyNextPrediction(nextPred)
-    } catch {
-      // ignore — hero still collapses, prediction updates on next load
-    }
-  }
-
   async function saveTeam(teamName) {
     setSavingTeam(true)
     try {
@@ -755,7 +739,6 @@ export default function HomePage() {
                 match={nextMatch}
                 navigate={navigate}
                 myPrediction={myNextPrediction}
-                onPredSaved={handlePredSaved}
               />
             )}
 
@@ -787,6 +770,9 @@ export default function HomePage() {
 
             {/* My open dares */}
             {!loading && <MyOpenDares dares={openChallenges.my_open} onCancel={cancelDare} />}
+
+            {/* Challenge a friend */}
+            {!loading && <ChallengeFriendCard matches={matches} navigate={navigate} />}
           </>
         )}
 

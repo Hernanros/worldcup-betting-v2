@@ -448,32 +448,14 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
                 background: "#13131f", border: "1px solid #2d2b55",
                 borderRadius: 8, padding: 10, marginBottom: 8,
               }}>
-                <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700,
-                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+                <div style={{ color: "#a78bfa", fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
                   {s.title}
                 </div>
-                <div style={{ display: "flex", gap: 6, alignItems: "stretch", marginBottom: 6 }}>
-                  <div style={{ flex: 1, textAlign: "center" }}>
-                    <div style={{ color: "#6b7280", fontSize: 9 }}>Your pick</div>
-                    <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 700,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {s.my_pick}
-                    </div>
-                    <div style={{ color: "#4ade80", fontSize: 10 }}>{s.my_odds}×</div>
-                  </div>
-                  <div style={{ color: "#2d2b55", fontSize: 12, alignSelf: "center", flexShrink: 0 }}>vs</div>
-                  <div style={{ flex: 1, textAlign: "center" }}>
-                    <div style={{ color: "#6b7280", fontSize: 9 }}>Their pick</div>
-                    <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 700,
-                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                      {s.their_pick}
-                    </div>
-                    <div style={{ color: "#f87171", fontSize: 10 }}>{s.their_odds}×</div>
-                  </div>
-                  <div style={{ flex: 1, textAlign: "center" }}>
-                    <div style={{ color: "#6b7280", fontSize: 9 }}>Stake</div>
-                    <div style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700 }}>{s.stake}</div>
-                  </div>
+                <div style={{ color: "#9ca3af", fontSize: 11, marginBottom: 4 }}>
+                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{s.my_pick}</span>
+                  <span style={{ color: "#4b5563", margin: "0 5px" }}>vs</span>
+                  <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{s.their_pick}</span>
+                  <span style={{ color: "#6b7280", marginLeft: 6 }}>· stake {s.stake} · {s.my_odds}×/{s.their_odds}×</span>
                 </div>
                 <p style={{ color: "#6b7280", fontSize: 11, lineHeight: 1.4, marginBottom: 8 }}>
                   {s.reason}

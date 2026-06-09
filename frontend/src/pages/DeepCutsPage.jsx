@@ -21,6 +21,44 @@ const STATUS_BADGE = {
   upcoming: { label: "Soon",     color: "#f59e0b" },
 }
 
+function MarketCard({ market, myBets, selections, stakes, isLocked, isUpcoming, loading, handleSelect, handlePlaceBet, setStakes }) {
+  const existingBet = myBets.find(b => b.market_key === market.key)
+  const sel = selections[market.key]
+  const stake = stakes[market.key] ?? (market.type === "group_advance" ? 5 : 20)
+  return (
+    <div style={{ background: "#111827", borderRadius: 10, padding: 14, marginBottom: 8, border: "1px solid #1f2937" }}>
+      <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>{market.label}</div>
+      <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>{market.description}</div>
+      {existingBet ? (
+        <div style={{ padding: "8px 10px", background: "#0d1117", borderRadius: 6, fontSize: 12, color: "#1abc9c" }}>
+          ✓ Your pick: <strong>{existingBet.selection}</strong> · {existingBet.stake} tokens @ {existingBet.odds}
+          <span style={{ marginLeft: 6, color: existingBet.status === "won" ? "#1abc9c" : existingBet.status === "lost" ? "#e74c3c" : "#888" }}>[{existingBet.status}]</span>
+        </div>
+      ) : isUpcoming ? (
+        <div style={{ fontSize: 11, color: "#f59e0b" }}>⏳ Opens when bracket is drawn</div>
+      ) : (
+        <>
+          {market.type === "over_under" && <OverUnderMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {market.type === "exact_count" && <ExactCountMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {market.type === "yes_no" && <YesNoMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {market.type === "team_pick" && <TeamPickMarket market={market} teams={market.teams || []} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {market.type === "text_pick" && market.players && <PlayerPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {market.type === "text_pick" && !market.players && <TextPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {market.type === "group_advance" && <GroupAdvanceMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
+          {sel?.selection && !isLocked && (
+            <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>
+              <input type="number" min={1} value={stake} onChange={e => setStakes(prev => ({...prev, [market.key]: parseInt(e.target.value) || 1}))} style={{ width: 80, padding: "6px 8px", borderRadius: 6, border: "1px solid #2d2b55", background: "#0d1117", color: "#fff", fontSize: 13 }} />
+              <span style={{ fontSize: 11, color: "#888" }}>tokens</span>
+              <span style={{ fontSize: 11, color: "#1abc9c" }}>→ win {Math.round(stake * sel.odds)} if correct</span>
+              <button onClick={() => handlePlaceBet(market)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 6, background: "#1abc9c", border: "none", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>Lock In</button>
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
 export default function DeepCutsPage() {
   const [searchParams] = useSearchParams()
   const [stages, setStages] = useState([])
@@ -31,6 +69,7 @@ export default function DeepCutsPage() {
   const [stakes, setStakes] = useState({})
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [groupsExpanded, setGroupsExpanded] = useState(false)
 
   useEffect(() => {
     api.get("/api/deep-cuts/stages").then(d => setStages(d.stages || []))
@@ -65,6 +104,13 @@ export default function DeepCutsPage() {
 
   const activeStageInfo = stages.find(s => s.stage === activeStage)
   const isLocked = activeStageInfo?.status === "locked"
+  const isUpcoming = activeStageInfo?.status === "upcoming"
+
+  // Separate group-advance markets from the rest
+  const groupMarkets = markets.filter(m => m.type === "group_advance")
+  const otherMarkets = markets.filter(m => m.type !== "group_advance")
+  const pickedGroups = groupMarkets.filter(m => myBets.find(b => b.market_key === m.key)).length
+  const totalGroups = groupMarkets.length
 
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px 12px 80px" }}>
@@ -96,43 +142,39 @@ export default function DeepCutsPage() {
       </div>
 
       {isLocked && <div style={{ padding: "10px 14px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #e74c3c", color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>🔒 This stage is locked — the matches have started, so no new picks are accepted. Your existing picks will settle when the stage ends.</div>}
+      {isUpcoming && <div style={{ padding: "10px 14px", background: "#1a1a2e", borderRadius: 8, border: "1px solid #f59e0b", color: "#f59e0b", fontSize: 12, marginBottom: 12 }}>⏳ Bracket not drawn yet — picks for this stage open once the matches are scheduled.</div>}
       {error && <div style={{ padding: "10px 14px", background: "#2d0a0a", borderRadius: 8, color: "#e74c3c", fontSize: 12, marginBottom: 12 }}>{error}</div>}
 
-      {markets.map(market => {
-        const existingBet = myBets.find(b => b.market_key === market.key)
-        const sel = selections[market.key]
-        const stake = stakes[market.key] ?? (market.type === "group_advance" ? 5 : 20)
-        return (
-          <div key={market.key} style={{ background: "#111827", borderRadius: 10, padding: 14, marginBottom: 12, border: "1px solid #1f2937" }}>
-            <div style={{ fontWeight: 700, fontSize: 14, color: "#fff", marginBottom: 4 }}>{market.label}</div>
-            <div style={{ fontSize: 11, color: "#888", marginBottom: 10 }}>{market.description}</div>
-            {existingBet ? (
-              <div style={{ padding: "8px 10px", background: "#0d1117", borderRadius: 6, fontSize: 12, color: "#1abc9c" }}>
-                ✓ Your pick: <strong>{existingBet.selection}</strong> · {existingBet.stake} tokens @ {existingBet.odds}
-                <span style={{ marginLeft: 6, color: existingBet.status === "won" ? "#1abc9c" : existingBet.status === "lost" ? "#e74c3c" : "#888" }}>[{existingBet.status}]</span>
-              </div>
-            ) : (
-              <>
-                {market.type === "over_under" && <OverUnderMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "exact_count" && <ExactCountMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "yes_no" && <YesNoMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "team_pick" && <TeamPickMarket market={market} teams={market.teams || []} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "text_pick" && market.players && <PlayerPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "text_pick" && !market.players && <TextPickMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {market.type === "group_advance" && <GroupAdvanceMarket market={market} selected={sel?.selection} onSelect={(s, o) => handleSelect(market.key, s, o)} />}
-                {sel?.selection && !isLocked && (
-                  <div style={{ marginTop: 10, display: "flex", gap: 8, alignItems: "center" }}>
-                    <input type="number" min={1} value={stake} onChange={e => setStakes(prev => ({...prev, [market.key]: parseInt(e.target.value) || 1}))} style={{ width: 80, padding: "6px 8px", borderRadius: 6, border: "1px solid #2d2b55", background: "#0d1117", color: "#fff", fontSize: 13 }} />
-                    <span style={{ fontSize: 11, color: "#888" }}>tokens</span>
-                    <span style={{ fontSize: 11, color: "#1abc9c" }}>→ win {Math.round(stake * sel.odds)} if correct</span>
-                    <button onClick={() => handlePlaceBet(market)} disabled={loading} style={{ marginLeft: "auto", padding: "6px 14px", borderRadius: 6, background: "#1abc9c", border: "none", color: "#fff", fontWeight: 700, fontSize: 13, cursor: "pointer", opacity: loading ? 0.6 : 1 }}>Lock In</button>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-        )
-      })}
+      {/* ── Non-group-advance markets ── */}
+      {otherMarkets.map(market => <MarketCard key={market.key} market={market} myBets={myBets} selections={selections} stakes={stakes} isLocked={isLocked} isUpcoming={isUpcoming} loading={loading} handleSelect={handleSelect} handlePlaceBet={handlePlaceBet} setStakes={setStakes} />)}
+
+      {/* ── Group advancement accordion ── */}
+      {groupMarkets.length > 0 && (
+        <div style={{ marginBottom: 12 }}>
+          <button
+            onClick={() => setGroupsExpanded(v => !v)}
+            style={{
+              width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+              background: "#111827", border: "1px solid #1f2937", borderRadius: groupsExpanded ? "10px 10px 0 0" : 10,
+              padding: "12px 14px", cursor: "pointer",
+            }}
+          >
+            <div>
+              <span style={{ color: "#fff", fontWeight: 700, fontSize: 14 }}>📋 Group Advancement</span>
+              <span style={{ color: "#888", fontSize: 11, marginLeft: 8 }}>
+                {pickedGroups}/{totalGroups} groups picked
+              </span>
+            </div>
+            <span style={{ color: "#4b5563", fontSize: 14,
+              transform: groupsExpanded ? "rotate(180deg)" : "none", transition: "transform 0.15s" }}>▾</span>
+          </button>
+          {groupsExpanded && (
+            <div style={{ border: "1px solid #1f2937", borderTop: "none", borderRadius: "0 0 10px 10px", background: "#0d1117", padding: 12 }}>
+              {groupMarkets.map(market => <MarketCard key={market.key} market={market} myBets={myBets} selections={selections} stakes={stakes} isLocked={isLocked} isUpcoming={isUpcoming} loading={loading} handleSelect={handleSelect} handlePlaceBet={handlePlaceBet} setStakes={setStakes} />)}
+            </div>
+          )}
+        </div>
+      )}
 
       {myBets.length > 0 && (
         <div style={{ marginTop: 24 }}>

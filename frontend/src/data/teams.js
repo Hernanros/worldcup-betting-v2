@@ -84,6 +84,16 @@ export function flagUrl(teamName, size = 40) {
   return `https://flagcdn.com/w${bucket}/${iso}.png`
 }
 
+// Custom team logos — populate here to override flags with proper crests.
+// Falls back to flagUrl when no custom logo is set.
+// Example: TEAM_LOGOS["Argentina"] = "https://…/arg_crest.png"
+export const TEAM_LOGOS = {}
+
+export function teamLogoUrl(teamName, size = 40) {
+  if (TEAM_LOGOS[teamName]) return TEAM_LOGOS[teamName]
+  return flagUrl(teamName, size)
+}
+
 // Top-25 Golden Boot contenders for the dropdown
 export const GOLDEN_BOOT_PLAYERS = [
   "Kylian Mbappé",

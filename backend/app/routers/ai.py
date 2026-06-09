@@ -1,5 +1,8 @@
 import json
+import os
 import re
+import time
+import httpx
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 import anthropic
@@ -7,6 +10,40 @@ from app.database import get_db
 from app.deps import get_current_player
 from app.models import Match, Player, Bet, TournamentBet, SpicyBet
 from app.config import settings
+
+# ── In-memory news cache (team_pair → (timestamp, text)) ─────────────────────
+_news_cache: dict[str, tuple[float, str]] = {}
+_NEWS_TTL = 6 * 3600  # 6 hours
+
+async def _fetch_team_news(home: str, away: str) -> str:
+    """Search for recent team news/injuries using Serper API. Returns '' if key missing."""
+    api_key = os.getenv("SERPER_API_KEY", "")
+    if not api_key:
+        return ""
+    cache_key = f"{home}|{away}"
+    now = time.time()
+    if cache_key in _news_cache:
+        ts, text = _news_cache[cache_key]
+        if now - ts < _NEWS_TTL:
+            return text
+    try:
+        q = f"{home} vs {away} 2026 World Cup injuries form team news"
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            r = await client.post(
+                "https://google.serper.dev/search",
+                headers={"X-API-KEY": api_key, "Content-Type": "application/json"},
+                json={"q": q, "num": 5, "gl": "us", "hl": "en"},
+            )
+        snippets = [
+            f"- {item.get('title','')}: {item.get('snippet','')}"
+            for item in r.json().get("organic", [])[:5]
+            if item.get("snippet")
+        ]
+        text = "\n".join(snippets) if snippets else ""
+    except Exception:
+        text = ""
+    _news_cache[cache_key] = (now, text)
+    return text
 
 router = APIRouter()
 
@@ -82,7 +119,8 @@ _STAR_PLAYERS = {
 
 def _build_prompt(match: Match, player: Player, odds: dict,
                   existing_bet=None, existing_prediction=None, open_challenges=None,
-                  recent_bets=None, tournament_bets=None, deep_cuts_bets=None) -> str:
+                  recent_bets=None, tournament_bets=None, deep_cuts_bets=None,
+                  team_news: str = "") -> str:
     lines = [
         f"Match: {match.home_team} vs {match.away_team}",
         f"Round: {match.round}",
@@ -118,6 +156,8 @@ def _build_prompt(match: Match, player: Player, odds: dict,
     all_stars   = home_stars + away_stars
     if all_stars:
         lines.append(f"Star players available (use for player_h2h): {', '.join(all_stars[:8])}")
+    if team_news:
+        lines.append(f"\nRecent team news (use for context — injuries, form, chatter):\n{team_news}")
     lines += ["", "Available odds:"]
     # Fallback: if no odds cached for this match, provide typical WC-style defaults
     # so Claude always has meaningful data to build suggestions from.
@@ -209,12 +249,14 @@ async def suggest_challenge(
         .limit(5)
     )).scalars().all()
 
+    team_news = await _fetch_team_news(match.home_team, match.away_team)
     prompt = _build_prompt(
         match, player, odds,
         existing_bet, existing_prediction, open_challenges,
         recent_bets=recent_bets,
         tournament_bets=tournament_bets,
         deep_cuts_bets=deep_cuts_bets,
+        team_news=team_news,
     )
     try:
         message = anthropic_client.messages.create(
