@@ -109,64 +109,71 @@ function PresetChips({ presets, value, onChange }) {
 /* ── Handicap picker ───────────────────────────────────────── */
 function HandicapPicker({ match, selection, onPick }) {
   const LINES = ["+0.5", "+1", "+1.5", "+2", "+2.5"]
-  // Parse current selection if any: "Argentina +1.5" → team="Argentina", line="+1.5"
   const parts = selection ? selection.split(" ") : []
   const currentLine = parts.length >= 2 ? parts[parts.length - 1] : null
   const currentTeam = parts.length >= 2 ? parts.slice(0, -1).join(" ") : null
 
   function pick(team, line) {
     const otherTeam = team === match.home_team ? match.away_team : match.home_team
-    const neg = line.replace("+", "-")
-    // issuerSel used for settlement; acceptorSel is display-only
-    onPick(`${team} ${line}`, `${otherTeam} ${neg}`)
+    onPick(`${team} ${line}`, `${otherTeam} ${line.replace("+", "-")}`)
   }
 
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>
-        Which team are <strong style={{ color: "#a78bfa" }}>you</strong> backing with a head-start?
+      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 6 }}>
+        Pick a team <strong style={{ color: "#a78bfa" }}>and</strong> their head-start — one tap picks both
       </div>
-      <div style={{ color: "#4b5563", fontSize: 9, marginBottom: 8 }}>
-        Your team gets extra virtual goals — they can lose and you still win.
-      </div>
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 10 }}>
-        {[match.home_team, match.away_team].map(team => (
-          <button key={team} onClick={() => pick(team, currentLine || "+1")} style={{
-            padding: "8px 4px", borderRadius: 8, fontSize: 11, fontWeight: 700,
-            cursor: "pointer", border: "1px solid",
-            background: currentTeam === team ? "rgba(168,85,247,0.2)" : "transparent",
-            borderColor: currentTeam === team ? "rgba(168,85,247,0.6)" : "#2d2b55",
-            color: currentTeam === team ? "#c4b5fd" : "#6b7280",
-            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-          }}>
-            {currentTeam === team ? `✓ ${team}` : team}
-          </button>
-        ))}
-      </div>
-      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 4 }}>
-        Head-start size (goals)
-      </div>
-      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-        {LINES.map(line => (
-          <button key={line} onClick={() => pick(currentTeam || match.home_team, line)} style={{
-            padding: "4px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700,
-            cursor: "pointer", border: "1px solid",
-            background: currentLine === line ? "rgba(168,85,247,0.2)" : "transparent",
-            borderColor: currentLine === line ? "rgba(168,85,247,0.6)" : "#2d2b55",
-            color: currentLine === line ? "#c4b5fd" : "#6b7280",
-          }}>
-            {line}
-          </button>
-        ))}
-      </div>
+
+      {/* Two-row grid: one row per team */}
+      {[match.home_team, match.away_team].map(team => {
+        const isTeamSelected = currentTeam === team
+        return (
+          <div key={team} style={{ marginBottom: 6 }}>
+            {/* Team label */}
+            <div style={{
+              fontSize: 9, fontWeight: 700, color: isTeamSelected ? "#a78bfa" : "#4b5563",
+              textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 3,
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {team}
+            </div>
+            {/* Line chips for this team */}
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+              {LINES.map(line => {
+                const isSelected = isTeamSelected && currentLine === line
+                return (
+                  <button key={line} onClick={() => pick(team, line)} style={{
+                    padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700,
+                    cursor: "pointer", border: "1px solid",
+                    background: isSelected ? "rgba(168,85,247,0.25)" : "transparent",
+                    borderColor: isSelected ? "#a78bfa" : "#2d2b55",
+                    color: isSelected ? "#c4b5fd" : "#6b7280",
+                    transition: "all 0.1s",
+                  }}>
+                    {line}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+        )
+      })}
+
+      {/* Live explanation of the current pick */}
       {selection && (
         <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(168,85,247,0.08)",
           borderRadius: 8, border: "1px solid rgba(168,85,247,0.2)" }}>
-          <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
-            ✓ You back: {selection}
+          <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
+            ✓ You back: <strong>{currentTeam}</strong> {currentLine}
           </div>
-          <div style={{ color: "#6b7280", fontSize: 10 }}>
-            You win if {currentTeam} loses by fewer than {currentLine?.replace("+", "")} {currentLine === "+1" ? "goal" : "goals"}, draws, or wins outright.
+          <div style={{ color: "#9ca3af", fontSize: 10, lineHeight: 1.4 }}>
+            {currentLine === "+0.5"
+              ? `${currentTeam} must win outright for you to win.`
+              : `You win if ${currentTeam} wins, draws, or loses by fewer than ${currentLine?.replace("+", "")} goals.`
+            }
+          </div>
+          <div style={{ color: "#4b5563", fontSize: 9, marginTop: 3 }}>
+            Their side (auto): {currentTeam === match.home_team ? match.away_team : match.home_team} {currentLine?.replace("+", "-")}
           </div>
         </div>
       )}
@@ -511,10 +518,13 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
 
         {/* Pick section */}
         {currentType.yesNo ? (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 10 }}>
+          <div style={{ marginBottom: 10 }}>
             <YesNoPicker label="Your call" value={selection} onChange={handleMyPick} />
-            <YesNoPicker label="Their call (auto)" value={acceptorSelection}
-              onChange={v => { setAcceptorSelection(v); setSelection(oppositeOf(currentType, v)) }} />
+            {selection && (
+              <div style={{ marginTop: 6, color: "#6b7280", fontSize: 10 }}>
+                Their call (auto): <strong style={{ color: "#e2e8f0" }}>{acceptorSelection}</strong>
+              </div>
+            )}
           </div>
         ) : currentType.playerH2H ? (
           <PlayerH2HPicker
