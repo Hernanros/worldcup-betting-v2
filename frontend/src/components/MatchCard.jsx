@@ -59,7 +59,7 @@ export default function MatchCard({ match }) {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
             <div style={{ textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
               <TeamFlag name={match.home_team} size={36} />
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginTop: 4 }}>{match.home_team}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", marginTop: 4 }}>{match.home_team}</div>
               {hasScore && (
                 <div className="gradient-text" style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>
                   {match.home_score}
@@ -73,7 +73,7 @@ export default function MatchCard({ match }) {
 
             <div style={{ textAlign: "center", flex: 1, display: "flex", flexDirection: "column", alignItems: "center" }}>
               <TeamFlag name={match.away_team} size={36} />
-              <div style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0", marginTop: 4 }}>{match.away_team}</div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0", marginTop: 4 }}>{match.away_team}</div>
               {hasScore && (
                 <div className="gradient-text" style={{ fontSize: 24, fontWeight: 800, marginTop: 4 }}>
                   {match.away_score}

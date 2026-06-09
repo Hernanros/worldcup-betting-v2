@@ -172,7 +172,7 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
         {/* Home */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}>
           <Flag name={entry.home_team} />
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#e2e8f0",
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {entry.home_team}
           </span>
@@ -227,7 +227,7 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
 
         {/* Away */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
-          <span style={{ fontSize: 11, fontWeight: 600, color: "#e2e8f0",
+          <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
             {entry.away_team}
           </span>

@@ -73,7 +73,7 @@ function SmartBanner({ state, nextMatch, navigate }) {
       <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 17, marginBottom: 4 }}>
         World Cup hasn't started yet
       </div>
-      <div style={{ color: "#9ca3af", fontSize: 12, lineHeight: 1.5, marginBottom: 14 }}>
+      <div style={{ color: "#9ca3af", fontSize: 13, lineHeight: 1.5, marginBottom: 14 }}>
         First match {countdown}. Lock in who lifts the trophy and who wins the Golden Boot — these picks close the moment the whistle blows.
       </div>
       <button onClick={() => navigate("/tournament")} style={{
@@ -97,7 +97,7 @@ function SmartBanner({ state, nextMatch, navigate }) {
         <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 15, marginBottom: 2 }}>
           🏆 Who wins WC 2026?
         </div>
-        <div style={{ color: "#9ca3af", fontSize: 12 }}>
+        <div style={{ color: "#9ca3af", fontSize: 13 }}>
           Pick your winner + Golden Boot — still open
         </div>
       </div>
@@ -129,13 +129,13 @@ function SmartBanner({ state, nextMatch, navigate }) {
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <button onClick={() => navigate(`/matches/${nextMatch.id}?tab=challenges`)} style={{
           background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
-          border: "none", borderRadius: 10, padding: "10px 8px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+          border: "none", borderRadius: 10, padding: "10px 8px", fontSize: 13, fontWeight: 700, cursor: "pointer",
         }}>
           ⚔️ Send a Dare
         </button>
         <button onClick={() => navigate("/predict")} style={{
           background: "#13131f", border: "1px solid #2d2b55",
-          borderRadius: 10, padding: "10px 8px", fontSize: 12, fontWeight: 700,
+          borderRadius: 10, padding: "10px 8px", fontSize: 13, fontWeight: 700,
           color: "#e2e8f0", cursor: "pointer",
         }}>
           🎯 Predict Score
@@ -215,7 +215,7 @@ function DaresForMe({ dares, navigate }) {
             <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 2 }}>
               {c.issuer_name || "Someone"} dares you
             </div>
-            <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600,
+            <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {c.match_home_team} vs {c.match_away_team} · {c.bet_type?.replace(/_/g, " ")}
             </div>
@@ -251,7 +251,7 @@ function MyOpenDares({ dares, onCancel }) {
             <div style={{ color: "#6b7280", fontSize: 10 }}>
               {c.match_home_team} vs {c.match_away_team}
             </div>
-            <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600,
+            <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>
               {c.selection} · <span style={{ color: "#fbbf24" }}>{c.issuer_stake} tokens</span>
             </div>
@@ -551,7 +551,7 @@ function TeamPickerModal({ onPick, onClose, saving }) {
                   opacity: saving ? 0.6 : 1,
                 }}>
                   {flagImg(team, 22)}
-                  <span style={{ color: "#e2e8f0", fontSize: 11, fontWeight: 600,
+                  <span style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                     {team}
                   </span>
@@ -574,7 +574,7 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam }) {
       <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 10 }}>Support a team</div>
       <button onClick={onPickTeam} style={{
         background: "none", border: "1px solid #4b5563", borderRadius: 10,
-        color: "#e2e8f0", fontSize: 12, fontWeight: 700, padding: "8px 16px",
+        color: "#e2e8f0", fontSize: 13, fontWeight: 700, padding: "8px 16px",
         cursor: "pointer",
       }}>🏳️ Pick your team</button>
     </div>

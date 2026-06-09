@@ -74,7 +74,7 @@ function YesNoPicker({ value, onChange, label }) {
       <div style={{ display: "flex", gap: 6 }}>
         {["Yes", "No"].map(opt => (
           <button key={opt} onClick={() => onChange(opt)} style={{
-            flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 12, fontWeight: 700,
+            flex: 1, padding: "7px 0", borderRadius: 8, fontSize: 13, fontWeight: 700,
             cursor: "pointer", border: "1px solid",
             background: value === opt ? (opt === "Yes" ? "rgba(74,222,128,0.15)" : "rgba(248,113,113,0.15)") : "transparent",
             borderColor: value === opt ? (opt === "Yes" ? "rgba(74,222,128,0.5)" : "rgba(248,113,113,0.5)") : "#2d2b55",
@@ -560,14 +560,14 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Your pick</div>
                 <input value={selection} onChange={e => handleMyPick(e.target.value)} placeholder="e.g. Over 2.5"
                   style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
-                    borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 12 }} />
+                    borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 13 }} />
               </div>
               <div>
                 <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Their pick (auto)</div>
                 <input value={acceptorSelection} onChange={e => { setAcceptorSelection(e.target.value); setSelection(oppositeOf(currentType, e.target.value)) }}
                   placeholder="e.g. Under 2.5"
                   style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
-                    borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 12 }} />
+                    borderRadius: 6, padding: "6px 10px", color: "#e2e8f0", fontSize: 13 }} />
               </div>
             </div>
           </div>
@@ -579,19 +579,19 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Your stake</div>
             <input type="number" value={issuerStake} onChange={e => setIssuerStake(Number(e.target.value))}
               style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
-                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 12 }} />
+                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 13 }} />
           </div>
           <div>
             <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Your odds</div>
             <input type="number" step="0.1" value={issuerOdds} onChange={e => setIssuerOdds(Number(e.target.value))}
               style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
-                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 12 }} />
+                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 13 }} />
           </div>
           <div>
             <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 3 }}>Their odds</div>
             <input type="number" step="0.1" value={acceptorOdds} onChange={e => setAcceptorOdds(Number(e.target.value))}
               style={{ width: "100%", boxSizing: "border-box", background: "#13131f", border: "1px solid #2d2b55",
-                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 12 }} />
+                borderRadius: 6, padding: "6px 8px", color: "#e2e8f0", fontSize: 13 }} />
           </div>
         </div>
 
@@ -602,7 +602,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
           </p>
           <button onClick={issueDare} disabled={loading} style={{
             background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
-            border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 12, fontWeight: 700,
+            border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700,
             cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1,
           }}>
             {loading ? "..." : "💥 Send Dare"}
@@ -675,7 +675,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
                     background: acceptingId === c.id ? "#1e1b3a" : "linear-gradient(135deg,#a855f7,#3b82f6)",
                     color: acceptingId === c.id ? "#6b7280" : "#fff",
                     border: "none", borderRadius: 8, padding: "8px",
-                    fontSize: 12, fontWeight: 700,
+                    fontSize: 13, fontWeight: 700,
                     cursor: acceptingId === c.id ? "not-allowed" : "pointer",
                   }}>
                   {acceptingId === c.id ? "Accepting…" : "Accept dare ✓"}
@@ -687,7 +687,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
       )}
 
       {msg && (
-        <p style={{ color: msg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 12, marginTop: 8 }}>{msg}</p>
+        <p style={{ color: msg.startsWith("✓") ? "#4ade80" : "#f87171", fontSize: 13, marginTop: 8 }}>{msg}</p>
       )}
 
       {shareUrl && (

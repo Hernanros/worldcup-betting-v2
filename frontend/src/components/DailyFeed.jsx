@@ -26,7 +26,7 @@ function MatchResult({ match }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
         <Flag name={match.home} />
-        <span style={{ fontSize: 11, color: "#e2e8f0", fontWeight: 600,
+        <span style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600,
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {match.home}
         </span>
@@ -55,7 +55,7 @@ function MatchResult({ match }) {
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
-        <span style={{ fontSize: 11, color: "#e2e8f0", fontWeight: 600,
+        <span style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600,
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
           {match.away}
         </span>
@@ -75,7 +75,7 @@ function MomentCard({ moment }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 18 }}>🎯</span>
           <div style={{ flex: 1 }}>
-            <div style={{ color: "#4ade80", fontSize: 11, fontWeight: 700 }}>
+            <div style={{ color: "#4ade80", fontSize: 13, fontWeight: 700 }}>
               {moment.is_me ? "You" : moment.player} nailed the exact score!
             </div>
             <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1 }}>
@@ -98,7 +98,7 @@ function MomentCard({ moment }) {
         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
           <span style={{ fontSize: 16 }}>⚔️</span>
           <div style={{ flex: 1 }}>
-            <div style={{ color: highlight ? "#a78bfa" : "#e2e8f0", fontSize: 11, fontWeight: 700 }}>
+            <div style={{ color: highlight ? "#a78bfa" : "#e2e8f0", fontSize: 13, fontWeight: 700 }}>
               {moment.is_me_winner ? "You beat" : `${moment.winner} beat`}{" "}
               {moment.is_me_winner ? moment.loser : (moment.loser === "You" ? "you" : moment.loser)}
             </div>
@@ -247,7 +247,7 @@ export default function DailyFeed() {
           {tab === "moments" && (
             <div>
               {data.moments.length === 0 ? (
-                <p style={{ color: "#4b5563", fontSize: 11, textAlign: "center", padding: "8px 0" }}>
+                <p style={{ color: "#4b5563", fontSize: 12, textAlign: "center", padding: "8px 0" }}>
                   No moments yet — check back after matches finish
                 </p>
               ) : (
@@ -268,13 +268,13 @@ export default function DailyFeed() {
                     {["🥇","🥈","🥉"][i] || `${i+1}.`}
                   </span>
                   <span style={{
-                    flex: 1, fontSize: 11, fontWeight: 600,
+                    flex: 1, fontSize: 12, fontWeight: 600,
                     color: s.is_me ? "#a78bfa" : "#e2e8f0",
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>
                     {s.is_me ? "You" : s.name}
                   </span>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "#4ade80" }}>
+                  <span style={{ fontSize: 12, fontWeight: 700, color: "#4ade80" }}>
                     +{s.pts} pts
                   </span>
                 </div>
