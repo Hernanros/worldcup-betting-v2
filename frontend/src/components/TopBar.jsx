@@ -16,7 +16,7 @@ export default function TopBar({ balance, onBalanceChange }) {
   useEffect(() => {
     const unsub = subscribe(async (event) => {
       if (event.type === "leaderboard_updated" || event.type === "match_settled") {
-        const me = await api.get("/api/players/me").catch(() => null)
+        const me = await api.get("/api/me").catch(() => null)
         if (me) onBalanceChangeRef.current(me.token_balance)
       }
     })

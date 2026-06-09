@@ -1,17 +1,9 @@
 import { useState, useEffect } from "react"
 import { api } from "../api.js"
-import { flagUrl } from "../data/teams.js"
+import TeamFlag from "./TeamFlag.jsx"
+import { ScorePicker } from "./InlinePrediction.jsx"
 import { ilTime } from "../utils/time.js"
 
-function Flag({ name, size = 16 }) {
-  const url = flagUrl(name, 32)
-  if (!url) return null
-  return (
-    <img src={url} alt={name} width={size} height={Math.round(size * 0.67)}
-      style={{ objectFit: "cover", borderRadius: 2, flexShrink: 0, verticalAlign: "middle" }}
-      onError={e => { e.target.style.display = "none" }} />
-  )
-}
 
 function MatchResult({ match }) {
   const live = match.status === "locked" && match.home_score !== null
@@ -25,7 +17,7 @@ function MatchResult({ match }) {
       borderBottom: "1px solid #1f2937",
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
-        <Flag name={match.home} />
+        <TeamFlag name={match.home} />
         <span style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600,
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {match.home}
@@ -59,8 +51,72 @@ function MatchResult({ match }) {
           overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
           {match.away}
         </span>
-        <Flag name={match.away} />
+        <TeamFlag name={match.away} />
       </div>
+    </div>
+  )
+}
+
+/* ── Upcoming match row with inline predict ──────────────────── */
+function UpcomingPredictRow({ match, prediction, onPredictionSaved }) {
+  const [open, setOpen] = useState(false)
+  const hasPred = prediction != null
+
+  return (
+    <div style={{ padding: "6px 0", borderBottom: "1px solid #1f2937" }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+        {/* Home */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
+          <TeamFlag name={match.home} size={20} />
+          <span style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            {match.home}
+          </span>
+        </div>
+
+        {/* Centre: kickoff + predict button */}
+        <div style={{ flexShrink: 0, textAlign: "center" }}>
+          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 3 }}>
+            {match.kickoff_time ? ilTime(match.kickoff_time) : "—"}
+          </div>
+          <button onClick={() => setOpen(v => !v)} style={{
+            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, cursor: "pointer",
+            border: `1px solid ${hasPred ? "rgba(34,211,238,0.4)" : "rgba(168,85,247,0.4)"}`,
+            background: hasPred ? "rgba(34,211,238,0.08)" : "rgba(168,85,247,0.06)",
+            color: hasPred ? "#22d3ee" : "#c4b5fd",
+          }}>
+            {hasPred
+              ? `🎯 ${prediction.home_score_pred}–${prediction.away_score_pred}`
+              : "🎯 Predict"}
+          </button>
+        </div>
+
+        {/* Away */}
+        <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
+          <span style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600,
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
+            {match.away}
+          </span>
+          <TeamFlag name={match.away} size={20} />
+        </div>
+      </div>
+
+      {open && (
+        <div style={{ marginTop: 8, borderTop: "1px solid #1e1e3a", paddingTop: 8 }}
+          onClick={e => e.stopPropagation()}>
+          <ScorePicker
+            matchId={match.id}
+            prediction={prediction}
+            onSaved={(doublesUsed, h, a) => onPredictionSaved?.(match.id, h, a)}
+            onCollapse={() => setOpen(false)}
+          />
+          <button onClick={() => setOpen(false)} style={{
+            width: "100%", background: "none", border: "1px solid #2d2b55",
+            borderRadius: 8, padding: "5px", fontSize: 11, color: "#6b7280",
+            cursor: "pointer", marginTop: 4,
+          }}>Cancel</button>
+        </div>
+      )}
     </div>
   )
 }
@@ -236,7 +292,7 @@ function MomentCard({ moment }) {
   return null
 }
 
-export default function DailyFeed() {
+export default function DailyFeed({ predictions = {}, onPredictionSaved }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState("results") // "results" | "moments" | "scores"
@@ -357,9 +413,19 @@ export default function DailyFeed() {
           {/* Results tab */}
           {(tab === "results" || TABS.length === 1) && (
             <div>
-              {data.matches.map(m => (
-                <MatchResult key={m.id} match={m} />
-              ))}
+              {data._isFuture
+                ? data.matches.map(m => (
+                    <UpcomingPredictRow
+                      key={m.id}
+                      match={m}
+                      prediction={predictions[m.id]}
+                      onPredictionSaved={onPredictionSaved}
+                    />
+                  ))
+                : data.matches.map(m => (
+                    <MatchResult key={m.id} match={m} />
+                  ))
+              }
             </div>
           )}
 

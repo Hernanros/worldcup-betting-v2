@@ -1,6 +1,7 @@
 // frontend/src/pages/HomePage.jsx
-import { useState, useEffect, useCallback, useRef } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
+import { useOutletContext } from "react-router-dom"
 import { api } from "../api.js"
 import { getPlayer } from "../auth.js"
 import PageBackground from "../components/PageBackground.jsx"
@@ -8,6 +9,7 @@ import { flagUrl, WC2026_GROUPS, TEAM_GROUP } from "../data/teams.js"
 import DeepCutsBanner from "../components/DeepCutsBanner.jsx"
 import DailyFeed from "../components/DailyFeed.jsx"
 import { ilDateTimeFull, ilDateTime } from "../utils/time.js"
+import { ScorePicker } from "../components/InlinePrediction.jsx"
 
 /* ── helpers ────────────────────────────────────────────── */
 function flagImg(name, size = 28) {
@@ -108,7 +110,7 @@ function SmartBanner({ state, nextMatch, navigate }) {
           🏆 Who wins WC 2026?
         </div>
         <div style={{ color: "#d1a040", fontSize: 13, lineHeight: 1.4 }}>
-          Tournament is live — pick the winner &amp; Golden Boot now
+          Pick your winners
         </div>
       </div>
       <span style={{ color: "#fbbf24", fontSize: 22, flexShrink: 0 }}>→</span>
@@ -413,10 +415,11 @@ function HeroScorePicker({ entry, onSaved, onCollapse }) {
   )
 }
 
-/* ── Next match hero (full-width, entirely tappable) ─────── */
-function NextMatchHero({ match, navigate, myPrediction }) {
+/* ── Next match hero — inline predict + Challenge ─────────── */
+function NextMatchHero({ match, navigate, myPrediction, onPredictionSaved }) {
   const countdown = useCountdown(match?.kickoff_time)
   const kickoffStr = match?.kickoff_time ? ilDateTimeFull(match.kickoff_time) : null
+  const [showPicker, setShowPicker] = useState(false)
 
   if (!match) return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
@@ -428,12 +431,14 @@ function NextMatchHero({ match, navigate, myPrediction }) {
   const hasPred = myPrediction != null
 
   return (
-    <button onClick={() => navigate(`/matches/${match.id}`)} style={{
-      width: "100%", textAlign: "left", cursor: "pointer",
+    <div style={{
       background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
-      padding: "18px 16px 16px", marginBottom: 14,
-      display: "block",
-    }}>
+      padding: "18px 16px 14px", marginBottom: 14,
+      cursor: showPicker ? "default" : "pointer",
+    }}
+      onClick={() => { if (!showPicker) setShowPicker(true) }}
+    >
+      {/* Match header — tapping opens picker */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
         <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700,
           textTransform: "uppercase", letterSpacing: 0.8 }}>⏱ Next match</div>
@@ -442,7 +447,7 @@ function NextMatchHero({ match, navigate, myPrediction }) {
       {kickoffStr && (
         <div style={{ color: "#6b7280", fontSize: 11, marginBottom: 14 }}>{kickoffStr}</div>
       )}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginBottom: hasPred ? 12 : 6 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around", marginBottom: 8 }}>
         <div style={{ textAlign: "center", flex: 1 }}>
           {flagImg(match.home_team, 52)}
           <div style={{ color: "#e2e8f0", fontSize: 14, fontWeight: 700, marginTop: 8,
@@ -459,17 +464,51 @@ function NextMatchHero({ match, navigate, myPrediction }) {
           </div>
         </div>
       </div>
-      {hasPred && (
-        <div style={{ textAlign: "center", fontSize: 11, color: "#22d3ee", fontWeight: 600 }}>
+
+      {/* Prediction hint when collapsed */}
+      {!showPicker && hasPred && (
+        <div style={{ textAlign: "center", fontSize: 11, color: "#22d3ee", fontWeight: 600, marginBottom: 8 }}>
           🎯 Your pick: {myPrediction.home_score_pred}–{myPrediction.away_score_pred} · tap to change
         </div>
       )}
-      {!hasPred && (
-        <div style={{ textAlign: "center", fontSize: 11, color: "#4b5563" }}>
-          Tap to predict, bet &amp; dare →
+      {!showPicker && !hasPred && (
+        <div style={{ textAlign: "center", fontSize: 11, color: "#6b7280", marginBottom: 8 }}>
+          Tap to predict the score
         </div>
       )}
-    </button>
+
+      {/* Inline picker (expands on tap) */}
+      {showPicker && (
+        <div style={{ borderTop: "1px solid #1e1e3a", paddingTop: 12, marginTop: 4 }}
+          onClick={e => e.stopPropagation()}
+        >
+          <ScorePicker
+            matchId={match.id}
+            prediction={myPrediction}
+            onSaved={(doublesUsed, h, a) => { onPredictionSaved?.(match.id, h, a) }}
+            onCollapse={() => setShowPicker(false)}
+          />
+          <button onClick={e => { e.stopPropagation(); setShowPicker(false) }} style={{
+            width: "100%", background: "none", border: "1px solid #2d2b55",
+            borderRadius: 8, padding: "6px", fontSize: 11, color: "#6b7280",
+            cursor: "pointer", marginTop: 4,
+          }}>Cancel</button>
+        </div>
+      )}
+
+      {/* Challenge button — always visible, stops propagation so it doesn't open picker */}
+      <button
+        onClick={e => { e.stopPropagation(); navigate(`/matches/${match.id}?tab=challenges`) }}
+        style={{
+          width: "100%", marginTop: 10, padding: "9px 6px", borderRadius: 8,
+          fontSize: 12, fontWeight: 700, cursor: "pointer",
+          border: "1px solid rgba(168,85,247,0.3)",
+          background: "rgba(168,85,247,0.08)", color: "#c4b5fd",
+        }}
+      >
+        ⚔️ Challenge a friend
+      </button>
+    </div>
   )
 }
 
@@ -562,7 +601,7 @@ function TeamPickerModal({ onPick, onClose, saving }) {
 }
 
 /* ── My team card ───────────────────────────────────────── */
-function MyTeamCard({ favoriteTeam, matches, onPickTeam }) {
+function MyTeamCard({ favoriteTeam, matches, onPickTeam, predictionsMap = {}, onPredictionSaved }) {
   if (!favoriteTeam) return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12,
       padding: 14, display: "flex", flexDirection: "column",
@@ -587,6 +626,8 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam }) {
   const opponent = teamNext
     ? (teamNext.home_team === favoriteTeam ? teamNext.away_team : teamNext.home_team)
     : null
+  const teamPred = teamNext ? (predictionsMap[teamNext.id] ?? null) : null
+  const [showPredict, setShowPredict] = useState(false)
 
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12, padding: 14 }}>
@@ -621,8 +662,30 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam }) {
             <span style={{ color: "#9ca3af", fontSize: 10 }}>vs {opponent}</span>
           </div>
           {teamNext?.kickoff_time && (
-            <div style={{ color: "#6b7280", fontSize: 9 }}>
+            <div style={{ color: "#6b7280", fontSize: 9, marginBottom: 6 }}>
               {ilDateTimeFull(teamNext.kickoff_time)}
+            </div>
+          )}
+          {/* Inline predict */}
+          <button onClick={() => setShowPredict(v => !v)} style={{
+            width: "100%", fontSize: 10, fontWeight: 700, padding: "4px 6px",
+            borderRadius: 6, cursor: "pointer",
+            border: `1px solid ${teamPred ? "rgba(34,211,238,0.4)" : "rgba(168,85,247,0.4)"}`,
+            background: teamPred ? "rgba(34,211,238,0.08)" : "rgba(168,85,247,0.06)",
+            color: teamPred ? "#22d3ee" : "#c4b5fd",
+          }}>
+            {teamPred
+              ? `🎯 ${teamPred.home_score_pred}–${teamPred.away_score_pred} · change`
+              : "🎯 Predict"}
+          </button>
+          {showPredict && (
+            <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>
+              <ScorePicker
+                matchId={teamNext.id}
+                prediction={teamPred}
+                onSaved={(doublesUsed, h, a) => onPredictionSaved?.(teamNext.id, h, a)}
+                onCollapse={() => setShowPredict(false)}
+              />
             </div>
           )}
         </div>
@@ -652,6 +715,8 @@ export default function HomePage() {
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [savingTeam, setSavingTeam] = useState(false)
   const [myNextPrediction, setMyNextPrediction] = useState(null)
+  const [predictionsMap, setPredictionsMap] = useState({})
+  const { onBalanceChange } = useOutletContext() ?? {}
 
   const load = useCallback(async () => {
     setLoadError(null)
@@ -667,10 +732,12 @@ export default function HomePage() {
       const upcoming = allMatches.filter(m => m.status === "upcoming")
       setMatches(allMatches)
       setNextMatch(upcoming[0] ?? null)
-      const nextPred = upcoming[0]
-        ? (predictions.find(p => p.match_id === upcoming[0].id)?.my_prediction ?? null)
-        : null
-      setMyNextPrediction(nextPred)
+      const predMap = {}
+      if (Array.isArray(predictions)) {
+        predictions.forEach(p => { if (p.my_prediction) predMap[p.match_id] = p.my_prediction })
+      }
+      setPredictionsMap(predMap)
+      setMyNextPrediction(upcoming[0] ? (predMap[upcoming[0].id] ?? null) : null)
       setTournamentBets(tournamentData.my_bets || [])
       setOpenChallenges(challengeData)
       setLeaderboard(lb)
@@ -691,7 +758,8 @@ export default function HomePage() {
 
   async function cancelDare(id) {
     try {
-      await api.delete(`/api/challenges/${id}`)
+      const r = await api.delete(`/api/challenges/${id}`)
+      if (r?.new_balance != null) onBalanceChange?.(r.new_balance)
       setOpenChallenges(prev => ({ ...prev, my_open: prev.my_open.filter(x => x.id !== id) }))
     } catch (e) { alert(e.message || "Cancel failed") }
   }
@@ -704,6 +772,28 @@ export default function HomePage() {
       setShowTeamPicker(false)
     } catch (e) { alert(e.message || "Failed to save team") }
     finally { setSavingTeam(false) }
+  }
+
+  function handlePredictionSaved(matchId, h, a) {
+    if (matchId != null && h != null && a != null) {
+      // Optimistic update — no round-trip needed
+      setPredictionsMap(prev => ({
+        ...prev,
+        [matchId]: { ...(prev[matchId] || {}), home_score_pred: h, away_score_pred: a },
+      }))
+      if (nextMatch && matchId === nextMatch.id) {
+        setMyNextPrediction(prev => ({ ...(prev || {}), home_score_pred: h, away_score_pred: a }))
+      }
+    } else {
+      // Full reload (called without args from legacy callers)
+      api.get("/api/predictions").then(preds => {
+        const predMap = {}
+        if (Array.isArray(preds)) preds.forEach(p => { if (p.my_prediction) predMap[p.match_id] = p.my_prediction })
+        setPredictionsMap(predMap)
+        const upcoming = matches.filter(m => m.status === "upcoming")
+        setMyNextPrediction(upcoming[0] ? (predMap[upcoming[0].id] ?? null) : null)
+      }).catch(() => {})
+    }
   }
 
   return (
@@ -739,11 +829,17 @@ export default function HomePage() {
                 match={nextMatch}
                 navigate={navigate}
                 myPrediction={myNextPrediction}
+                onPredictionSaved={handlePredictionSaved}
               />
             )}
 
             {/* Daily group feed */}
-            {!loading && <DailyFeed />}
+            {!loading && (
+              <DailyFeed
+                predictions={predictionsMap}
+                onPredictionSaved={handlePredictionSaved}
+              />
+            )}
 
             {/* Two-column: My team + Rankings */}
             {!loading && (
@@ -752,6 +848,8 @@ export default function HomePage() {
                   favoriteTeam={favoriteTeam}
                   matches={matches}
                   onPickTeam={() => setShowTeamPicker(true)}
+                  predictionsMap={predictionsMap}
+                  onPredictionSaved={handlePredictionSaved}
                 />
                 <TopThreeMini leaderboard={leaderboard} myEntry={myEntry} navigate={navigate} />
               </div>
