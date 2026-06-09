@@ -10,7 +10,6 @@ import MatchDetailPage from "./pages/MatchDetailPage.jsx"
 import PredictionsPage from "./pages/PredictionsPage.jsx"
 import TournamentPage from "./pages/TournamentPage.jsx"
 import LeaderboardPage from "./pages/LeaderboardPage.jsx"
-import AIPage from "./pages/AIPage.jsx"
 import SandboxPage from "./pages/SandboxPage.jsx"
 import AdminPage from "./pages/AdminPage.jsx"
 import DeepCutsPage from "./pages/DeepCutsPage.jsx"
@@ -51,7 +50,6 @@ export default function App() {
           <Route path="/predict" element={<PredictionsPage />} />
           <Route path="/tournament" element={<TournamentPage />} />
           <Route path="/rankings" element={<LeaderboardPage />} />
-          <Route path="/ai" element={<AIPage />} />
           <Route path="/sandbox" element={<SandboxPage />} />
           <Route path="/admin" element={<AdminPage />} />
           <Route path="/deep-cuts" element={<DeepCutsPage />} />

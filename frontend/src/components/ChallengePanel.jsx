@@ -291,6 +291,10 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
   const [shareUrl, setShareUrl] = useState("")
+  const [aiOpen, setAiOpen] = useState(false)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiSuggestions, setAiSuggestions] = useState([])
+  const [aiError, setAiError] = useState(null)
 
   const currentType = DARE_TYPES.find(t => t.key === betType) || DARE_TYPES[0]
 
@@ -339,6 +343,32 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
     finally { setAcceptingId(null) }
   }
 
+  async function generateAI() {
+    setAiSuggestions([])
+    setAiError(null)
+    setAiLoading(true)
+    try {
+      const data = await api.post("/api/ai/suggest-challenge", { match_id: match.id })
+      setAiSuggestions(data.suggestions || [])
+      if ((data.suggestions || []).length === 0) setAiError("No suggestions returned — try again.")
+    } catch (err) {
+      setAiError(err.message || "Failed to generate suggestions")
+    } finally {
+      setAiLoading(false)
+    }
+  }
+
+  function useThisAI(suggestion) {
+    setBetType(suggestion.bet_type ?? betType)
+    setSelection(suggestion.my_pick ?? "")
+    setAcceptorSelection(suggestion.their_pick ?? "")
+    setIssuerOdds(suggestion.my_odds ?? issuerOdds)
+    setAcceptorOdds(suggestion.their_odds ?? acceptorOdds)
+    setIssuerStake(suggestion.stake ?? issuerStake)
+    setMsg("")
+    setAiOpen(false)
+  }
+
   const streakBonus = playerStreak >= 5 ? "+35%" : playerStreak === 4 ? "+20%" : playerStreak === 3 ? "+10%" : null
   const MILESTONES = [[5, 50], [10, 150], [20, 400]]
   const nextMilestone = MILESTONES.find(([t]) => totalChallenges < t)
@@ -368,6 +398,98 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
           🎯 {milestoneText}
         </div>
       )}
+
+      {/* AI Ideas section */}
+      <div style={{ marginBottom: 12 }}>
+        <button
+          onClick={() => setAiOpen(v => !v)}
+          style={{
+            width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
+            background: "#0d0d1a", border: "1px solid #2d2b55",
+            borderRadius: aiOpen ? "8px 8px 0 0" : 8,
+            padding: "8px 12px", cursor: "pointer",
+          }}
+        >
+          <span style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700 }}>✨ AI Dare Ideas</span>
+          <span style={{ color: "#4b5563", fontSize: 12,
+            transform: aiOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s",
+            display: "block" }}>▾</span>
+        </button>
+
+        {aiOpen && (
+          <div style={{
+            border: "1px solid #2d2b55", borderTop: "none",
+            borderRadius: "0 0 8px 8px", padding: 12,
+            background: "#0c0c14",
+          }}>
+            <button
+              onClick={generateAI}
+              disabled={aiLoading}
+              style={{
+                width: "100%",
+                background: aiLoading ? "#1e1b3a" : "linear-gradient(135deg, #a855f7, #3b82f6)",
+                color: aiLoading ? "#6b7280" : "#fff",
+                border: "none", borderRadius: 8, padding: "10px",
+                fontSize: 13, fontWeight: 700,
+                cursor: aiLoading ? "not-allowed" : "pointer",
+                marginBottom: 10,
+              }}
+            >
+              {aiLoading ? "✨ Thinking…" : "✨ Generate Dare Ideas"}
+            </button>
+
+            {aiError && (
+              <p style={{ color: "#f87171", fontSize: 12, marginBottom: 8 }}>⚠ {aiError}</p>
+            )}
+
+            {aiSuggestions.map((s, i) => (
+              <div key={i} style={{
+                background: "#13131f", border: "1px solid #2d2b55",
+                borderRadius: 8, padding: 10, marginBottom: 8,
+              }}>
+                <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700,
+                  textTransform: "uppercase", letterSpacing: 1, marginBottom: 4 }}>
+                  {s.title}
+                </div>
+                <div style={{ display: "flex", gap: 6, alignItems: "stretch", marginBottom: 6 }}>
+                  <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ color: "#6b7280", fontSize: 9 }}>Your pick</div>
+                    <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 700,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s.my_pick}
+                    </div>
+                    <div style={{ color: "#4ade80", fontSize: 10 }}>{s.my_odds}×</div>
+                  </div>
+                  <div style={{ color: "#2d2b55", fontSize: 12, alignSelf: "center", flexShrink: 0 }}>vs</div>
+                  <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ color: "#6b7280", fontSize: 9 }}>Their pick</div>
+                    <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 700,
+                      overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {s.their_pick}
+                    </div>
+                    <div style={{ color: "#f87171", fontSize: 10 }}>{s.their_odds}×</div>
+                  </div>
+                  <div style={{ flex: 1, textAlign: "center" }}>
+                    <div style={{ color: "#6b7280", fontSize: 9 }}>Stake</div>
+                    <div style={{ color: "#fbbf24", fontSize: 12, fontWeight: 700 }}>{s.stake}</div>
+                  </div>
+                </div>
+                <p style={{ color: "#6b7280", fontSize: 11, lineHeight: 1.4, marginBottom: 8 }}>
+                  {s.reason}
+                </p>
+                <button onClick={() => useThisAI(s)} style={{
+                  width: "100%",
+                  background: "linear-gradient(135deg, #a855f7, #3b82f6)",
+                  color: "#fff", border: "none", borderRadius: 6,
+                  padding: "8px", fontSize: 12, fontWeight: 700, cursor: "pointer",
+                }}>
+                  💥 Use This →
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Issue form */}
       <div style={{ background: "#0c0c14", border: "1px solid #2d2b55", borderRadius: 10, padding: 12, marginBottom: 12 }}>

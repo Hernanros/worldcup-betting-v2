@@ -16,19 +16,24 @@ _SYSTEM = """You are a dare advisor for a World Cup friend group.
 Given a match, suggest exactly 2 fun, spicy P2P dare ideas.
 NEVER suggest match result (1x2) or correct score — these are too generic.
 Focus on prop outcomes that make matches interesting to watch beyond the final score.
+Each of your 2 suggestions MUST use a different bet_type.
+Prefer player_h2h when star players are listed for the match.
+Prefer handicap when h2h odds show a clear favourite (one team's price noticeably lower).
+Avoid repeating btts or totals — use them only when nothing else fits.
 Respond ONLY with a valid JSON array — no markdown, no explanation, just the array.
 Each item must have exactly these fields:
 {
-  "title": "short fun label, e.g. 'Both Teams Score' or 'Corner Fest' or 'Argentina Cover'",
-  "bet_type": "one of: btts, any_red_card, went_to_et, went_to_pens, totals, total_cards, corners, offsides, handicap",
+  "title": "short fun label, e.g. 'Messi vs Mbappé', 'Corner Fest', 'Argentina Cover'",
+  "bet_type": "one of: btts, any_red_card, went_to_et, went_to_pens, totals, total_cards, corners, offsides, handicap, player_h2h",
   "my_pick": "issuer selection per type:
     btts/any_red_card/went_to_et/went_to_pens → 'Yes' or 'No'
     totals → 'Over N.5' or 'Under N.5' (e.g. 'Over 2.5')
     total_cards → 'Over N.5' or 'Under N.5' (e.g. 'Over 3.5')
     corners → 'Over N.5' or 'Under N.5' (e.g. 'Over 9.5')
     offsides → 'Over N.5' or 'Under N.5' (e.g. 'Over 3.5')
-    handicap → '{team} +{line}' (e.g. 'Argentina +1.5' — backs Argentina to not lose by 2+)",
-  "their_pick": "exact opposite — 'No'/'Yes', 'Under N.5'/'Over N.5', or '{other_team} -{line}' for handicap",
+    handicap → '{team} +{line}' (e.g. 'Argentina +1.5' — backs Argentina to not lose by 2+)
+    player_h2h → '{player_name} goals' or '{player_name} assists' (e.g. 'Messi goals')",
+  "their_pick": "exact opposite — 'No'/'Yes', 'Under N.5'/'Over N.5', '{other_team} -{line}' for handicap, '{other_player} goals/assists' for player_h2h",
   "my_odds": 2.0,
   "their_odds": 1.85,
   "stake": 100,
@@ -36,7 +41,43 @@ Each item must have exactly these fields:
 }
 Stakes 50–300. Odds must be positive floats. Vary bet_type across the 2 suggestions.
 Typical WC lines: corners ~9.5, offsides ~3.5, total cards ~3.5, goals ~2.5.
-For handicap: use +0.5/+1/+1.5/+2/+2.5 lines; pick the underdog when match-up is lopsided."""
+For handicap: use +0.5/+1/+1.5/+2/+2.5 lines; pick the underdog when match-up is lopsided.
+For player_h2h: use exactly 'goals' or 'assists' as the stat suffix."""
+
+
+_STAR_PLAYERS = {
+    "Argentina":    ["Messi", "Di María", "Álvarez", "Mac Allister"],
+    "France":       ["Mbappé", "Griezmann", "Dembélé", "Camavinga"],
+    "Brazil":       ["Vini Jr", "Rodrygo", "Raphinha", "Paquetá"],
+    "England":      ["Bellingham", "Saka", "Foden", "Kane"],
+    "Portugal":     ["Ronaldo", "B. Silva", "Félix", "R. Leão"],
+    "Spain":        ["Pedri", "Yamal", "Morata", "Olmo"],
+    "Germany":      ["Müller", "Wirtz", "Gnabry", "Havertz"],
+    "Netherlands":  ["Van Dijk", "Gakpo", "Depay", "Simons"],
+    "Uruguay":      ["Núñez", "Valverde", "Araújo"],
+    "Colombia":     ["James", "Díaz", "Arias"],
+    "USA":          ["Pulisic", "Reyna", "Adams"],
+    "Mexico":       ["Lozano", "Guardado", "Raúl"],
+    "Morocco":      ["En-Nesyri", "Hakimi", "Ziyech"],
+    "Senegal":      ["Mané", "Dia", "Sarr"],
+    "Japan":        ["Mitoma", "Kubo", "Kamada"],
+    "South Korea":  ["Son", "Lee Kang-In", "Hwang"],
+    "Croatia":      ["Modrić", "Kovačić", "Gvardiol"],
+    "Belgium":      ["De Bruyne", "Lukaku", "Tielemans"],
+    "Italy":        ["Barella", "Tonali", "Scamacca"],
+    "Poland":       ["Lewandowski", "Zieliński", "Szymański"],
+    "Switzerland":  ["Xhaka", "Shaqiri", "Embolo"],
+    "Australia":    ["Hrustic", "Irvine", "Boyle"],
+    "Canada":       ["Davies", "David", "Buchanan"],
+    "Ecuador":      ["Caicedo", "Plata", "Enner Valencia"],
+    "Iran":         ["Taremi", "Jahanbakhsh", "Azmoun"],
+    "Saudi Arabia": ["Al-Dawsari", "Al-Shahrani", "Al-Malki"],
+    "Cameroon":     ["Onana", "Aboubakar", "Choupo-Moting"],
+    "Ghana":        ["Kudus", "Partey", "Ayew"],
+    "Nigeria":      ["Lookman", "Osimhen", "Iheanacho"],
+    "South Africa": ["Tau", "Dolly", "Zwane"],
+    "Qatar":        ["Al-Haydos", "Afif", "Al-Rawi"],
+}
 
 
 def _build_prompt(match: Match, player: Player, odds: dict,
@@ -71,6 +112,12 @@ def _build_prompt(match: Match, player: Player, odds: dict,
         lines.append(f"Player's recent prop bets: {dc_summary}")
     if open_challenges:
         lines.append(f"Open challenges already posted: {len(open_challenges)} — suggest something different")
+    # Star players context — helps Claude favour player_h2h suggestions
+    home_stars = _STAR_PLAYERS.get(match.home_team, [])
+    away_stars  = _STAR_PLAYERS.get(match.away_team, [])
+    all_stars   = home_stars + away_stars
+    if all_stars:
+        lines.append(f"Star players available (use for player_h2h): {', '.join(all_stars[:8])}")
     lines += ["", "Available odds:"]
     # Fallback: if no odds cached for this match, provide typical WC-style defaults
     # so Claude always has meaningful data to build suggestions from.
@@ -103,7 +150,8 @@ def _build_prompt(match: Match, player: Player, odds: dict,
             ],
         }
     for market, outcomes in odds.items():
-        lines.append(f"  {market}:")
+        label = "h2h (match-result odds — use for handicap sizing)" if market == "h2h" else market
+        lines.append(f"  {label}:")
         for o in outcomes:
             lines.append(f"    {o.get('name', '?')}: {o.get('price', '?')}")
     lines.append("\nReturn a JSON array of exactly 2 challenge suggestions.")
