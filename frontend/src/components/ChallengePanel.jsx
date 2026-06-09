@@ -108,72 +108,76 @@ function PresetChips({ presets, value, onChange }) {
 
 /* ── Handicap picker ───────────────────────────────────────── */
 function HandicapPicker({ match, selection, onPick }) {
-  const LINES = ["+0.5", "+1", "+1.5", "+2", "+2.5"]
+  const NEG = ["-2", "-1.5", "-1", "-0.5"]
+  const POS = ["+0.5", "+1", "+1.5", "+2"]
   const parts = selection ? selection.split(" ") : []
   const currentLine = parts.length >= 2 ? parts[parts.length - 1] : null
   const currentTeam = parts.length >= 2 ? parts.slice(0, -1).join(" ") : null
 
   function pick(team, line) {
     const otherTeam = team === match.home_team ? match.away_team : match.home_team
-    onPick(`${team} ${line}`, `${otherTeam} ${line.replace("+", "-")}`)
+    const mirror = line.startsWith("-") ? "+" + line.slice(1) : "-" + line.slice(1)
+    onPick(`${team} ${line}`, `${otherTeam} ${mirror}`)
+  }
+
+  function explain(team, line) {
+    const n = Math.abs(parseFloat(line))
+    if (line.startsWith("-")) return `${team} must win by more than ${n} ${n === 1 ? "goal" : "goals"}`
+    if (line === "+0.5") return `${team} must win outright`
+    return `${team} wins, draws, or loses by fewer than ${n} goals`
   }
 
   return (
     <div style={{ marginBottom: 10 }}>
-      <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 6 }}>
-        Pick a team <strong style={{ color: "#a78bfa" }}>and</strong> their head-start — one tap picks both
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 8, color: "#4b5563", marginBottom: 4 }}>
+        <span>← must win by margin</span>
+        <span>head-start →</span>
       </div>
-
-      {/* Two-row grid: one row per team */}
       {[match.home_team, match.away_team].map(team => {
-        const isTeamSelected = currentTeam === team
+        const isSel = currentTeam === team
         return (
-          <div key={team} style={{ marginBottom: 6 }}>
-            {/* Team label */}
-            <div style={{
-              fontSize: 9, fontWeight: 700, color: isTeamSelected ? "#a78bfa" : "#4b5563",
-              textTransform: "uppercase", letterSpacing: 0.8, marginBottom: 3,
-              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
-            }}>
+          <div key={team} style={{ marginBottom: 8 }}>
+            <div style={{ fontSize: 9, fontWeight: 700, marginBottom: 3, textTransform: "uppercase",
+              letterSpacing: 0.8, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+              color: isSel ? "#a78bfa" : "#4b5563" }}>
               {team}
             </div>
-            {/* Line chips for this team */}
-            <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-              {LINES.map(line => {
-                const isSelected = isTeamSelected && currentLine === line
-                return (
-                  <button key={line} onClick={() => pick(team, line)} style={{
-                    padding: "5px 10px", borderRadius: 999, fontSize: 11, fontWeight: 700,
-                    cursor: "pointer", border: "1px solid",
-                    background: isSelected ? "rgba(168,85,247,0.25)" : "transparent",
-                    borderColor: isSelected ? "#a78bfa" : "#2d2b55",
-                    color: isSelected ? "#c4b5fd" : "#6b7280",
-                    transition: "all 0.1s",
-                  }}>
-                    {line}
-                  </button>
-                )
+            <div style={{ display: "flex", gap: 3, alignItems: "center" }}>
+              {NEG.map(line => {
+                const on = isSel && currentLine === line
+                return <button key={line} onClick={() => pick(team, line)} style={{
+                  padding: "4px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                  border: `1px solid ${on ? "#ef4444" : "#2d2b55"}`,
+                  background: on ? "rgba(239,68,68,0.18)" : "transparent",
+                  color: on ? "#fca5a5" : "#6b7280",
+                }}>{line}</button>
+              })}
+              <div style={{ width: 1, height: 22, background: "#2d2b55", margin: "0 2px", flexShrink: 0 }} />
+              {POS.map(line => {
+                const on = isSel && currentLine === line
+                return <button key={line} onClick={() => pick(team, line)} style={{
+                  padding: "4px 7px", borderRadius: 6, fontSize: 10, fontWeight: 700, cursor: "pointer",
+                  border: `1px solid ${on ? "#a78bfa" : "#2d2b55"}`,
+                  background: on ? "rgba(168,85,247,0.2)" : "transparent",
+                  color: on ? "#c4b5fd" : "#6b7280",
+                }}>{line}</button>
               })}
             </div>
           </div>
         )
       })}
-
-      {/* Live explanation of the current pick */}
       {selection && (
-        <div style={{ marginTop: 8, padding: "8px 10px", background: "rgba(168,85,247,0.08)",
-          borderRadius: 8, border: "1px solid rgba(168,85,247,0.2)" }}>
-          <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 700, marginBottom: 3 }}>
-            ✓ You back: <strong>{currentTeam}</strong> {currentLine}
+        <div style={{ marginTop: 6, padding: "8px 10px", borderRadius: 8,
+          background: "rgba(168,85,247,0.08)", border: "1px solid rgba(168,85,247,0.2)" }}>
+          <div style={{ color: "#c4b5fd", fontSize: 11, fontWeight: 700, marginBottom: 2 }}>
+            ✓ {currentTeam} {currentLine}
           </div>
           <div style={{ color: "#9ca3af", fontSize: 10, lineHeight: 1.4 }}>
-            {currentLine === "+0.5"
-              ? `${currentTeam} must win outright for you to win.`
-              : `You win if ${currentTeam} wins, draws, or loses by fewer than ${currentLine?.replace("+", "")} goals.`
-            }
+            {explain(currentTeam, currentLine)}
           </div>
-          <div style={{ color: "#4b5563", fontSize: 9, marginTop: 3 }}>
-            Their side (auto): {currentTeam === match.home_team ? match.away_team : match.home_team} {currentLine?.replace("+", "-")}
+          <div style={{ color: "#4b5563", fontSize: 9, marginTop: 2 }}>
+            Their side: {currentTeam === match.home_team ? match.away_team : match.home_team}{" "}
+            {currentLine?.startsWith("-") ? "+" + currentLine.slice(1) : "-" + currentLine.slice(1)}
           </div>
         </div>
       )}
@@ -302,6 +306,8 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const [aiLoading, setAiLoading] = useState(false)
   const [aiSuggestions, setAiSuggestions] = useState([])
   const [aiError, setAiError] = useState(null)
+  const [oddsLoading, setOddsLoading] = useState(false)
+  const [oddsReason, setOddsReason] = useState("")
 
   const currentType = DARE_TYPES.find(t => t.key === betType) || DARE_TYPES[0]
 
@@ -364,6 +370,20 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
     } finally {
       setAiLoading(false)
     }
+  }
+
+  async function suggestOdds() {
+    if (!selection) return
+    setOddsLoading(true); setOddsReason("")
+    try {
+      const data = await api.post("/api/ai/suggest-odds", {
+        match_id: match.id, bet_type: betType, selection, acceptor_selection: acceptorSelection,
+      })
+      if (data.issuer_odds) setIssuerOdds(data.issuer_odds)
+      if (data.acceptor_odds) setAcceptorOdds(data.acceptor_odds)
+      if (data.reasoning) setOddsReason(data.reasoning)
+    } catch { setOddsReason("Could not get suggestion — set manually") }
+    finally { setOddsLoading(false) }
   }
 
   function useThisAI(suggestion) {
@@ -564,6 +584,21 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             </div>
           </div>
         )}
+
+        {/* AI odds suggestion */}
+        <div style={{ marginBottom: 8, display: "flex", alignItems: "center", gap: 8 }}>
+          <button onClick={suggestOdds} disabled={!selection || oddsLoading} style={{
+            background: selection && !oddsLoading ? "rgba(168,85,247,0.12)" : "transparent",
+            border: "1px solid rgba(168,85,247,0.3)", borderRadius: 7,
+            color: selection ? "#a78bfa" : "#4b5563", fontSize: 11, fontWeight: 700,
+            padding: "5px 12px", cursor: selection ? "pointer" : "not-allowed",
+          }}>
+            {oddsLoading ? "✨ Thinking…" : "✨ Suggest odds"}
+          </button>
+          {oddsReason && (
+            <span style={{ color: "#6b7280", fontSize: 10, flex: 1 }}>{oddsReason}</span>
+          )}
+        </div>
 
         {/* Stakes & odds */}
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, marginBottom: 10 }}>

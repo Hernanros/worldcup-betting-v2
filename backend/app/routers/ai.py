@@ -284,3 +284,69 @@ async def suggest_challenge(
         suggestions = []
 
     return {"suggestions": suggestions}
+
+
+_ODDS_SYSTEM = """You are an odds compiler for a friend-group sports betting app.
+Given a P2P bet between two friends, suggest fair decimal odds for each side.
+Consider the implied probability of each outcome. Odds must be >= 1.01 and <= 15.
+Respond ONLY with valid JSON: {"issuer_odds": X.XX, "acceptor_odds": X.XX, "reasoning": "one sentence"}
+No markdown, no explanation outside the JSON."""
+
+
+@router.post("/api/ai/suggest-odds")
+async def suggest_odds(
+    data: dict,
+    auth=Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
+    player, _ = auth
+    match = await db.get(Match, data.get("match_id"))
+    if not match:
+        raise HTTPException(404, "match not found")
+
+    bet_type = data.get("bet_type", "")
+    selection = data.get("selection", "")
+    acceptor_selection = data.get("acceptor_selection", "")
+
+    try:
+        odds = json.loads(match.odds_cache) if match.odds_cache else {}
+    except Exception:
+        odds = {}
+
+    odds_lines = []
+    for market, outcomes in odds.items():
+        for o in outcomes:
+            odds_lines.append(f"  {market} {o.get('name','?')}: {o.get('price','?')}")
+    odds_text = "\n".join(odds_lines) if odds_lines else "  (no market odds available)"
+
+    prompt = (
+        f"Match: {match.home_team} vs {match.away_team}\n"
+        f"Bet type: {bet_type}\n"
+        f"Side A (issuer) pick: {selection}\n"
+        f"Side B (acceptor) pick: {acceptor_selection}\n"
+        f"Available market odds:\n{odds_text}\n\n"
+        "Suggest fair decimal odds for each side. "
+        "Use the market odds as reference. "
+        "If the bet is roughly 50/50, use ~2.0/2.0. "
+        "If one side is more likely, give it lower odds."
+    )
+
+    try:
+        message = anthropic_client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=120,
+            system=_ODDS_SYSTEM,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = message.content[0].text.strip()
+        fence = re.search(r"```(?:json)?\s*([\s\S]*?)```", raw)
+        if fence:
+            raw = fence.group(1).strip()
+        result = json.loads(raw)
+        issuer_odds = round(max(1.01, min(15.0, float(result["issuer_odds"]))), 2)
+        acceptor_odds = round(max(1.01, min(15.0, float(result["acceptor_odds"]))), 2)
+        reasoning = str(result.get("reasoning", ""))[:120]
+    except Exception:
+        issuer_odds, acceptor_odds, reasoning = 2.0, 2.0, ""
+
+    return {"issuer_odds": issuer_odds, "acceptor_odds": acceptor_odds, "reasoning": reasoning}
