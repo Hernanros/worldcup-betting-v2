@@ -1,17 +1,8 @@
 import { useState, useRef, useCallback } from "react"
 import { api } from "../api.js"
-import { flagUrl } from "../data/teams.js"
+import TeamFlag from "./TeamFlag.jsx"
 import { ilTime } from "../utils/time.js"
 
-function Flag({ name, size = 20 }) {
-  const url = flagUrl(name, 40)
-  if (!url) return null
-  return (
-    <img src={url} alt={name} width={size} height={Math.round(size * 0.67)}
-      style={{ objectFit: "cover", borderRadius: 2, verticalAlign: "middle", flexShrink: 0 }}
-      onError={(e) => { e.target.style.display = "none" }} />
-  )
-}
 
 const NUM_PICKER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
@@ -171,7 +162,7 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
 
         {/* Home */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}>
-          <Flag name={entry.home_team} />
+          <TeamFlag name={entry.home_team} />
           <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {entry.home_team}
@@ -231,7 +222,7 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
             {entry.away_team}
           </span>
-          <Flag name={entry.away_team} />
+          <TeamFlag name={entry.away_team} />
         </div>
       </div>
 
