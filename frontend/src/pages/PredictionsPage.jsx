@@ -113,6 +113,7 @@ function GroupSection({ label, entries, doublesUsed, onSaved }) {
 export default function PredictionsPage() {
   const [entries, setEntries] = useState([])
   const [doublesUsed, setDoublesUsed] = useState(0)
+  const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [view, setView] = useState("chrono") // "chrono" | "group"
 
@@ -120,11 +121,14 @@ export default function PredictionsPage() {
 
   async function load() {
     setError(null)
+    setLoading(true)
     try {
       const data = await api.get("/api/predictions")
-      setEntries(data)
-      setDoublesUsed(data.filter(e => e.my_prediction?.is_double).length)
+      const safe = Array.isArray(data) ? data : []
+      setEntries(safe)
+      setDoublesUsed(safe.filter(e => e.my_prediction?.is_double).length)
     } catch (err) { setError(err.message || "Failed to load predictions") }
+    finally { setLoading(false) }
   }
 
   function handleRowSaved(newDoublesCount) {
@@ -188,11 +192,35 @@ export default function PredictionsPage() {
           </span>
         </div>
 
-        {error && <p style={{ color: "#f87171", textAlign: "center", fontSize: 13 }}>⚠ {error}</p>}
+        {/* ── Loading skeleton ── */}
+        {loading && (
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <div style={{ color: "#6b7280", fontSize: 13 }}>Loading predictions…</div>
+          </div>
+        )}
+
+        {/* ── Error state ── */}
+        {!loading && error && (
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <div style={{ fontSize: 36, marginBottom: 12 }}>⚠️</div>
+            <div style={{ color: "#f87171", fontSize: 14, marginBottom: 16 }}>{error}</div>
+            <button onClick={load} style={{
+              background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
+              border: "none", borderRadius: 10, padding: "10px 24px",
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
+            }}>Retry</button>
+          </div>
+        )}
 
         {/* ── Chrono view ── */}
-        {view === "chrono" && (
+        {!loading && !error && view === "chrono" && (
           <>
+            {chronoGroups.length === 0 && (
+              <div style={{ textAlign: "center", padding: "40px 20px" }}>
+                <div style={{ fontSize: 36, marginBottom: 12 }}>🎯</div>
+                <div style={{ color: "#6b7280", fontSize: 13 }}>No matches to predict yet — check back soon.</div>
+              </div>
+            )}
             {chronoGroups.map(([label, dayEntries]) => (
               <div key={label}>
                 <DayHeader label={label} />
@@ -205,7 +233,7 @@ export default function PredictionsPage() {
         )}
 
         {/* ── Group view ── */}
-        {view === "group" && (
+        {!loading && !error && view === "group" && (
           <>
             {groupGroups.map(([label, groupEntries]) => (
               <GroupSection
