@@ -73,10 +73,11 @@ export default function TopBar({ balance, onBalanceChange }) {
           )}
 
           <button
-            onClick={() => navigate("/deep-cuts")}
-            style={{ background: "none", border: "1px solid #1abc9c", borderRadius: 6, padding: "4px 8px", color: "#1abc9c", fontSize: 12, fontWeight: 700, cursor: "pointer" }}
+            onClick={() => navigate("/help")}
+            title="Help"
+            style={{ background: "none", border: "1px solid #374151", borderRadius: 6, padding: "4px 8px", color: "#6b7280", fontSize: 13, cursor: "pointer" }}
           >
-            🔪
+            ❓
           </button>
 
           {player?.is_admin && (

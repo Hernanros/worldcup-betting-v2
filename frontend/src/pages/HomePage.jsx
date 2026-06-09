@@ -86,22 +86,23 @@ function SmartBanner({ state, nextMatch, navigate }) {
   )
 
   if (state === "NEEDS_PICKS") return (
-    <div style={{
-      background: "rgba(251,191,36,0.08)", border: "1px solid rgba(251,191,36,0.3)",
-      borderRadius: 12, padding: "12px 14px", marginBottom: 14,
-      display: "flex", alignItems: "center", gap: 10,
+    <button onClick={() => navigate("/tournament")} style={{
+      width: "100%", textAlign: "left", cursor: "pointer",
+      background: "linear-gradient(135deg, rgba(251,191,36,0.12), rgba(245,158,11,0.06))",
+      border: "1px solid rgba(251,191,36,0.4)",
+      borderRadius: 14, padding: "14px 16px", marginBottom: 14,
+      display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
     }}>
-      <span style={{ fontSize: 22 }}>⚠️</span>
-      <span style={{ color: "#e2e8f0", fontSize: 13, flex: 1 }}>
-        Tournament picks still open — lock in your winner & Golden Boot
-      </span>
-      <button onClick={() => navigate("/tournament")} style={{
-        background: "none", border: "1px solid #fbbf24", borderRadius: 8,
-        color: "#fbbf24", fontSize: 11, fontWeight: 700, padding: "5px 10px", cursor: "pointer", flexShrink: 0,
-      }}>
-        Pick now →
-      </button>
-    </div>
+      <div>
+        <div style={{ color: "#fbbf24", fontWeight: 800, fontSize: 15, marginBottom: 2 }}>
+          🏆 Who wins WC 2026?
+        </div>
+        <div style={{ color: "#9ca3af", fontSize: 12 }}>
+          Pick your winner + Golden Boot — still open
+        </div>
+      </div>
+      <span style={{ color: "#fbbf24", fontSize: 18, flexShrink: 0 }}>→</span>
+    </button>
   )
 
   if (state === "IMMINENT" && nextMatch) return (

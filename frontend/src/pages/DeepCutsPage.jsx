@@ -68,12 +68,14 @@ export default function DeepCutsPage() {
 
   return (
     <div style={{ maxWidth: 480, margin: "0 auto", padding: "16px 12px 80px" }}>
-      <div style={{ marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 20, fontWeight: 800, color: "#1abc9c", display: "flex", alignItems: "center" }}>
-          🔪 Deep Cuts
-          <HelpTip text="Prop predictions scoped to each tournament stage — from group stage all the way to the final. Each round has unique markets. Picks lock when that stage starts and settle when it ends." />
-        </h2>
-        <p style={{ margin: "4px 0 0", fontSize: 12, color: "#888" }}>Stage-specific props · unique markets each round</p>
+      <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <div>
+          <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#1abc9c" }}>
+            🔪 Deep Cuts
+          </h2>
+          <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>Spicy props · stage by stage</p>
+        </div>
+        <HelpTip text="Prop predictions scoped to each tournament stage — from group stage all the way to the final. Each round has unique markets. Picks lock when that stage starts and settle when it ends." />
       </div>
 
       <div style={{ display: "flex", gap: 4, overflowX: "auto", marginBottom: 16, paddingBottom: 4 }}>
