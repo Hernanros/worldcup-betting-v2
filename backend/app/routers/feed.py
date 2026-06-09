@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.deps import get_current_player
-from app.models import Challenge, Match, Player, Prediction
+from app.models import Bet, Challenge, Match, Player, Prediction, SpicyBet
 from app.settlement import (
     determine_btts_winner,
     determine_correct_score_winner,
@@ -79,6 +79,31 @@ async def get_daily_feed(
                     Challenge.match_id.in_(today_match_ids),
                     Challenge.status == "resolved",
                     Challenge.issuer_id.in_(league_player_ids),
+                )
+            )
+        ).scalars().all()
+
+    # ── Bets settled on today's finished matches ───────────────────────────
+    bets: list[Bet] = []
+    if finished_ids and league_player_ids:
+        bets = (
+            await db.execute(
+                select(Bet).where(
+                    Bet.match_id.in_(finished_ids),
+                    Bet.player_id.in_(league_player_ids),
+                    Bet.status.in_(["won", "lost"]),
+                )
+            )
+        ).scalars().all()
+
+    # ── Deep Cuts (SpicyBet) wins for league players ───────────────────────
+    spicy_bets: list[SpicyBet] = []
+    if league_player_ids:
+        spicy_bets = (
+            await db.execute(
+                select(SpicyBet).where(
+                    SpicyBet.player_id.in_(league_player_ids),
+                    SpicyBet.status == "won",
                 )
             )
         ).scalars().all()
@@ -155,20 +180,93 @@ async def get_daily_feed(
         loser_name  = acceptor_name if issuer_won else issuer_name
         tokens_won  = int(c.issuer_stake * c.issuer_odds) if issuer_won else int(c.acceptor_stake * c.acceptor_odds)
 
+        # Streak bonus: only issuer can earn it
+        streak_bonus = 0
+        if issuer_won and c.bravery_streak_bonus_pct > 0:
+            streak_bonus = int(tokens_won * c.bravery_streak_bonus_pct)
+
         moments.append({
             "type": "dare",
             "winner": winner_name,
             "loser": loser_name,
             "match": f"{m.home_team} vs {m.away_team}",
             "tokens": tokens_won,
+            "streak_bonus": streak_bonus,
             "is_me_winner": (
                 (issuer_won and c.issuer_id == player.id)
                 or (not issuer_won and c.acceptor_id == player.id)
             ),
         })
 
-    # Sort moments: correct_score first, then dares by tokens desc
-    moments.sort(key=lambda x: (x["type"] != "correct_score", -x.get("tokens", x.get("pts", 0))))
+    # Correct-outcome predictions (right result, not exact score)
+    for p in preds:
+        if p.status == "correct_outcome":
+            m = match_by_id.get(p.match_id)
+            if not m:
+                continue
+            moments.append({
+                "type": "prediction_win",
+                "player": name_of.get(p.player_id, "Someone"),
+                "match": f"{m.home_team} vs {m.away_team}",
+                "pts": p.points_awarded,
+                "is_me": p.player_id == player.id,
+            })
+
+    # Bet wins and losses on today's matches
+    for b in bets:
+        m = match_by_id.get(b.match_id)
+        if not m:
+            continue
+        payout = int(b.stake * b.odds_at_placement) if b.status == "won" else 0
+        bet_label = b.bet_type.replace("_", " ").title()
+        if b.is_wildcard and b.status == "won":
+            moments.append({
+                "type": "wildcard_win",
+                "player": name_of.get(b.player_id, "Someone"),
+                "match": f"{m.home_team} vs {m.away_team}",
+                "tokens": payout,
+                "bet_type": bet_label,
+                "selection": b.selection,
+                "is_me": b.player_id == player.id,
+            })
+        else:
+            moments.append({
+                "type": "bet_win" if b.status == "won" else "bet_loss",
+                "player": name_of.get(b.player_id, "Someone"),
+                "match": f"{m.home_team} vs {m.away_team}",
+                "tokens": payout,
+                "bet_type": bet_label,
+                "selection": b.selection,
+                "is_me": b.player_id == player.id,
+            })
+
+    # Deep Cuts hits
+    for sb in spicy_bets:
+        payout = int(sb.stake * sb.odds_at_placement)
+        market_label = sb.market_key.replace("_", " ").title()
+        moments.append({
+            "type": "deep_cuts_hit",
+            "player": name_of.get(sb.player_id, "Someone"),
+            "market": market_label,
+            "selection": sb.selection,
+            "tokens": payout,
+            "is_me": sb.player_id == player.id,
+        })
+
+    # Sort moments by priority: correct_score → wildcard_win → dare → bet_win → deep_cuts_hit → prediction_win → bet_loss
+    _priority = {
+        "correct_score": 0,
+        "wildcard_win": 1,
+        "dare": 2,
+        "bet_win": 3,
+        "deep_cuts_hit": 4,
+        "prediction_win": 5,
+        "bet_loss": 6,
+    }
+    moments.sort(key=lambda x: (
+        _priority.get(x["type"], 99),
+        -(x.get("tokens") or x.get("pts") or 0),
+    ))
 
     # ── Top prediction scorers today ───────────────────────────────────────
     pts_by_player: dict[int, int] = {}
@@ -186,9 +284,9 @@ async def get_daily_feed(
     )[:5]
 
     return {
-        "has_activity": bool(finished_today or challenges),
+        "has_activity": bool(finished_today or challenges or bets or spicy_bets),
         "date": str(today_utc),
         "matches": match_results,
-        "moments": moments[:10],
+        "moments": moments[:12],
         "top_scorers": top_scorers,
     }

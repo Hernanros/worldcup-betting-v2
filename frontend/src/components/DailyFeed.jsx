@@ -106,6 +106,126 @@ function MomentCard({ moment }) {
               {moment.match} · <span style={{ color: "#fbbf24" }}>
                 {moment.is_me_winner ? "+" : ""}{moment.tokens} tokens
               </span>
+              {moment.streak_bonus > 0 && (
+                <span style={{ color: "#fb923c", marginLeft: 4 }}>
+                  🔥 +{moment.streak_bonus} streak bonus
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.type === "bet_win") {
+    const highlight = moment.is_me
+    return (
+      <div style={{
+        background: highlight ? "rgba(251,191,36,0.08)" : "#13131f",
+        border: `1px solid ${highlight ? "rgba(251,191,36,0.25)" : "#2d2b55"}`,
+        borderRadius: 8, padding: "8px 10px", marginBottom: 5,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 16 }}>💰</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: highlight ? "#fbbf24" : "#e2e8f0", fontSize: 13, fontWeight: 700 }}>
+              {moment.is_me ? "You" : moment.player} won a {moment.bet_type} bet
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1 }}>
+              {moment.match} · {moment.selection} · <span style={{ color: "#4ade80" }}>+{moment.tokens} tokens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.type === "wildcard_win") {
+    const highlight = moment.is_me
+    return (
+      <div style={{
+        background: highlight ? "rgba(234,179,8,0.12)" : "rgba(234,179,8,0.05)",
+        border: `1px solid ${highlight ? "rgba(234,179,8,0.4)" : "rgba(234,179,8,0.2)"}`,
+        borderRadius: 8, padding: "8px 10px", marginBottom: 5,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 16 }}>🃏</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#fde047", fontSize: 13, fontWeight: 700 }}>
+              {moment.is_me ? "Your" : `${moment.player}'s`} wildcard paid off!
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1 }}>
+              {moment.match} · {moment.bet_type} · <span style={{ color: "#fde047" }}>+{moment.tokens} tokens (2×)</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.type === "deep_cuts_hit") {
+    const highlight = moment.is_me
+    return (
+      <div style={{
+        background: highlight ? "rgba(99,102,241,0.1)" : "#13131f",
+        border: `1px solid ${highlight ? "rgba(99,102,241,0.3)" : "#2d2b55"}`,
+        borderRadius: 8, padding: "8px 10px", marginBottom: 5,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 16 }}>🔬</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: highlight ? "#818cf8" : "#e2e8f0", fontSize: 13, fontWeight: 700 }}>
+              {moment.is_me ? "You" : moment.player} nailed a Deep Cut!
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1 }}>
+              {moment.market} · {moment.selection} · <span style={{ color: "#4ade80" }}>+{moment.tokens} tokens</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.type === "prediction_win") {
+    const highlight = moment.is_me
+    return (
+      <div style={{
+        background: highlight ? "rgba(34,197,94,0.07)" : "#13131f",
+        border: `1px solid ${highlight ? "rgba(34,197,94,0.2)" : "#2d2b55"}`,
+        borderRadius: 8, padding: "8px 10px", marginBottom: 5,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 16 }}>✅</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: highlight ? "#86efac" : "#d1d5db", fontSize: 13, fontWeight: 600 }}>
+              {moment.is_me ? "You" : moment.player} called the result
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1 }}>
+              {moment.match} · <span style={{ color: "#4ade80" }}>+{moment.pts} pts</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  if (moment.type === "bet_loss") {
+    if (!moment.is_me) return null  // only show losses for the current player
+    return (
+      <div style={{
+        background: "#13131f",
+        border: "1px solid #2d2b55",
+        borderRadius: 8, padding: "8px 10px", marginBottom: 5, opacity: 0.7,
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{ fontSize: 16 }}>😬</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ color: "#9ca3af", fontSize: 12, fontWeight: 600 }}>
+              Your {moment.bet_type} bet didn't land
+            </div>
+            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 1 }}>
+              {moment.match} · {moment.selection}
             </div>
           </div>
         </div>
