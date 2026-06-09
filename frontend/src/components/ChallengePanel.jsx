@@ -349,8 +349,9 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
     setAiLoading(true)
     try {
       const data = await api.post("/api/ai/suggest-challenge", { match_id: match.id })
-      setAiSuggestions(data.suggestions || [])
-      if ((data.suggestions || []).length === 0) setAiError("No suggestions returned — try again.")
+      const items = data.suggestions || []
+      setAiSuggestions(items)
+      if (items.length === 0) setAiError("No suggestions returned — try again.")
     } catch (err) {
       setAiError(err.message || "Failed to generate suggestions")
     } finally {
