@@ -1,5 +1,5 @@
 // frontend/src/pages/HomePage.jsx
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { api } from "../api.js"
 import { getPlayer } from "../auth.js"
@@ -294,16 +294,154 @@ function ordinal(n) {
   return ["1st","2nd","3rd","4th"][n - 1] ?? `${n}th`
 }
 
+/* ── Hero score picker ──────────────────────────────────── */
+const HERO_NUM_PICKER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+function heroScoreInputStyle(active, filled) {
+  return {
+    width: 40, height: 38,
+    border: `1.5px solid ${active ? "#a855f7" : filled ? "#22d3ee" : "#2d2b55"}`,
+    borderRadius: 7,
+    background: active ? "rgba(168,85,247,0.12)" : filled ? "rgba(34,211,238,0.06)" : "#0c0c14",
+    fontSize: 18, fontWeight: 800, textAlign: "center",
+    color: active ? "#e2e8f0" : filled ? "#22d3ee" : "#4b5563",
+    cursor: "text", outline: "none",
+    MozAppearance: "textfield",
+    padding: 0, boxSizing: "border-box", flexShrink: 0,
+  }
+}
+
+function HeroScorePicker({ entry, onSaved, onCollapse }) {
+  const [home, setHome] = useState(entry?.my_prediction?.home_score_pred ?? null)
+  const [away, setAway] = useState(entry?.my_prediction?.away_score_pred ?? null)
+  const [activePicker, setActivePicker] = useState("home")
+  const [saving, setSaving] = useState(false)
+  const homeRef = useRef(null)
+  const awayRef = useRef(null)
+
+  async function doSave(h, a) {
+    if (h === null || a === null) return
+    setSaving(true)
+    try {
+      const result = await api.post("/api/predictions", {
+        match_id: entry.match_id,
+        home_score_pred: h,
+        away_score_pred: a,
+        is_double: false,
+      })
+      onSaved(result.doubles_used)
+      onCollapse()
+    } catch {
+      // fail silently — user can retry by tapping expand again
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handlePickNumber(n) {
+    if (activePicker === "home") {
+      setHome(n)
+      if (away !== null) { setActivePicker(null); await doSave(n, away) }
+      else { setActivePicker("away"); setTimeout(() => awayRef.current?.focus(), 0) }
+    } else {
+      setAway(n)
+      if (home !== null) { setActivePicker(null); await doSave(home, n) }
+      else { setActivePicker("home"); setTimeout(() => homeRef.current?.focus(), 0) }
+    }
+  }
+
+  return (
+    <div style={{ marginBottom: 12 }}>
+      <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+        letterSpacing: 0.8, marginBottom: 10 }}>🎯 Your score prediction</div>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 14, marginBottom: 10 }}>
+        <input
+          ref={homeRef}
+          type="number" min={0} max={99} inputMode="numeric"
+          value={home ?? ""}
+          placeholder="–"
+          onFocus={() => setActivePicker("home")}
+          onBlur={() => setTimeout(() => {
+            if (document.activeElement !== awayRef.current) setActivePicker(null)
+          }, 150)}
+          onChange={e => {
+            const n = parseInt(e.target.value, 10)
+            if (!isNaN(n) && n >= 0) setHome(n)
+            else if (e.target.value === "") setHome(null)
+          }}
+          style={heroScoreInputStyle(activePicker === "home", home !== null)}
+        />
+        <span style={{ color: "#4b5563", fontSize: 20, fontWeight: 800 }}>–</span>
+        <input
+          ref={awayRef}
+          type="number" min={0} max={99} inputMode="numeric"
+          value={away ?? ""}
+          placeholder="–"
+          onFocus={() => setActivePicker("away")}
+          onBlur={() => setTimeout(() => {
+            if (document.activeElement !== homeRef.current) setActivePicker(null)
+          }, 150)}
+          onChange={e => {
+            const n = parseInt(e.target.value, 10)
+            if (!isNaN(n) && n >= 0) setAway(n)
+            else if (e.target.value === "") setAway(null)
+          }}
+          style={heroScoreInputStyle(activePicker === "away", away !== null)}
+        />
+      </div>
+      {activePicker && (
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 8 }}>
+          {HERO_NUM_PICKER.map(n => (
+            <button
+              key={n}
+              onMouseDown={e => e.preventDefault()}
+              onClick={() => handlePickNumber(n)}
+              style={{
+                width: 36, height: 34, border: "1px solid #2d2b55", borderRadius: 7,
+                background: "#1a1a2e", fontSize: 15, fontWeight: 700,
+                color: "#e2e8f0", cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+              }}
+            >{n}</button>
+          ))}
+        </div>
+      )}
+      {saving && <div style={{ color: "#6b7280", fontSize: 10, textAlign: "center" }}>saving…</div>}
+      <style>{`
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+      `}</style>
+    </div>
+  )
+}
+
 /* ── Next match hero (full-width) ───────────────────────── */
-function NextMatchHero({ match, navigate }) {
+function NextMatchHero({ match, navigate, myPrediction, onPredSaved }) {
   const countdown = useCountdown(match?.kickoff_time)
   const kickoffStr = match?.kickoff_time ? ilDateTimeFull(match.kickoff_time) : null
+  const [predExpanded, setPredExpanded] = useState(false)
+
   if (!match) return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
       padding: 20, marginBottom: 14, textAlign: "center" }}>
       <div style={{ color: "#6b7280", fontSize: 13 }}>No upcoming matches</div>
     </div>
   )
+
+  const hasPred = myPrediction != null
+  const predLabel = hasPred
+    ? `🎯 ${myPrediction.home_score_pred}–${myPrediction.away_score_pred} · change`
+    : "🎯 Predict"
+
+  const pickerEntry = {
+    match_id: match.id,
+    home_team: match.home_team,
+    away_team: match.away_team,
+    kickoff_time: match.kickoff_time,
+    status: "upcoming",
+    my_prediction: myPrediction || null,
+  }
+
   return (
     <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
       padding: "16px 16px 14px", marginBottom: 14 }}>
@@ -332,17 +470,37 @@ function NextMatchHero({ match, navigate }) {
           </div>
         </div>
       </div>
+
+      {predExpanded && (
+        <HeroScorePicker
+          entry={pickerEntry}
+          onSaved={(doublesCount) => { onPredSaved?.(doublesCount); setPredExpanded(false) }}
+          onCollapse={() => setPredExpanded(false)}
+        />
+      )}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         <button onClick={() => navigate(`/matches/${match.id}?tab=challenges`)} style={{
           background: "linear-gradient(135deg,#a855f7,#3b82f6)", color: "#fff",
           border: "none", borderRadius: 10, padding: "10px 0",
-          fontSize: 12, fontWeight: 700, cursor: "pointer",
+          fontSize: 13, fontWeight: 700, cursor: "pointer",
         }}>⚔️ Dare friends</button>
-        <button onClick={() => navigate("/predict")} style={{
-          background: "none", border: "1px solid #2d2b55", borderRadius: 10,
-          padding: "10px 0", fontSize: 12, fontWeight: 700,
-          color: "#e2e8f0", cursor: "pointer",
-        }}>🎯 Predict</button>
+        {predExpanded ? (
+          <button onClick={() => setPredExpanded(false)} style={{
+            background: "none", border: "1px solid #4b5563", borderRadius: 10,
+            padding: "10px 0", fontSize: 13, fontWeight: 700,
+            color: "#6b7280", cursor: "pointer",
+          }}>✕ Cancel</button>
+        ) : (
+          <button onClick={() => setPredExpanded(true)} style={{
+            background: "none",
+            border: `1px solid ${hasPred ? "#22d3ee" : "#2d2b55"}`,
+            borderRadius: 10, padding: "10px 0", fontSize: 13, fontWeight: 700,
+            color: hasPred ? "#22d3ee" : "#e2e8f0", cursor: "pointer",
+            overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            paddingLeft: 4, paddingRight: 4,
+          }}>{predLabel}</button>
+        )}
       </div>
     </div>
   )
@@ -497,20 +655,26 @@ export default function HomePage() {
   const [favoriteTeam, setFavoriteTeam] = useState(null)
   const [showTeamPicker, setShowTeamPicker] = useState(false)
   const [savingTeam, setSavingTeam] = useState(false)
+  const [myNextPrediction, setMyNextPrediction] = useState(null)
 
   const load = useCallback(async () => {
     setLoadError(null)
     try {
-      const [allMatches, tournamentData, lb, challengeData, me] = await Promise.all([
+      const [allMatches, tournamentData, lb, challengeData, me, predictions] = await Promise.all([
         api.get("/api/matches"),
         api.get("/api/tournament/bets").catch(() => ({ my_bets: [] })),
         api.get("/api/leaderboard"),
         api.get("/api/challenges").catch(() => ({ my_open: [], for_me: [] })),
         api.get("/api/me").catch(() => null),
+        api.get("/api/predictions").catch(() => []),
       ])
       const upcoming = allMatches.filter(m => m.status === "upcoming")
       setMatches(allMatches)
       setNextMatch(upcoming[0] ?? null)
+      const nextPred = upcoming[0]
+        ? (predictions.find(p => p.match_id === upcoming[0].id)?.my_prediction ?? null)
+        : null
+      setMyNextPrediction(nextPred)
       setTournamentBets(tournamentData.my_bets || [])
       setOpenChallenges(challengeData)
       setLeaderboard(lb)
@@ -534,6 +698,18 @@ export default function HomePage() {
       await api.delete(`/api/challenges/${id}`)
       setOpenChallenges(prev => ({ ...prev, my_open: prev.my_open.filter(x => x.id !== id) }))
     } catch (e) { alert(e.message || "Cancel failed") }
+  }
+
+  async function handlePredSaved() {
+    try {
+      const predictions = await api.get("/api/predictions")
+      const nextPred = nextMatch
+        ? (predictions.find(p => p.match_id === nextMatch.id)?.my_prediction ?? null)
+        : null
+      setMyNextPrediction(nextPred)
+    } catch {
+      // ignore — hero still collapses, prediction updates on next load
+    }
   }
 
   async function saveTeam(teamName) {
@@ -574,7 +750,14 @@ export default function HomePage() {
             {!loading && <DeepCutsBanner />}
 
             {/* Next match hero */}
-            {!loading && <NextMatchHero match={nextMatch} navigate={navigate} />}
+            {!loading && (
+              <NextMatchHero
+                match={nextMatch}
+                navigate={navigate}
+                myPrediction={myNextPrediction}
+                onPredSaved={handlePredSaved}
+              />
+            )}
 
             {/* Daily group feed */}
             {!loading && <DailyFeed />}
