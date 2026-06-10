@@ -28,6 +28,7 @@ async def _fetch_team_news(home: str, away: str) -> str:
             return text
     try:
         q = f"{home} vs {away} 2026 World Cup injuries form team news"
+        print(f"[Serper] fetching news for: {q}", flush=True)
         async with httpx.AsyncClient(timeout=4.0) as client:
             r = await client.post(
                 "https://google.serper.dev/search",
@@ -40,7 +41,9 @@ async def _fetch_team_news(home: str, away: str) -> str:
             if item.get("snippet")
         ]
         text = "\n".join(snippets) if snippets else ""
-    except Exception:
+        print(f"[Serper] got {len(snippets)} snippets (status {r.status_code})", flush=True)
+    except Exception as e:
+        print(f"[Serper] error: {e}", flush=True)
         text = ""
     _news_cache[cache_key] = (now, text)
     return text
