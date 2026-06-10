@@ -194,6 +194,18 @@ async def place_spicy_bet(
     if stake < 1:
         raise HTTPException(400, "minimum stake is 1")
 
+    # Prevent duplicate: same player, same market, same stage already pending
+    existing_bet = (await db.execute(
+        select(SpicyBet).where(
+            SpicyBet.player_id  == player.id,
+            SpicyBet.market_key == market_key,
+            SpicyBet.stage      == stage,
+            SpicyBet.status     == "pending",
+        )
+    )).scalar_one_or_none()
+    if existing_bet:
+        raise HTTPException(400, "You already have a pick for this market — cancel it first if you want to change it")
+
     # Server-side odds — client value is intentionally ignored.
     market_cfg = DEEP_CUTS_MARKETS[market_key]
     odds = _resolve_spicy_odds(market_cfg, selection)
@@ -236,6 +248,30 @@ async def get_my_bets(auth=Depends(get_current_player), db: AsyncSession = Depen
         }
         for b in bets
     ]}
+
+
+@router.delete("/api/deep-cuts/bets/{bet_id}")
+async def cancel_spicy_bet(
+    bet_id: int,
+    auth=Depends(get_current_player),
+    db: AsyncSession = Depends(get_db),
+):
+    player, _ = auth
+    bet = await db.get(SpicyBet, bet_id)
+    if not bet or bet.player_id != player.id:
+        raise HTTPException(404, "Bet not found")
+    if bet.status != "pending":
+        raise HTTPException(400, "Only pending bets can be cancelled")
+
+    lock_time = await _get_lock_time(bet.stage, db)
+    if lock_time and datetime.now(timezone.utc) >= lock_time:
+        raise HTTPException(400, "Stage is locked — cannot cancel")
+
+    fresh_player = await db.get(Player, player.id)
+    fresh_player.token_balance += bet.stake
+    bet.status = "cancelled"
+    await db.commit()
+    return {"new_balance": fresh_player.token_balance}
 
 
 @router.post("/api/deep-cuts/dismiss/{stage}")
