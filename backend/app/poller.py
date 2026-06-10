@@ -227,13 +227,18 @@ def start_poller(app) -> None:
     scheduler = AsyncIOScheduler()
 
     async def _poll():
-        try:
-            results = fetch_live_scores(settings.football_api_key, settings.odds_api_key)
-        except Exception as e:
-            logger.warning(f"Poll failed: {e}")
-            return
         async with AsyncSessionLocal() as db:
             locked = (await db.execute(select(Match).where(Match.status == "locked"))).scalars().all()
+
+            # Skip external API calls entirely when no matches are in progress
+            if not locked:
+                return
+
+            try:
+                results = fetch_live_scores(settings.football_api_key, settings.odds_api_key)
+            except Exception as e:
+                logger.warning(f"Poll failed: {e}")
+                return
             settled_rounds: set = set()
             for result in results:
                 match = next((m for m in locked if m.home_team == result["home_team"] and m.away_team == result["away_team"]), None)
