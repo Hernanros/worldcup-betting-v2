@@ -32,6 +32,19 @@ async def issue_challenge(match_id: int, data: dict, auth=Depends(get_current_pl
     if not bet_type or not selection or not acceptor_selection:
         raise HTTPException(400, "bet_type, selection, and acceptor_selection are required")
 
+    # Prevent duplicate: same player, same match, same bet_type + selection already open
+    duplicate = (await db.execute(
+        select(Challenge).where(
+            Challenge.issuer_id == player.id,
+            Challenge.match_id == match_id,
+            Challenge.bet_type == bet_type,
+            Challenge.selection == selection,
+            Challenge.status == "open",
+        )
+    )).scalar_one_or_none()
+    if duplicate:
+        raise HTTPException(400, "You already have this exact bet open for this match — cancel it first if you want to change it")
+
     acceptor_stake = max(1, round(issuer_stake * (issuer_odds / acceptor_odds)))
 
     player = await db.get(Player, player.id)
