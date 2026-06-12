@@ -102,6 +102,7 @@ class Challenge(Base):
     id = Column(Integer, primary_key=True)
     issuer_id = Column(Integer, ForeignKey("players.id"), nullable=False)
     acceptor_id = Column(Integer, ForeignKey("players.id"), nullable=True)
+    addressee_id = Column(Integer, ForeignKey("players.id"), nullable=True)  # if set, only this player can accept
     match_id = Column(Integer, ForeignKey("matches.id"), nullable=False)
     bet_type = Column(String(30), nullable=False)
     selection = Column(String(100), nullable=False)

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { api } from "../api.js"
 import HelpTip from "./HelpTip.jsx"
 
@@ -327,11 +327,17 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const [selection, setSelection] = useState(prefill?.my_pick ?? "")
   const [acceptorSelection, setAcceptorSelection] = useState(prefill?.their_pick ?? "")
   const [betType, setBetType] = useState(prefill?.bet_type ?? "btts")
+  const [addresseeId, setAddresseeId] = useState(null)
+  const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
   const [msg, setMsg] = useState("")
   const [shareUrl, setShareUrl] = useState("")
   const [aiOpen, setAiOpen] = useState(false)
+
+  useEffect(() => {
+    api.get("/api/friends").then(data => setFriends(data)).catch(() => {})
+  }, [])
   const [aiLoading, setAiLoading] = useState(false)
   const [aiSuggestions, setAiSuggestions] = useState([])
   const [aiError, setAiError] = useState(null)
@@ -361,11 +367,14 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
     if (!issuerStake || issuerStake <= 0) return setMsg("Stake must be positive")
     setLoading(true); setMsg("")
     try {
-      const r = await api.post(`/api/matches/${match.id}/challenges`, {
+      const payload = {
         bet_type: betType, selection, acceptor_selection: acceptorSelection,
         issuer_stake: issuerStake, issuer_odds: issuerOdds, acceptor_odds: acceptorOdds,
-      })
-      setMsg(`✓ Dare issued! Balance: ${r.new_balance}`)
+      }
+      if (addresseeId) payload.addressee_id = addresseeId
+      const r = await api.post(`/api/matches/${match.id}/challenges`, payload)
+      const addresseeName = friends.find(f => f.id === addresseeId)?.name
+      setMsg(`✓ Dare ${addresseeName ? `sent to ${addresseeName}` : "issued"}! Balance: ${r.new_balance}`)
       setShareUrl(`${window.location.origin}/matches/${match.id}`)
       setSelection(""); setAcceptorSelection("")
       onBalanceChange?.(r.new_balance)
@@ -651,6 +660,38 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
           </div>
         </div>
 
+        {/* Friend picker */}
+        {friends.length > 0 && (
+          <div style={{ marginBottom: 12 }}>
+            <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: 0.8, marginBottom: 6 }}>
+              Challenge who?
+            </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+              <button onClick={() => setAddresseeId(null)} style={{
+                padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                border: "1px solid", transition: "all 0.1s",
+                background: addresseeId === null ? "rgba(168,85,247,0.2)" : "transparent",
+                borderColor: addresseeId === null ? "rgba(168,85,247,0.6)" : "#2d2b55",
+                color: addresseeId === null ? "#c4b5fd" : "#6b7280",
+              }}>
+                Anyone
+              </button>
+              {friends.map(f => (
+                <button key={f.id} onClick={() => setAddresseeId(f.id)} style={{
+                  padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  border: "1px solid", transition: "all 0.1s",
+                  background: addresseeId === f.id ? "rgba(74,222,128,0.15)" : "transparent",
+                  borderColor: addresseeId === f.id ? "rgba(74,222,128,0.5)" : "#2d2b55",
+                  color: addresseeId === f.id ? "#4ade80" : "#9ca3af",
+                }}>
+                  {f.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ color: "#a78bfa", fontSize: 11, margin: 0 }}>
             Their stake: <strong>{acceptorStake}</strong> tokens
@@ -661,7 +702,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
             border: "none", borderRadius: 8, padding: "8px 18px", fontSize: 13, fontWeight: 700,
             cursor: loading ? "not-allowed" : "pointer", opacity: loading ? 0.7 : 1,
           }}>
-            {loading ? "..." : "💥 Send Dare"}
+            {loading ? "..." : addresseeId ? `💥 Dare ${friends.find(f => f.id === addresseeId)?.name}` : "💥 Send Dare"}
           </button>
         </div>
       </div>
@@ -684,6 +725,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
                 {/* Header */}
                 <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, marginBottom: 10 }}>
                   ⚔️ {c.issuer_name || "Someone"} dares you
+                  {c.addressee_name && <span style={{ color: "#4ade80", fontWeight: 700 }}> — you specifically</span>}
                   {typeInfo && <span style={{ color: "#4b5563", fontWeight: 400 }}> · {typeInfo.short}</span>}
                 </div>
 

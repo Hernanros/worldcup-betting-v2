@@ -61,8 +61,16 @@ async def issue_challenge(match_id: int, data: dict, auth=Depends(get_current_pl
 
     player.token_balance -= issuer_stake
 
+    addressee_id = data.get("addressee_id")
+    if addressee_id is not None:
+        try:
+            addressee_id = int(addressee_id)
+        except (TypeError, ValueError):
+            addressee_id = None
+
     challenge = Challenge(
         issuer_id=player.id,
+        addressee_id=addressee_id,
         match_id=match_id,
         bet_type=bet_type,
         selection=selection,
@@ -149,6 +157,11 @@ async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession 
     else:
         open_q = select(Challenge).where(Challenge.status == "open")
 
+    # Only include challenges addressed to me (or open to anyone)
+    open_q = open_q.where(
+        (Challenge.addressee_id == None) | (Challenge.addressee_id == player.id)  # noqa: E711
+    )
+
     open_challenges = (await db.execute(open_q)).scalars().all()
 
     match_ids  = list({c.match_id  for c in open_challenges})
@@ -163,6 +176,12 @@ async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession 
     if issuer_ids:
         name_rows = (await db.execute(select(Player.id, Player.name).where(Player.id.in_(issuer_ids)))).all()
         player_names = {row.id: row.name for row in name_rows}
+
+    addressee_ids = list({c.addressee_id for c in open_challenges if c.addressee_id})
+    addressee_names: dict[int, str] = {}
+    if addressee_ids:
+        addr_rows = (await db.execute(select(Player.id, Player.name).where(Player.id.in_(addressee_ids)))).all()
+        addressee_names = {row.id: row.name for row in addr_rows}
 
     my_open = []
     for_me = []
@@ -182,6 +201,7 @@ async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession 
             "issuer_odds": c.issuer_odds,
             "acceptor_odds": c.acceptor_odds,
             "issuer_name": player_names.get(c.issuer_id, ""),
+            "addressee_name": addressee_names.get(c.addressee_id) if c.addressee_id else None,
         }
         if c.issuer_id == player.id:
             my_open.append(entry)
@@ -189,3 +209,17 @@ async def list_my_challenges(auth=Depends(get_current_player), db: AsyncSession 
             for_me.append(entry)
 
     return {"my_open": my_open, "for_me": for_me}
+
+
+@router.get("/api/friends")
+async def list_friends(auth=Depends(get_current_player), db: AsyncSession = Depends(get_db)):
+    """Return all other players in the same league — used to populate the friend picker."""
+    player, _ = auth
+    if player.league_id is None:
+        return []
+    rows = (await db.execute(
+        select(Player.id, Player.name)
+        .where(Player.league_id == player.league_id, Player.id != player.id)
+        .order_by(Player.name)
+    )).all()
+    return [{"id": row.id, "name": row.name} for row in rows]
