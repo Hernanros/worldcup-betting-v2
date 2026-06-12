@@ -197,9 +197,83 @@ EXHAUSTED_PLAYER_LIST = sorted([
     "Alphonso Davies", "Jonathan David", "Tajon Buchanan",
     "Cyle Larin", "Junior Hoilett", "Atiba Hutchinson",
 
-    # ── CHRISTOPHER NKUNKU already in France ─────────────────────────────────
-    # ── Serhou Guirassy already covered ──────────────────────────────────────
     "Serhou Guirassy",
+
+    # ── SOUTH AFRICA ─────────────────────────────────────────────────────────
+    "Percy Tau", "Bongani Zungu", "Themba Zwane", "Lebo Mothiba",
+    "Ronwen Williams", "Siyanda Xulu", "Innocent Maela",
+
+    # ── CZECHIA ──────────────────────────────────────────────────────────────
+    "Patrik Schick", "Vladimír Coufal", "Tomáš Souček",
+    "Jakub Jankto", "Antonín Barák", "Jiří Pavlenka",
+
+    # ── BOSNIA-HERZEGOVINA ───────────────────────────────────────────────────
+    "Edin Džeko", "Sead Kolašinac", "Miralem Pjanić",
+    "Ermedin Demirović", "Rade Krunić",
+
+    # ── QATAR ────────────────────────────────────────────────────────────────
+    "Almoez Ali", "Akram Afif", "Hassan Al-Haydos",
+    "Salmin Al-Enezi", "Meshaal Barsham",
+
+    # ── HAITI ────────────────────────────────────────────────────────────────
+    "Duckens Nazon", "Frantzdy Pierrot", "Orlens Dalcé",
+    "Steeven Saba", "Jonathan Pétion",
+
+    # ── SCOTLAND ─────────────────────────────────────────────────────────────
+    "John McGinn", "Scott McTominay", "Che Adams",
+    "Kieran Tierney", "Andrew Robertson", "Craig Gordon",
+
+    # ── CURAÇAO ──────────────────────────────────────────────────────────────
+    "Cuco Martina", "Leandro Bacuna", "Juriën Timber",
+    "Queensy Menig",
+
+    # ── SWEDEN ───────────────────────────────────────────────────────────────
+    "Alexander Isak", "Emil Forsberg", "Dejan Kulusevski",
+    "Zlatan Ibrahimović", "Victor Lindelöf", "Robin Olsen",
+
+    # ── TUNISIA ──────────────────────────────────────────────────────────────
+    "Youssef Msakni", "Wahbi Khazri", "Naim Sliti",
+    "Ellyes Skhiri", "Dylan Bronn",
+
+    # ── CAPE VERDE ───────────────────────────────────────────────────────────
+    "Garry Rodrigues", "Ryan Mendes", "Nuno Tavares",
+    "Steven Fortes",
+
+    # ── NEW ZEALAND ──────────────────────────────────────────────────────────
+    "Chris Wood", "Liberato Cacace", "Clayton Lewis",
+    "Tommy Smith",
+
+    # ── IRAQ ─────────────────────────────────────────────────────────────────
+    "Mohanad Ali", "Ali Adnan", "Amjed Attwan",
+    "Bashar Resan",
+
+    # ── AUSTRIA ──────────────────────────────────────────────────────────────
+    "David Alaba", "Marcel Sabitzer", "Marko Arnautovic",
+    "Konrad Laimer", "Michael Gregoritsch", "Patrick Pentz",
+
+    # ── JORDAN ───────────────────────────────────────────────────────────────
+    "Baha'a Faisal", "Musa Al-Taamari", "Yazan Al-Naimat",
+    "Ahmad Harman",
+
+    # ── DR CONGO ─────────────────────────────────────────────────────────────
+    "Cédric Bakambu", "Chancel Mbemba", "Yannick Bolasie",
+    "Théo Bongonda", "Joris Kayembe",
+
+    # ── UZBEKISTAN ───────────────────────────────────────────────────────────
+    "Eldor Shomurodov", "Jaloliddin Masharipov", "Abbosbek Fayzullayev",
+    "Jamshid Iskanderov", "Dostonbek Tursunov",
+
+    # ── PANAMA ───────────────────────────────────────────────────────────────
+    "Rolando Blackburn", "José Fajardo", "Adalberto Carrasquilla",
+    "Cecilio Waterman", "Roderick Miller",
+
+    # ── GHANA ────────────────────────────────────────────────────────────────
+    "Mohammed Kudus", "Thomas Partey", "André Ayew",
+    "Jordan Ayew", "Antoine Semenyo", "Lawrence Ati-Zigi",
+
+    # ── CROATIA ──────────────────────────────────────────────────────────────
+    "Luka Modrić", "Mateo Kovačić", "Joško Gvardiol",
+    "Andrej Kramarić", "Bruno Petković", "Dominik Livaković",
 ])
 
 
