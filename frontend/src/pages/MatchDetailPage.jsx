@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react"
 import { useParams, useNavigate, useLocation, useOutletContext } from "react-router-dom"
 import { api } from "../api.js"
+import { getPlayer } from "../auth.js"
 import ChallengePanel from "../components/ChallengePanel.jsx"
 import PageBackground from "../components/PageBackground.jsx"
 import { getMomentForMatch } from "../data/moments.js"
@@ -14,6 +15,7 @@ export default function MatchDetailPage() {
   const location = useLocation()
   const { onBalanceChange } = useOutletContext() ?? {}
   const prefill = location.state?.prefill ?? null
+  const currentPlayer = getPlayer()
 
   const [match, setMatch] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -162,6 +164,7 @@ export default function MatchDetailPage() {
               prefill={prefill}
               playerStreak={playerStreak}
               totalChallenges={totalChallenges}
+              currentPlayerId={currentPlayer?.id ?? null}
             />
           </div>
         ) : (

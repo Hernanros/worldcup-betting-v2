@@ -320,7 +320,7 @@ function PlayerH2HPicker({ match, selection, acceptorSelection, onPick }) {
 }
 
 /* ── Main ──────────────────────────────────────────────────── */
-export default function ChallengePanel({ match, challenges, onUpdate, onBalanceChange, prefill, playerStreak = 0, totalChallenges = 0 }) {
+export default function ChallengePanel({ match, challenges, onUpdate, onBalanceChange, prefill, playerStreak = 0, totalChallenges = 0, currentPlayerId = null }) {
   const [issuerStake, setIssuerStake] = useState(prefill?.stake ?? 100)
   const [issuerOdds, setIssuerOdds] = useState(prefill?.my_odds ?? 2.0)
   const [acceptorOdds, setAcceptorOdds] = useState(prefill?.their_odds ?? 2.0)
@@ -331,6 +331,7 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
   const [friends, setFriends] = useState([])
   const [loading, setLoading] = useState(false)
   const [acceptingId, setAcceptingId] = useState(null)
+  const [cancellingId, setCancellingId] = useState(null)
   const [msg, setMsg] = useState("")
   const [shareUrl, setShareUrl] = useState("")
   const [aiOpen, setAiOpen] = useState(false)
@@ -392,6 +393,17 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
       onUpdate?.()
     } catch (err) { setMsg(`✗ ${err.message}`) }
     finally { setAcceptingId(null) }
+  }
+
+  async function cancelDare(challengeId) {
+    setCancellingId(challengeId)
+    try {
+      const r = await api.delete(`/api/challenges/${challengeId}`)
+      setMsg(`✓ Dare withdrawn. Refunded ${r.refunded} tokens.`)
+      onBalanceChange?.(r.new_balance)
+      onUpdate?.()
+    } catch (err) { setMsg(`✗ ${err.message}`) }
+    finally { setCancellingId(null) }
   }
 
   async function generateAI() {
@@ -660,37 +672,35 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
           </div>
         </div>
 
-        {/* Friend picker */}
-        {friends.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-              letterSpacing: 0.8, marginBottom: 6 }}>
-              Challenge who?
-            </div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
-              <button onClick={() => setAddresseeId(null)} style={{
+        {/* Friend picker — always visible */}
+        <div style={{ marginBottom: 12 }}>
+          <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 0.8, marginBottom: 6 }}>
+            Challenge who?
+          </div>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+            <button onClick={() => setAddresseeId(null)} style={{
+              padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
+              border: "1px solid", transition: "all 0.1s",
+              background: addresseeId === null ? "rgba(168,85,247,0.2)" : "transparent",
+              borderColor: addresseeId === null ? "rgba(168,85,247,0.6)" : "#2d2b55",
+              color: addresseeId === null ? "#c4b5fd" : "#6b7280",
+            }}>
+              Anyone
+            </button>
+            {friends.map(f => (
+              <button key={f.id} onClick={() => setAddresseeId(f.id)} style={{
                 padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
                 border: "1px solid", transition: "all 0.1s",
-                background: addresseeId === null ? "rgba(168,85,247,0.2)" : "transparent",
-                borderColor: addresseeId === null ? "rgba(168,85,247,0.6)" : "#2d2b55",
-                color: addresseeId === null ? "#c4b5fd" : "#6b7280",
+                background: addresseeId === f.id ? "rgba(74,222,128,0.15)" : "transparent",
+                borderColor: addresseeId === f.id ? "rgba(74,222,128,0.5)" : "#2d2b55",
+                color: addresseeId === f.id ? "#4ade80" : "#9ca3af",
               }}>
-                Anyone
+                {f.name}
               </button>
-              {friends.map(f => (
-                <button key={f.id} onClick={() => setAddresseeId(f.id)} style={{
-                  padding: "5px 12px", borderRadius: 999, fontSize: 11, fontWeight: 700, cursor: "pointer",
-                  border: "1px solid", transition: "all 0.1s",
-                  background: addresseeId === f.id ? "rgba(74,222,128,0.15)" : "transparent",
-                  borderColor: addresseeId === f.id ? "rgba(74,222,128,0.5)" : "#2d2b55",
-                  color: addresseeId === f.id ? "#4ade80" : "#9ca3af",
-                }}>
-                  {f.name}
-                </button>
-              ))}
-            </div>
+            ))}
           </div>
-        )}
+        </div>
 
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <p style={{ color: "#a78bfa", fontSize: 11, margin: 0 }}>
@@ -707,14 +717,56 @@ export default function ChallengePanel({ match, challenges, onUpdate, onBalanceC
         </div>
       </div>
 
+      {/* My pending dares — with cancel */}
+      {challenges?.filter(c => c.issuer_id === currentPlayerId).length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+            letterSpacing: 0.8, marginBottom: 8 }}>
+            🕐 My pending dares
+          </p>
+          {challenges.filter(c => c.issuer_id === currentPlayerId).map((c) => {
+            const typeInfo = DARE_TYPES.find(t => t.key === c.bet_type)
+            return (
+              <div key={c.id} style={{
+                background: "#0c0c14", border: "1px solid #2d2b55",
+                borderRadius: 12, padding: "10px 12px", marginBottom: 8,
+                display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10,
+              }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ color: "#6b7280", fontSize: 10, marginBottom: 2 }}>
+                    {typeInfo?.short ?? c.bet_type}
+                    {c.addressee_name && <span style={{ color: "#4ade80", marginLeft: 6 }}>→ {c.addressee_name}</span>}
+                  </div>
+                  <div style={{ color: "#e2e8f0", fontSize: 12, fontWeight: 600,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {c.selection} · <span style={{ color: "#fbbf24" }}>{c.issuer_stake} 🪙</span>
+                  </div>
+                </div>
+                <button
+                  onClick={() => cancelDare(c.id)}
+                  disabled={cancellingId === c.id}
+                  style={{
+                    flexShrink: 0, background: "none", border: "1px solid #ef4444",
+                    borderRadius: 6, color: "#ef4444", fontSize: 11,
+                    padding: "4px 10px", cursor: cancellingId === c.id ? "not-allowed" : "pointer",
+                    fontWeight: 600, opacity: cancellingId === c.id ? 0.5 : 1,
+                  }}>
+                  {cancellingId === c.id ? "…" : "Withdraw"}
+                </button>
+              </div>
+            )
+          })}
+        </div>
+      )}
+
       {/* Incoming dares to accept */}
-      {challenges?.length > 0 && (
+      {challenges?.filter(c => c.issuer_id !== currentPlayerId).length > 0 && (
         <div>
           <p style={{ color: "#6b7280", fontSize: 11, fontWeight: 700, textTransform: "uppercase",
             letterSpacing: 0.8, marginBottom: 8 }}>
             ⚔️ Dares waiting for you
           </p>
-          {challenges.map((c) => {
+          {challenges.filter(c => c.issuer_id !== currentPlayerId).map((c) => {
             const typeInfo = DARE_TYPES.find(t => t.key === c.bet_type)
             return (
               <div key={c.id} style={{

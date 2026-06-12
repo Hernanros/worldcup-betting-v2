@@ -241,7 +241,7 @@ function MyOpenDares({ dares, onCancel }) {
         letterSpacing: 0.8, marginBottom: 8 }}>
         🕐 Dares I sent — waiting for response
       </div>
-      {dares.slice(0, 2).map(c => (
+      {dares.map(c => (
         <div key={c.id} style={{
           background: "#13131f", border: "1px solid #2d2b55",
           borderRadius: 10, padding: "10px 12px", marginBottom: 6,
@@ -250,6 +250,7 @@ function MyOpenDares({ dares, onCancel }) {
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ color: "#6b7280", fontSize: 10 }}>
               {c.match_home_team} vs {c.match_away_team}
+              {c.addressee_name && <span style={{ color: "#4ade80", marginLeft: 5 }}>→ {c.addressee_name}</span>}
             </div>
             <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 600,
               overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 180 }}>
@@ -261,7 +262,7 @@ function MyOpenDares({ dares, onCancel }) {
             borderRadius: 6, color: "#ef4444", fontSize: 11,
             padding: "4px 10px", cursor: "pointer", fontWeight: 600,
           }}>
-            Cancel
+            Withdraw
           </button>
         </div>
       ))}

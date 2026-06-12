@@ -26,11 +26,13 @@ def _match_dict(m: Match, challenge_count: int = 0) -> dict:
     }
 
 
-def _challenge_dict(c: Challenge, issuer_name: str = "") -> dict:
+def _challenge_dict(c: Challenge, issuer_name: str = "", addressee_name: str | None = None) -> dict:
     return {
         "id": c.id,
         "issuer_id": c.issuer_id,
         "issuer_name": issuer_name,
+        "addressee_id": c.addressee_id,
+        "addressee_name": addressee_name,
         "bet_type": c.bet_type,
         "selection": c.selection,
         "acceptor_selection": c.acceptor_selection,
@@ -84,6 +86,7 @@ async def get_match(match_id: int, auth=Depends(get_current_player), db: AsyncSe
         odds = {}
 
     current_player = auth[0] if auth else None
+    current_player_id = current_player.id if current_player else None
     if current_player is not None and current_player.league_id is not None:
         league_player_ids = (await db.execute(
             select(Player.id).where(Player.league_id == current_player.league_id)
@@ -98,15 +101,27 @@ async def get_match(match_id: int, auth=Depends(get_current_player), db: AsyncSe
             Challenge.match_id == match_id, Challenge.status == "open"
         )
     open_challenges = (await db.execute(ch_query)).scalars().all()
-    # Resolve issuer names in one batch
-    issuer_ids = list({c.issuer_id for c in open_challenges})
-    issuer_map: dict[int, str] = {}
-    if issuer_ids:
-        players = (await db.execute(select(Player).where(Player.id.in_(issuer_ids)))).scalars().all()
-        issuer_map = {p.id: p.name for p in players}
+
+    # Filter: show challenges by current player + challenges open to anyone or directed at current player
+    open_challenges = [
+        c for c in open_challenges
+        if c.issuer_id == current_player_id
+        or c.addressee_id is None
+        or c.addressee_id == current_player_id
+    ]
+
+    # Resolve issuer + addressee names in one batch
+    all_player_ids = list({c.issuer_id for c in open_challenges} | {c.addressee_id for c in open_challenges if c.addressee_id})
+    player_map: dict[int, str] = {}
+    if all_player_ids:
+        players = (await db.execute(select(Player).where(Player.id.in_(all_player_ids)))).scalars().all()
+        player_map = {p.id: p.name for p in players}
 
     return {
         **_match_dict(match, len(open_challenges)),
         "odds": odds,
-        "open_challenges": [_challenge_dict(c, issuer_map.get(c.issuer_id, "")) for c in open_challenges],
+        "open_challenges": [
+            _challenge_dict(c, player_map.get(c.issuer_id, ""), player_map.get(c.addressee_id) if c.addressee_id else None)
+            for c in open_challenges
+        ],
     }
