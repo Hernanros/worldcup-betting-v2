@@ -432,20 +432,17 @@ export default function DailyFeed({ predictions = {}, onPredictionSaved }) {
           {/* Results tab */}
           {(tab === "results" || TABS.length === 1) && (
             <div>
-              {data._isFuture
-                ? data.matches.map(m => (
-                    <UpcomingPredictRow
+              {data.matches.map(m =>
+                m.status === "upcoming"
+                  ? <UpcomingPredictRow
                       key={m.id}
                       match={m}
                       prediction={predictions[m.id]}
                       onPredictionSaved={onPredictionSaved}
                       navigate={navigate}
                     />
-                  ))
-                : data.matches.map(m => (
-                    <MatchResult key={m.id} match={m} />
-                  ))
-              }
+                  : <MatchResult key={m.id} match={m} />
+              )}
             </div>
           )}
 
