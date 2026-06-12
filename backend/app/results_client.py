@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 
 # Normalize API team names → DB team names
 TEAM_NAME_MAP = {
-    # Odds API uses these; DB uses the right-hand side
-    "Czech Republic": "Czechia",
-    "Bosnia & Herzegovina": "Bosnia & Herzegovina",
-    "IR Iran": "Iran",
-    "Korea Republic": "South Korea",
+    # ESPN displayName → DB team name
     "United States": "USA",
-    # ESPN variants (add as discovered during tournament)
-    "Czechia": "Czechia",   # ESPN already uses this ✅
+    "Türkiye":       "Turkey",
+    "Congo DR":      "DR Congo",
+    # Legacy / alternate spellings
+    "Czech Republic": "Czechia",
+    "IR Iran":        "Iran",
+    "Korea Republic": "South Korea",
 }
 
 
@@ -98,13 +98,11 @@ def fetch_odds_api_results(api_key: str) -> list[dict]:
 
 
 def fetch_live_scores(football_api_key: str = "", odds_api_key: str = "") -> list[dict]:
-    """Layered fetch: ESPN (primary) → Odds API (fallback/catch-up).
-    Returns deduplicated list of finished match results.
-    football_api_key kept for signature compatibility but unused."""
+    """Fetch finished WC match results from ESPN (free, no API key required).
+    football_api_key and odds_api_key kept for signature compatibility but unused."""
     seen: set[tuple[str, str]] = set()
     results: list[dict] = []
 
-    # Layer 1: ESPN — free, live-aware, team names match our DB well
     try:
         for r in fetch_espn_results():
             key = (r["home_team"], r["away_team"])
@@ -114,17 +112,6 @@ def fetch_live_scores(football_api_key: str = "", odds_api_key: str = "") -> lis
                 logger.debug("ESPN settled: %s %d-%d %s", r["home_team"], r["home_score"], r["away_score"], r["away_team"])
     except Exception as e:
         logger.warning("ESPN layer failed: %s", e)
-
-    # Layer 2: Odds API — 3-day lookback, catches restarts and missed ticks
-    try:
-        for r in fetch_odds_api_results(odds_api_key):
-            key = (r["home_team"], r["away_team"])
-            if key not in seen:
-                seen.add(key)
-                results.append(r)
-                logger.debug("OddsAPI settled: %s %d-%d %s", r["home_team"], r["home_score"], r["away_score"], r["away_team"])
-    except Exception as e:
-        logger.warning("Odds API layer failed: %s", e)
 
     return results
 

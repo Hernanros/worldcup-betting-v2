@@ -86,37 +86,64 @@ For player_h2h: use exactly 'goals' or 'assists' as the stat suffix."""
 
 
 _STAR_PLAYERS = {
-    "Argentina":    ["Messi", "Di María", "Álvarez", "Mac Allister"],
-    "France":       ["Mbappé", "Griezmann", "Dembélé", "Camavinga"],
-    "Brazil":       ["Vini Jr", "Rodrygo", "Raphinha", "Paquetá"],
-    "England":      ["Bellingham", "Saka", "Foden", "Kane"],
-    "Portugal":     ["Ronaldo", "B. Silva", "Félix", "R. Leão"],
-    "Spain":        ["Pedri", "Yamal", "Morata", "Olmo"],
-    "Germany":      ["Müller", "Wirtz", "Gnabry", "Havertz"],
-    "Netherlands":  ["Van Dijk", "Gakpo", "Depay", "Simons"],
-    "Uruguay":      ["Núñez", "Valverde", "Araújo"],
-    "Colombia":     ["James", "Díaz", "Arias"],
-    "USA":          ["Pulisic", "Reyna", "Adams"],
-    "Mexico":       ["Lozano", "Guardado", "Raúl"],
-    "Morocco":      ["En-Nesyri", "Hakimi", "Ziyech"],
-    "Senegal":      ["Mané", "Dia", "Sarr"],
-    "Japan":        ["Mitoma", "Kubo", "Kamada"],
-    "South Korea":  ["Son", "Lee Kang-In", "Hwang"],
-    "Croatia":      ["Modrić", "Kovačić", "Gvardiol"],
-    "Belgium":      ["De Bruyne", "Lukaku", "Tielemans"],
-    "Italy":        ["Barella", "Tonali", "Scamacca"],
-    "Poland":       ["Lewandowski", "Zieliński", "Szymański"],
-    "Switzerland":  ["Xhaka", "Shaqiri", "Embolo"],
-    "Australia":    ["Hrustic", "Irvine", "Boyle"],
-    "Canada":       ["Davies", "David", "Buchanan"],
-    "Ecuador":      ["Caicedo", "Plata", "Enner Valencia"],
-    "Iran":         ["Taremi", "Jahanbakhsh", "Azmoun"],
-    "Saudi Arabia": ["Al-Dawsari", "Al-Shahrani", "Al-Malki"],
-    "Cameroon":     ["Onana", "Aboubakar", "Choupo-Moting"],
-    "Ghana":        ["Kudus", "Partey", "Ayew"],
-    "Nigeria":      ["Lookman", "Osimhen", "Iheanacho"],
-    "South Africa": ["Tau", "Dolly", "Zwane"],
-    "Qatar":        ["Al-Haydos", "Afif", "Al-Rawi"],
+    # Group A
+    "Mexico":               ["Lozano", "Jiménez", "Guardado"],
+    "South Africa":         ["Tau", "Dolly", "Zwane"],
+    "South Korea":          ["Son", "Lee Kang-In", "Hwang"],
+    "Czechia":              ["Schick", "Souček", "Barák"],
+    # Group B
+    "Canada":               ["Davies", "David", "Buchanan"],
+    "Switzerland":          ["Xhaka", "Shaqiri", "Embolo"],
+    "Bosnia-Herzegovina":   ["Džeko", "Kolašinac", "Pjanić"],
+    "Qatar":                ["Al-Haydos", "Afif"],
+    # Group C
+    "USA":                  ["Pulisic", "Reyna", "Adams"],
+    "Turkey":               ["Calhanoglu", "Arda Güler", "Yildiz"],
+    "Paraguay":             ["Almirón", "Sanabria"],
+    "Australia":            ["Hrustic", "Irvine", "Boyle"],
+    # Group D
+    "Brazil":               ["Vini Jr", "Rodrygo", "Raphinha", "Paquetá"],
+    "Morocco":              ["En-Nesyri", "Hakimi", "Ziyech"],
+    "Scotland":             ["McGinn", "McTominay", "Adams"],
+    # Group E
+    "Germany":              ["Müller", "Wirtz", "Gnabry", "Havertz"],
+    "Ivory Coast":          ["Zaha", "Gradel", "Haller"],
+    "Ecuador":              ["Caicedo", "Plata", "Enner Valencia"],
+    # Group F
+    "Netherlands":          ["Van Dijk", "Gakpo", "Depay", "Simons"],
+    "Japan":                ["Mitoma", "Kubo", "Kamada"],
+    "Sweden":               ["Isak", "Forsberg", "Kulusevski"],
+    "Tunisia":              ["Msakni", "Sliti", "Talbi"],
+    # Group G
+    "Spain":                ["Pedri", "Yamal", "Morata", "Olmo"],
+    "Saudi Arabia":         ["Al-Dawsari", "Al-Shahrani"],
+    "Uruguay":              ["Núñez", "Valverde", "Araújo"],
+    "Cape Verde":           ["Tavares", "Andrade"],
+    # Group H
+    "Belgium":              ["De Bruyne", "Lukaku", "Tielemans"],
+    "Egypt":                ["Salah", "Trezeguet"],
+    "Iran":                 ["Taremi", "Jahanbakhsh", "Azmoun"],
+    "New Zealand":          ["Wood", "McGlinchey"],
+    # Group I
+    "France":               ["Mbappé", "Griezmann", "Dembélé", "Camavinga"],
+    "Senegal":              ["Mané", "Dia", "Sarr"],
+    "Norway":               ["Haaland", "Ødegaard", "Sörloth"],
+    "Iraq":                 ["Allawi", "Ali Adnan"],
+    # Group J
+    "Argentina":            ["Messi", "Di María", "Álvarez", "Mac Allister"],
+    "Algeria":              ["Mahrez", "Benrahma", "Slimani"],
+    "Austria":              ["Alaba", "Sabitzer", "Arnautovic"],
+    "Jordan":               ["Al-Naimat", "Bani Attiah"],
+    # Group K
+    "Portugal":             ["Ronaldo", "B. Silva", "Félix", "R. Leão"],
+    "DR Congo":             ["Bakambu", "Mbemba"],
+    "Colombia":             ["James", "Díaz", "Arias"],
+    "Uzbekistan":           ["Shomurodov", "Tursunov"],
+    # Group L
+    "England":              ["Bellingham", "Saka", "Foden", "Kane"],
+    "Croatia":              ["Modrić", "Kovačić", "Gvardiol"],
+    "Ghana":                ["Kudus", "Partey", "Ayew"],
+    "Panama":               ["Davis", "Blackburn"],
 }
 
 

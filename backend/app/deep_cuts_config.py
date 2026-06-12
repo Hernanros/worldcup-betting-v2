@@ -19,18 +19,18 @@ STAGE_ROUNDS = {
 # ⚠️ Estimated group compositions — verify against official FIFA draw before Jun 11, 2026
 # ── WC 2026 group compositions (A–L, 48 group stage teams) ─────────────────
 WC2026_GROUPS = {
-    "A": ["Mexico", "Jamaica", "Venezuela", "Ecuador"],
-    "B": ["USA", "Panama", "Costa Rica", "New Zealand"],
-    "C": ["Morocco", "Belgium", "Canada", "Honduras"],
-    "D": ["Brazil", "Croatia", "Japan", "Paraguay"],
-    "E": ["Argentina", "Chile", "Australia", "Poland"],
-    "F": ["Spain", "Portugal", "Egypt", "Algeria"],
-    "G": ["France", "Nigeria", "DR Congo", "Slovenia"],
-    "H": ["Germany", "Netherlands", "South Korea", "Iran"],
-    "I": ["England", "Senegal", "Tunisia", "South Africa"],
-    "J": ["Colombia", "Uruguay", "El Salvador", "Bolivia"],
-    "K": ["Turkey", "Ukraine", "Saudi Arabia", "Ghana"],
-    "L": ["Ivory Coast", "Norway", "Switzerland", "Czechia"],
+    "A": ["Mexico", "South Africa", "South Korea", "Czechia"],
+    "B": ["Canada", "Switzerland", "Bosnia-Herzegovina", "Qatar"],
+    "C": ["USA", "Turkey", "Paraguay", "Australia"],
+    "D": ["Brazil", "Morocco", "Haiti", "Scotland"],
+    "E": ["Germany", "Curaçao", "Ivory Coast", "Ecuador"],
+    "F": ["Netherlands", "Japan", "Sweden", "Tunisia"],
+    "G": ["Spain", "Cape Verde", "Saudi Arabia", "Uruguay"],
+    "H": ["Belgium", "Egypt", "Iran", "New Zealand"],
+    "I": ["France", "Senegal", "Iraq", "Norway"],
+    "J": ["Argentina", "Algeria", "Austria", "Jordan"],
+    "K": ["Portugal", "DR Congo", "Uzbekistan", "Colombia"],
+    "L": ["England", "Croatia", "Ghana", "Panama"],
 }
 
 ALL_GROUP_TEAMS = [t for teams in WC2026_GROUPS.values() for t in teams]

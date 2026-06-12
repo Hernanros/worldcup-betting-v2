@@ -37,27 +37,19 @@ function groupByGroup(entries) {
 /* ── Day section header ──────────────────────────────────────── */
 function DayHeader({ label }) {
   const isToday = label === "Today"
-  const isTomorrow = label === "Tomorrow"
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8, margin: "12px 0 6px" }}>
+    <div style={{ display: "flex", justifyContent: "flex-end", margin: "14px 0 6px" }}>
       <span style={{
-        fontSize: 10, fontWeight: 800,
-        color: isToday ? "#60a5fa" : "#6b7280",
-        textTransform: "uppercase", letterSpacing: 1, whiteSpace: "nowrap",
+        background: isToday ? "rgba(96,165,250,0.18)" : "#1e2030",
+        border: `1px solid ${isToday ? "rgba(96,165,250,0.4)" : "#2d2b55"}`,
+        borderRadius: 999,
+        padding: "4px 14px",
+        fontSize: 11, fontWeight: 700,
+        color: isToday ? "#60a5fa" : "#9ca3af",
+        letterSpacing: 0.3,
       }}>
         {label}
       </span>
-      {(isToday || isTomorrow) && (
-        <span style={{
-          background: isToday ? "rgba(96,165,250,0.15)" : "rgba(156,163,175,0.08)",
-          border: `1px solid ${isToday ? "rgba(96,165,250,0.3)" : "rgba(156,163,175,0.2)"}`,
-          borderRadius: 4, padding: "1px 6px",
-          fontSize: 8, color: isToday ? "#60a5fa" : "#9ca3af", fontWeight: 700,
-        }}>
-          {new Date().toLocaleDateString(undefined, { month: "short", day: "numeric" })}
-        </span>
-      )}
-      <div style={{ flex: 1, height: 1, background: "#1f2937" }} />
     </div>
   )
 }

@@ -229,9 +229,17 @@ def start_poller(app) -> None:
     async def _poll():
         async with AsyncSessionLocal() as db:
             locked = (await db.execute(select(Match).where(Match.status == "locked"))).scalars().all()
+            # Also include upcoming matches past their kickoff — ESPN may already have results
+            now_utc = __import__("datetime").datetime.utcnow()
+            upcoming_past_kickoff = (await db.execute(
+                select(Match).where(
+                    Match.status == "upcoming",
+                    Match.kickoff_time <= now_utc,
+                )
+            )).scalars().all()
+            candidates = {(m.home_team, m.away_team): m for m in locked + upcoming_past_kickoff}
 
-            # Skip external API calls entirely when no matches are in progress
-            if not locked:
+            if not candidates:
                 return
 
             try:
@@ -241,7 +249,7 @@ def start_poller(app) -> None:
                 return
             settled_rounds: set = set()
             for result in results:
-                match = next((m for m in locked if m.home_team == result["home_team"] and m.away_team == result["away_team"]), None)
+                match = candidates.get((result["home_team"], result["away_team"]))
                 if match:
                     await settle_match(db, match, result)
                     await manager.broadcast({"type": "match_settled", "match_id": match.id})
@@ -269,5 +277,15 @@ def start_poller(app) -> None:
                     await settle_stage(stage, db)
                     await db.commit()
 
-    scheduler.add_job(_poll, "interval", seconds=60)
+    async def _send_reminders():
+        from app.email_notifications import send_prediction_reminders
+        async with AsyncSessionLocal() as db:
+            try:
+                await send_prediction_reminders(db)
+            except Exception as e:
+                logger.warning("Email reminder job failed: %s", e)
+
+    scheduler.add_job(_poll, "interval", minutes=30)
+    # Daily at 09:00 UTC — remind players of upcoming matches they haven't predicted
+    scheduler.add_job(_send_reminders, "cron", hour=9, minute=0)
     scheduler.start()

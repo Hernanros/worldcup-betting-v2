@@ -21,102 +21,107 @@ from app.models import Match
 import app.database as _db
 
 # (home, away, kickoff_utc, round)
+# Team names match ESPN displayName where possible.
+# Exceptions handled in results_client.TEAM_NAME_MAP:
+#   ESPN "United States" → "USA"
+#   ESPN "Türkiye"       → "Turkey"
+#   ESPN "Congo DR"      → "DR Congo"
 MATCHES = [
-    # ── GROUP A (Mexico, Jamaica, Venezuela, Ecuador) ──────────────────
-    ("Mexico",       "Jamaica",       "2026-06-11T23:00:00Z", "group"),
-    ("Venezuela",    "Ecuador",       "2026-06-12T02:00:00Z", "group"),
-    ("Mexico",       "Venezuela",     "2026-06-16T20:00:00Z", "group"),
-    ("Jamaica",      "Ecuador",       "2026-06-16T23:00:00Z", "group"),
-    ("Mexico",       "Ecuador",       "2026-06-23T01:00:00Z", "group"),
-    ("Jamaica",      "Venezuela",     "2026-06-23T01:00:00Z", "group"),
+    # ── GROUP A (Mexico, South Africa, South Korea, Czechia) ───────────
+    ("Mexico",              "South Africa",         "2026-06-11T19:00:00Z", "group"),
+    ("South Korea",         "Czechia",              "2026-06-12T02:00:00Z", "group"),
+    ("Czechia",             "South Africa",         "2026-06-18T16:00:00Z", "group"),
+    ("Mexico",              "South Korea",          "2026-06-19T01:00:00Z", "group"),
+    ("Czechia",             "Mexico",               "2026-06-25T01:00:00Z", "group"),
+    ("South Africa",        "South Korea",          "2026-06-25T01:00:00Z", "group"),
 
-    # ── GROUP B (USA, Panama, Bolivia, New Zealand) ────────────────────
-    ("USA",          "Bolivia",       "2026-06-12T23:00:00Z", "group"),
-    ("Panama",       "New Zealand",   "2026-06-13T02:00:00Z", "group"),
-    ("USA",          "Panama",        "2026-06-17T20:00:00Z", "group"),
-    ("Bolivia",      "New Zealand",   "2026-06-17T23:00:00Z", "group"),
-    ("USA",          "New Zealand",   "2026-06-23T21:00:00Z", "group"),
-    ("Bolivia",      "Panama",        "2026-06-23T21:00:00Z", "group"),
+    # ── GROUP B (Canada, Switzerland, Bosnia-Herzegovina, Qatar) ───────
+    ("Canada",              "Bosnia-Herzegovina",   "2026-06-12T19:00:00Z", "group"),
+    ("Qatar",               "Switzerland",          "2026-06-13T19:00:00Z", "group"),
+    ("Switzerland",         "Bosnia-Herzegovina",   "2026-06-18T19:00:00Z", "group"),
+    ("Canada",              "Qatar",                "2026-06-18T22:00:00Z", "group"),
+    ("Bosnia-Herzegovina",  "Qatar",                "2026-06-24T19:00:00Z", "group"),
+    ("Switzerland",         "Canada",               "2026-06-24T19:00:00Z", "group"),
 
-    # ── GROUP C (Canada, Honduras, Morocco, Belgium) ───────────────────
-    ("Morocco",      "Belgium",       "2026-06-13T20:00:00Z", "group"),
-    ("Canada",       "Honduras",      "2026-06-13T23:00:00Z", "group"),
-    ("Morocco",      "Canada",        "2026-06-18T20:00:00Z", "group"),
-    ("Belgium",      "Honduras",      "2026-06-18T23:00:00Z", "group"),
-    ("Morocco",      "Honduras",      "2026-06-24T01:00:00Z", "group"),
-    ("Belgium",      "Canada",        "2026-06-24T01:00:00Z", "group"),
+    # ── GROUP C (USA, Turkey, Paraguay, Australia) ──────────────────────
+    ("USA",                 "Paraguay",             "2026-06-13T01:00:00Z", "group"),
+    ("Australia",           "Turkey",               "2026-06-14T04:00:00Z", "group"),
+    ("USA",                 "Australia",            "2026-06-19T19:00:00Z", "group"),
+    ("Turkey",              "Paraguay",             "2026-06-20T03:00:00Z", "group"),
+    ("Paraguay",            "Australia",            "2026-06-26T02:00:00Z", "group"),
+    ("Turkey",              "USA",                  "2026-06-26T02:00:00Z", "group"),
 
-    # ── GROUP D (Brazil, Paraguay, Japan, Croatia) ─────────────────────
-    ("Brazil",       "Croatia",       "2026-06-14T20:00:00Z", "group"),
-    ("Japan",        "Paraguay",      "2026-06-14T23:00:00Z", "group"),
-    ("Brazil",       "Japan",         "2026-06-19T20:00:00Z", "group"),
-    ("Croatia",      "Paraguay",      "2026-06-19T23:00:00Z", "group"),
-    ("Brazil",       "Paraguay",      "2026-06-24T21:00:00Z", "group"),
-    ("Japan",        "Croatia",       "2026-06-24T21:00:00Z", "group"),
+    # ── GROUP D (Brazil, Morocco, Haiti, Scotland) ──────────────────────
+    ("Brazil",              "Morocco",              "2026-06-13T22:00:00Z", "group"),
+    ("Haiti",               "Scotland",             "2026-06-14T01:00:00Z", "group"),
+    ("Scotland",            "Morocco",              "2026-06-19T22:00:00Z", "group"),
+    ("Brazil",              "Haiti",                "2026-06-20T00:30:00Z", "group"),
+    ("Morocco",             "Haiti",                "2026-06-24T22:00:00Z", "group"),
+    ("Scotland",            "Brazil",               "2026-06-24T22:00:00Z", "group"),
 
-    # ── GROUP E (Argentina, Chile, Australia, Poland) ──────────────────
-    ("Argentina",    "Chile",         "2026-06-14T02:00:00Z", "group"),
-    ("Australia",    "Poland",        "2026-06-15T02:00:00Z", "group"),
-    ("Argentina",    "Australia",     "2026-06-19T02:00:00Z", "group"),
-    ("Chile",        "Poland",        "2026-06-20T02:00:00Z", "group"),
-    ("Argentina",    "Poland",        "2026-06-25T01:00:00Z", "group"),
-    ("Chile",        "Australia",     "2026-06-25T01:00:00Z", "group"),
+    # ── GROUP E (Germany, Curaçao, Ivory Coast, Ecuador) ───────────────
+    ("Germany",             "Curaçao",              "2026-06-14T17:00:00Z", "group"),
+    ("Ivory Coast",         "Ecuador",              "2026-06-14T23:00:00Z", "group"),
+    ("Germany",             "Ivory Coast",          "2026-06-20T20:00:00Z", "group"),
+    ("Ecuador",             "Curaçao",              "2026-06-21T00:00:00Z", "group"),
+    ("Curaçao",             "Ivory Coast",          "2026-06-25T20:00:00Z", "group"),
+    ("Ecuador",             "Germany",              "2026-06-25T20:00:00Z", "group"),
 
-    # ── GROUP F (Spain, Portugal, Senegal, Cameroon) ───────────────────
-    ("Spain",        "Senegal",       "2026-06-15T20:00:00Z", "group"),
-    ("Portugal",     "Cameroon",      "2026-06-15T23:00:00Z", "group"),
-    ("Spain",        "Cameroon",      "2026-06-20T20:00:00Z", "group"),
-    ("Portugal",     "Senegal",       "2026-06-20T23:00:00Z", "group"),
-    ("Spain",        "Portugal",      "2026-06-25T21:00:00Z", "group"),
-    ("Senegal",      "Cameroon",      "2026-06-25T21:00:00Z", "group"),
+    # ── GROUP F (Netherlands, Japan, Sweden, Tunisia) ──────────────────
+    ("Netherlands",         "Japan",                "2026-06-14T20:00:00Z", "group"),
+    ("Sweden",              "Tunisia",              "2026-06-15T02:00:00Z", "group"),
+    ("Netherlands",         "Sweden",               "2026-06-20T17:00:00Z", "group"),
+    ("Tunisia",             "Japan",                "2026-06-21T04:00:00Z", "group"),
+    ("Japan",               "Sweden",               "2026-06-25T23:00:00Z", "group"),
+    ("Tunisia",             "Netherlands",          "2026-06-25T23:00:00Z", "group"),
 
-    # ── GROUP G (France, Uruguay, South Korea, Serbia) ─────────────────
-    ("France",       "Serbia",        "2026-06-16T02:00:00Z", "group"),
-    ("Uruguay",      "South Korea",   "2026-06-16T05:00:00Z", "group"),
-    ("France",       "Uruguay",       "2026-06-21T02:00:00Z", "group"),
-    ("Serbia",       "South Korea",   "2026-06-21T05:00:00Z", "group"),
-    ("France",       "South Korea",   "2026-06-26T01:00:00Z", "group"),
-    ("Serbia",       "Uruguay",       "2026-06-26T01:00:00Z", "group"),
+    # ── GROUP G (Spain, Cape Verde, Saudi Arabia, Uruguay) ─────────────
+    ("Spain",               "Cape Verde",           "2026-06-15T16:00:00Z", "group"),
+    ("Saudi Arabia",        "Uruguay",              "2026-06-15T22:00:00Z", "group"),
+    ("Spain",               "Saudi Arabia",         "2026-06-21T16:00:00Z", "group"),
+    ("Uruguay",             "Cape Verde",           "2026-06-21T22:00:00Z", "group"),
+    ("Cape Verde",          "Saudi Arabia",         "2026-06-27T00:00:00Z", "group"),
+    ("Uruguay",             "Spain",                "2026-06-27T00:00:00Z", "group"),
 
-    # ── GROUP H (England, Netherlands, Algeria, Tunisia) ──────────────
-    ("England",      "Algeria",       "2026-06-16T23:00:00Z", "group"),
-    ("Netherlands",  "Tunisia",       "2026-06-17T02:00:00Z", "group"),
-    ("England",      "Netherlands",   "2026-06-21T23:00:00Z", "group"),
-    ("Algeria",      "Tunisia",       "2026-06-22T02:00:00Z", "group"),
-    ("England",      "Tunisia",       "2026-06-26T21:00:00Z", "group"),
-    ("Algeria",      "Netherlands",   "2026-06-26T21:00:00Z", "group"),
+    # ── GROUP H (Belgium, Egypt, Iran, New Zealand) ─────────────────────
+    ("Belgium",             "Egypt",                "2026-06-15T19:00:00Z", "group"),
+    ("Iran",                "New Zealand",          "2026-06-16T01:00:00Z", "group"),
+    ("Belgium",             "Iran",                 "2026-06-21T19:00:00Z", "group"),
+    ("New Zealand",         "Egypt",                "2026-06-22T01:00:00Z", "group"),
+    ("Egypt",               "Iran",                 "2026-06-27T03:00:00Z", "group"),
+    ("New Zealand",         "Belgium",              "2026-06-27T03:00:00Z", "group"),
 
-    # ── GROUP I (Germany, Colombia, Saudi Arabia, Slovenia) ────────────
-    ("Germany",      "Colombia",      "2026-06-17T02:00:00Z", "group"),
-    ("Saudi Arabia", "Slovenia",      "2026-06-17T05:00:00Z", "group"),
-    ("Germany",      "Saudi Arabia",  "2026-06-22T02:00:00Z", "group"),
-    ("Colombia",     "Slovenia",      "2026-06-22T05:00:00Z", "group"),
-    ("Germany",      "Slovenia",      "2026-06-27T01:00:00Z", "group"),
-    ("Colombia",     "Saudi Arabia",  "2026-06-27T01:00:00Z", "group"),
+    # ── GROUP I (France, Senegal, Iraq, Norway) ─────────────────────────
+    ("France",              "Senegal",              "2026-06-16T19:00:00Z", "group"),
+    ("Iraq",                "Norway",               "2026-06-16T22:00:00Z", "group"),
+    ("France",              "Iraq",                 "2026-06-22T21:00:00Z", "group"),
+    ("Norway",              "Senegal",              "2026-06-23T00:00:00Z", "group"),
+    ("Norway",              "France",               "2026-06-26T19:00:00Z", "group"),
+    ("Senegal",             "Iraq",                 "2026-06-26T19:00:00Z", "group"),
 
-    # ── GROUP J (Italy, Ivory Coast, DR Congo, South Africa) ──────────
-    ("Italy",        "Ivory Coast",   "2026-06-18T02:00:00Z", "group"),
-    ("DR Congo",     "South Africa",  "2026-06-18T05:00:00Z", "group"),
-    ("Italy",        "DR Congo",      "2026-06-23T02:00:00Z", "group"),
-    ("Ivory Coast",  "South Africa",  "2026-06-23T05:00:00Z", "group"),
-    ("Italy",        "South Africa",  "2026-06-27T21:00:00Z", "group"),
-    ("Ivory Coast",  "DR Congo",      "2026-06-27T21:00:00Z", "group"),
+    # ── GROUP J (Argentina, Algeria, Austria, Jordan) ───────────────────
+    ("Argentina",           "Algeria",              "2026-06-17T01:00:00Z", "group"),
+    ("Austria",             "Jordan",               "2026-06-17T04:00:00Z", "group"),
+    ("Argentina",           "Austria",              "2026-06-22T17:00:00Z", "group"),
+    ("Jordan",              "Algeria",              "2026-06-23T03:00:00Z", "group"),
+    ("Algeria",             "Austria",              "2026-06-28T02:00:00Z", "group"),
+    ("Jordan",              "Argentina",            "2026-06-28T02:00:00Z", "group"),
 
-    # ── GROUP K (Turkey, Czechia, Iran, Nigeria) ───────────────────────
-    ("Turkey",       "Nigeria",       "2026-06-19T05:00:00Z", "group"),
-    ("Czechia",      "Iran",          "2026-06-19T02:00:00Z", "group"),
-    ("Turkey",       "Czechia",       "2026-06-24T05:00:00Z", "group"),
-    ("Iran",         "Nigeria",       "2026-06-24T02:00:00Z", "group"),
-    ("Turkey",       "Iran",          "2026-06-28T01:00:00Z", "group"),
-    ("Czechia",      "Nigeria",       "2026-06-28T01:00:00Z", "group"),
+    # ── GROUP K (Portugal, DR Congo, Uzbekistan, Colombia) ─────────────
+    ("Portugal",            "DR Congo",             "2026-06-17T17:00:00Z", "group"),
+    ("Uzbekistan",          "Colombia",             "2026-06-18T02:00:00Z", "group"),
+    ("Portugal",            "Uzbekistan",           "2026-06-23T17:00:00Z", "group"),
+    ("Colombia",            "DR Congo",             "2026-06-24T02:00:00Z", "group"),
+    ("Colombia",            "Portugal",             "2026-06-27T23:30:00Z", "group"),
+    ("DR Congo",            "Uzbekistan",           "2026-06-27T23:30:00Z", "group"),
 
-    # ── GROUP L (Switzerland, Egypt, Ghana, El Salvador) ──────────────
-    ("Switzerland",  "Ghana",         "2026-06-20T05:00:00Z", "group"),
-    ("Egypt",        "El Salvador",   "2026-06-20T02:00:00Z", "group"),
-    ("Switzerland",  "Egypt",         "2026-06-25T05:00:00Z", "group"),
-    ("Ghana",        "El Salvador",   "2026-06-25T02:00:00Z", "group"),
-    ("Switzerland",  "El Salvador",   "2026-06-28T21:00:00Z", "group"),
-    ("Egypt",        "Ghana",         "2026-06-28T21:00:00Z", "group"),
+    # ── GROUP L (England, Croatia, Ghana, Panama) ───────────────────────
+    ("England",             "Croatia",              "2026-06-17T20:00:00Z", "group"),
+    ("Ghana",               "Panama",               "2026-06-17T23:00:00Z", "group"),
+    ("England",             "Ghana",                "2026-06-23T20:00:00Z", "group"),
+    ("Panama",              "Croatia",              "2026-06-23T23:00:00Z", "group"),
+    ("Croatia",             "Ghana",                "2026-06-27T21:00:00Z", "group"),
+    ("Panama",              "England",              "2026-06-27T21:00:00Z", "group"),
 ]
 
 
@@ -132,9 +137,14 @@ async def seed(reset: bool = False):
 
     async with _db.AsyncSessionLocal() as db:
         if reset:
+            # Must delete child records before matches (no cascade on FKs)
+            from app.models import Bet, Challenge, Prediction
+            await db.execute(delete(Prediction))
+            await db.execute(delete(Challenge))
+            await db.execute(delete(Bet))
             await db.execute(delete(Match))
             await db.commit()
-            print("Existing matches wiped.")
+            print("Existing matches, bets, challenges, and predictions wiped.")
 
         inserted = 0
         skipped = 0

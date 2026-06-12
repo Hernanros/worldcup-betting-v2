@@ -3,10 +3,8 @@ import { api } from "../api.js"
 import TeamFlag from "./TeamFlag.jsx"
 import { ilTime } from "../utils/time.js"
 
-
 const NUM_PICKER = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
 
-// Shared input style — used for both home and away boxes
 function scoreInputStyle(active, filled, locked) {
   return {
     width: 38, height: 36,
@@ -17,27 +15,137 @@ function scoreInputStyle(active, filled, locked) {
     color: active ? "#e2e8f0" : filled ? "#22d3ee" : "#4b5563",
     cursor: locked ? "not-allowed" : "text",
     transition: "border-color 0.15s, background 0.15s",
-    flexShrink: 0,
-    outline: "none",
-    MozAppearance: "textfield",   // hide spinners Firefox
-    padding: 0,
-    boxSizing: "border-box",
+    flexShrink: 0, outline: "none",
+    MozAppearance: "textfield", padding: 0, boxSizing: "border-box",
   }
 }
 
+/* ── Finished result card (ripped from Domino's Challenge UI) ── */
+function FinishedCard({ entry }) {
+  const pred = entry.my_prediction
+  const pts = pred?.points_awarded ?? null
+  const hasPred = pred !== null
+
+  const ptsBg = !hasPred
+    ? "#374151"
+    : pts > 0
+      ? (pts >= 3 ? "#16a34a" : "#2563eb")
+      : "#d97706"
+
+  return (
+    <div style={{
+      background: "#161624",
+      border: "1px solid #2d2b55",
+      borderRadius: 12,
+      padding: "8px 10px 10px",
+      marginBottom: 5,
+    }}>
+      {/* Group label */}
+      {entry.group && (
+        <div style={{
+          textAlign: "center", fontSize: 9, fontWeight: 700,
+          color: "#6b7280", letterSpacing: 0.5,
+          textTransform: "uppercase", marginBottom: 6,
+        }}>
+          Group {entry.group}
+        </div>
+      )}
+
+      {/* Main row */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+
+        {/* Home side */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-start", gap: 3, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <TeamFlag name={entry.home_team} size={26} />
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: "#e2e8f0",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {entry.home_team}
+            </span>
+          </div>
+          {hasPred && (
+            <span style={{ fontSize: 10, color: "#6b7280", paddingLeft: 31 }}>
+              ({pred.home_score_pred})
+            </span>
+          )}
+        </div>
+
+        {/* Center: score + points bubble */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+          <span style={{ fontSize: 26, fontWeight: 900, color: "#f1f5f9", lineHeight: 1 }}>
+            {entry.home_score ?? "–"}
+          </span>
+          <div style={{
+            width: 30, height: 30, borderRadius: "50%",
+            background: ptsBg,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontSize: 11, fontWeight: 800, color: "#fff",
+            flexShrink: 0,
+          }}>
+            {hasPred ? (pts ?? 0) : "–"}
+          </div>
+          <span style={{ fontSize: 26, fontWeight: 900, color: "#f1f5f9", lineHeight: 1 }}>
+            {entry.away_score ?? "–"}
+          </span>
+        </div>
+
+        {/* Away side */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
+            <span style={{
+              fontSize: 11, fontWeight: 600, color: "#e2e8f0",
+              overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+            }}>
+              {entry.away_team}
+            </span>
+            <TeamFlag name={entry.away_team} size={26} />
+          </div>
+          {hasPred && (
+            <span style={{ fontSize: 10, color: "#6b7280", paddingRight: 31 }}>
+              ({pred.away_score_pred})
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Points label */}
+      {hasPred && pts !== null && (
+        <div style={{ textAlign: "center", marginTop: 5 }}>
+          <span style={{
+            fontSize: 9, fontWeight: 700, color: ptsBg,
+            textTransform: "uppercase", letterSpacing: 0.5,
+          }}>
+            {pts === 0 ? "No points" : pts >= 3 ? `+${pts} — Exact score!` : `+${pts} — Correct outcome`}
+          </span>
+        </div>
+      )}
+      {!hasPred && (
+        <div style={{ textAlign: "center", marginTop: 5 }}>
+          <span style={{ fontSize: 9, color: "#4b5563" }}>No prediction submitted</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/* ── Input card (upcoming / locked) ── */
 export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
+  if (entry.status === "finished") return <FinishedCard entry={entry} />
+
   const pred = entry.my_prediction
   const [home, setHome] = useState(pred?.home_score_pred ?? null)
   const [away, setAway] = useState(pred?.away_score_pred ?? null)
   const [isDouble, setIsDouble] = useState(pred?.is_double ?? false)
-  const [activePicker, setActivePicker] = useState(null) // "home" | "away" | null
+  const [activePicker, setActivePicker] = useState(null)
   const [saving, setSaving] = useState(false)
   const [msg, setMsg] = useState("")
   const saveTimer = useRef(null)
   const homeRef = useRef(null)
   const awayRef = useRef(null)
 
-  const locked = entry.status === "finished" || entry.status === "locked"
+  const locked = entry.status === "locked"
   const hasPred = home !== null && away !== null
   const doublesLeft = 3 - doublesUsed
   const canDouble = isDouble || doublesLeft > 0
@@ -62,16 +170,13 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
       setTimeout(() => setMsg(""), 2000)
     } catch {
       setMsg("✗")
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }, [entry.match_id, onSaved])
 
   function scheduleSave(h, a, dbl) {
     clearTimeout(saveTimer.current)
-    if (h !== null && a !== null) {
+    if (h !== null && a !== null)
       saveTimer.current = setTimeout(() => doSave(h, a, dbl), 600)
-    }
   }
 
   async function clear() {
@@ -87,19 +192,16 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
     finally { setSaving(false) }
   }
 
-  // Called when the user types into either input
   function handleTyped(side, raw) {
     if (raw === "") {
-      // Cleared
       if (side === "home") { setHome(null); clearTimeout(saveTimer.current) }
-      else                 { setAway(null); clearTimeout(saveTimer.current) }
+      else { setAway(null); clearTimeout(saveTimer.current) }
       return
     }
     const n = parseInt(raw, 10)
     if (isNaN(n) || n < 0) return
     if (side === "home") {
       setHome(n)
-      // Auto-advance to away if away is empty
       if (away === null) setTimeout(() => { awayRef.current?.focus(); awayRef.current?.select() }, 0)
       else scheduleSave(n, away, isDouble)
     } else {
@@ -109,27 +211,16 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
     }
   }
 
-  // Called when number-picker button is tapped
   async function handlePickNumber(n) {
     clearTimeout(saveTimer.current)
     if (activePicker === "home") {
       setHome(n)
-      if (away !== null) {
-        setActivePicker(null)
-        await doSave(n, away, isDouble)
-      } else {
-        setActivePicker("away")
-        setTimeout(() => { awayRef.current?.focus(); awayRef.current?.select() }, 0)
-      }
+      if (away !== null) { setActivePicker(null); await doSave(n, away, isDouble) }
+      else { setActivePicker("away"); setTimeout(() => { awayRef.current?.focus(); awayRef.current?.select() }, 0) }
     } else {
       setAway(n)
-      if (home !== null) {
-        setActivePicker(null)
-        await doSave(home, n, isDouble)
-      } else {
-        setActivePicker("home")
-        setTimeout(() => { homeRef.current?.focus(); homeRef.current?.select() }, 0)
-      }
+      if (home !== null) { setActivePicker(null); await doSave(home, n, isDouble) }
+      else { setActivePicker("home"); setTimeout(() => { homeRef.current?.focus(); homeRef.current?.select() }, 0) }
     }
   }
 
@@ -140,59 +231,54 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
     await doSave(home, away, next)
   }
 
-  const statusPill = pred?.status && pred.status !== "pending"
-    ? {
-        correct_score: { bg: "#16a34a", label: pred.is_double ? `+${pred.points_awarded} ✓✓` : "+3 ✓" },
-        correct_outcome: { bg: "#2563eb", label: pred.is_double ? `+${pred.points_awarded} ~` : "+1 ~" },
-        wrong: { bg: "#374151", label: "✗" },
-      }[pred.status]
-    : null
-
   return (
     <div style={{
       background: isUrgent ? "#16110a" : "#13131f",
       border: `1px solid ${isUrgent ? "rgba(245,158,11,0.35)" : "#2d2b55"}`,
       borderRadius: 10,
-      padding: "10px 10px 8px",
+      padding: "8px 10px",
       marginBottom: 5,
       opacity: locked && !hasPred ? 0.55 : 1,
     }}>
+      {/* Group label */}
+      {entry.group && (
+        <div style={{
+          textAlign: "center", fontSize: 9, fontWeight: 700,
+          color: "#6b7280", letterSpacing: 0.5,
+          textTransform: "uppercase", marginBottom: 5,
+        }}>
+          Group {entry.group}
+        </div>
+      )}
+
       {/* Teams + score row */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-
         {/* Home */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, flex: 1, minWidth: 0 }}>
-          <TeamFlag name={entry.home_team} />
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0",
+          <TeamFlag name={entry.home_team} size={24} />
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {entry.home_team}
           </span>
         </div>
 
-        {/* Center: inputs + meta */}
+        {/* Center */}
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flexShrink: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <input
-              ref={homeRef}
-              type="number" min={0} max={99} inputMode="numeric"
-              value={home ?? ""}
-              placeholder="–"
-              readOnly={locked}
+              ref={homeRef} type="number" min={0} max={99} inputMode="numeric"
+              value={home ?? ""} placeholder="–" readOnly={locked}
               onFocus={() => { if (!locked) setActivePicker("home") }}
               onBlur={() => setTimeout(() => {
-                // Only close picker if focus moved outside both inputs
                 if (document.activeElement !== awayRef.current) setActivePicker(null)
               }, 150)}
               onChange={e => handleTyped("home", e.target.value)}
               style={scoreInputStyle(activePicker === "home", home !== null, locked)}
             />
-            <span style={{ color: "#4b5563", fontSize: 14, fontWeight: 800, lineHeight: 1 }}>–</span>
+            <span style={{ color: "#4b5563", fontSize: 14, fontWeight: 800 }}>–</span>
             <input
-              ref={awayRef}
-              type="number" min={0} max={99} inputMode="numeric"
-              value={away ?? ""}
-              placeholder="–"
-              readOnly={locked}
+              ref={awayRef} type="number" min={0} max={99} inputMode="numeric"
+              value={away ?? ""} placeholder="–" readOnly={locked}
               onFocus={() => { if (!locked) setActivePicker("away") }}
               onBlur={() => setTimeout(() => {
                 if (document.activeElement !== homeRef.current) setActivePicker(null)
@@ -201,15 +287,9 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
               style={scoreInputStyle(activePicker === "away", away !== null, locked)}
             />
           </div>
-          {/* Meta */}
           <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
             {entry.kickoff_time && (
               <span style={{ fontSize: 9, color: "#6b7280" }}>{ilTime(entry.kickoff_time)}</span>
-            )}
-            {entry.group && (
-              <span style={{ fontSize: 8, color: "#6b7280", background: "#1a1a2e", borderRadius: 3, padding: "1px 4px" }}>
-                Grp {entry.group}
-              </span>
             )}
             {locked && <span style={{ fontSize: 9, color: "#4b5563" }}>🔒</span>}
             {isUrgent && <span style={{ fontSize: 8, color: "#f59e0b", fontWeight: 700 }}>⚠ {minsUntil}m</span>}
@@ -218,20 +298,20 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
 
         {/* Away */}
         <div style={{ display: "flex", alignItems: "center", gap: 5, flex: 1, minWidth: 0, justifyContent: "flex-end" }}>
-          <span style={{ fontSize: 13, fontWeight: 600, color: "#e2e8f0",
+          <span style={{ fontSize: 12, fontWeight: 600, color: "#e2e8f0",
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
             {entry.away_team}
           </span>
-          <TeamFlag name={entry.away_team} />
+          <TeamFlag name={entry.away_team} size={24} />
         </div>
       </div>
 
       {/* Actions row */}
-      {(hasPred || statusPill) && (
+      {(hasPred || pred?.status) && (
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 6 }}>
           {!locked && hasPred && (
             <button onClick={toggleDouble} disabled={saving || (!canDouble && !isDouble)}
-              title={isDouble ? "Double ON — tap to remove" : doublesLeft > 0 ? `${doublesLeft} doubles left` : "All 3 used"}
+              title={isDouble ? "Double ON" : doublesLeft > 0 ? `${doublesLeft} doubles left` : "All 3 used"}
               style={{
                 background: isDouble ? "rgba(245,158,11,0.15)" : "none",
                 border: `1px solid ${isDouble ? "#f59e0b" : "#2d2b55"}`,
@@ -239,16 +319,9 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
                 color: isDouble ? "#f59e0b" : "#6b7280",
                 fontSize: 10, fontWeight: 700,
                 opacity: (!canDouble && !isDouble) ? 0.4 : 1,
-                transition: "all 0.15s",
               }}>
               ⚡ {isDouble ? "2×" : "Double"}
             </button>
-          )}
-          {statusPill && (
-            <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 999,
-              background: statusPill.bg, color: "#fff" }}>
-              {statusPill.label}
-            </span>
           )}
           {!locked && hasPred && (
             <button onClick={clear} disabled={saving}
@@ -266,24 +339,18 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
         </div>
       )}
 
-      {/* Number picker — shown when an input is focused, as a quick-tap shortcut */}
+      {/* Number picker */}
       {activePicker && !locked && (
-        <div style={{
-          display: "flex", gap: 5, flexWrap: "wrap", paddingTop: 10,
-          animation: "predPickerPop 0.1s ease",
-        }}>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap", paddingTop: 10 }}>
           {NUM_PICKER.map(n => (
-            <button
-              key={n}
-              onMouseDown={e => e.preventDefault()} // prevent blur on input before pick fires
+            <button key={n}
+              onMouseDown={e => e.preventDefault()}
               onClick={() => handlePickNumber(n)}
               style={{
-                width: 36, height: 34,
-                border: "1px solid #2d2b55", borderRadius: 7,
+                width: 36, height: 34, border: "1px solid #2d2b55", borderRadius: 7,
                 background: "#1a1a2e", fontSize: 15, fontWeight: 700,
                 color: "#e2e8f0", cursor: "pointer",
-                display: "flex", alignItems: "center", justifyContent: "center",
-                flexShrink: 0,
+                display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
               }}>
               {n}
             </button>
@@ -294,10 +361,6 @@ export default function PredictionRow({ entry, onSaved, doublesUsed = 0 }) {
       <style>{`
         input[type=number]::-webkit-inner-spin-button,
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        @keyframes predPickerPop {
-          from { opacity: 0; transform: translateY(-4px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
       `}</style>
     </div>
   )
