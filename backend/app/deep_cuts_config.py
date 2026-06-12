@@ -285,7 +285,7 @@ def get_stage_lock_time(stage: str, db) -> Optional[datetime]:
     db may be None for group_stage (hardcoded).
     """
     if stage == "group_stage":
-        return datetime(2026, 6, 11, 18, 0, 0, tzinfo=timezone.utc)
+        return datetime(2026, 6, 15, 23, 59, 0, tzinfo=timezone.utc)
     # For all other stages, caller must provide db and query MIN kickoff.
     # See deep_cuts_settlement.get_stage_lock_time_from_db()
     return None

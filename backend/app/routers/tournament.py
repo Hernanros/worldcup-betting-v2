@@ -10,7 +10,7 @@ from app.deep_cuts_config import WC2026_GROUPS
 
 router = APIRouter()
 
-TOURNAMENT_LOCK_TIME = datetime(2026, 6, 11, 18, 0, 0, tzinfo=timezone.utc)
+TOURNAMENT_LOCK_TIME = datetime(2026, 6, 15, 23, 59, 0, tzinfo=timezone.utc)
 
 # Winner odds from The Odds API (fetched 2026-05-24, best price across bookmakers)
 WINNER_ODDS = [
