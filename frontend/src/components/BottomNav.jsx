@@ -1,12 +1,12 @@
 import { NavLink } from "react-router-dom"
-import { getLeague } from "../auth.js"
+import { HomeIcon, PredictIcon, CutsIcon, ChallengeIcon, RankIcon } from "./NavIcons.jsx"
 
 const TABS = [
-  { to: "/",            icon: "🏠", label: "Home"    },
-  { to: "/matches",     icon: "⚽", label: "Matches" },
-  { to: "/predict",     icon: "🎯", label: "Predict" },
-  { to: "/deep-cuts",   icon: "🔪", label: "Cuts"    },
-  { to: "/rankings",    icon: "📊", label: "Rank"    },
+  { to: "/",           Icon: HomeIcon,       label: "Home"      },
+  { to: "/predict",    Icon: PredictIcon,    label: "Predict"   },
+  { to: "/deep-cuts",  Icon: CutsIcon,       label: "Cuts"      },
+  { to: "/matches",    Icon: ChallengeIcon,  label: "Challenge" },
+  { to: "/rankings",   Icon: RankIcon,       label: "Rank"      },
 ]
 
 export default function BottomNav() {
@@ -21,14 +21,14 @@ export default function BottomNav() {
       padding: "6px 0 8px",
       zIndex: 50,
     }}>
-      {TABS.map(({ to, icon, label }) => (
+      {TABS.map(({ to, Icon, label }) => (
         <NavLink key={to} to={to} end={to === "/"} style={{ textDecoration: "none" }}>
           {({ isActive }) => (
             <div style={{ textAlign: "center", minWidth: 52, padding: "2px 0" }}>
-              <div style={{ fontSize: 22 }}>{icon}</div>
+              <Icon size={24} active={isActive} />
               <div style={{
-                fontSize: 11,
-                marginTop: 2,
+                fontSize: 10,
+                marginTop: 3,
                 fontWeight: isActive ? 700 : 500,
                 background: isActive ? "linear-gradient(90deg, #a855f7, #3b82f6)" : undefined,
                 backgroundClip: isActive ? "text" : undefined,

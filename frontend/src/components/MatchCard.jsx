@@ -1,22 +1,8 @@
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
-import { flagUrl } from "../data/teams.js"
 import { ilDateTime } from "../utils/time.js"
+import TeamFlag from "./TeamFlag.jsx"
 
-function TeamFlag({ name, size = 36 }) {
-  const url = flagUrl(name, 40)
-  if (!url) return <span style={{ fontSize: size }}>🏳️</span>
-  return (
-    <img
-      src={url}
-      alt={name}
-      width={size}
-      height={size * 0.67}
-      style={{ objectFit: "cover", borderRadius: 3, display: "block" }}
-      onError={(e) => { e.target.style.display = "none" }}
-    />
-  )
-}
 
 function formatKickoff(iso) {
   return ilDateTime(iso)

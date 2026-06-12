@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useLocation } from "react-router-dom"
 import { api } from "../api.js"
 import { flagUrl } from "../data/teams.js"
 import TournamentBetPanel from "../components/TournamentBetPanel.jsx"
@@ -325,7 +326,9 @@ function BracketTab() {
 // ── TournamentPage (orchestrator) ────────────────────────────────────────────
 
 export default function TournamentPage() {
-  const [tab, setTab] = useState("bets")
+  const location = useLocation()
+  const initTab = new URLSearchParams(location.search).get("tab") ?? "bets"
+  const [tab, setTab] = useState(initTab)
 
   return (
     <div>

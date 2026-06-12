@@ -5,17 +5,8 @@ import { api } from "../api.js"
 import ChallengePanel from "../components/ChallengePanel.jsx"
 import PageBackground from "../components/PageBackground.jsx"
 import { getMomentForMatch } from "../data/moments.js"
-import { flagUrl } from "../data/teams.js"
-
-function TeamFlag({ name, size = 48 }) {
-  const url = flagUrl(name, 64)
-  if (!url) return <span style={{ fontSize: size }}>🏳️</span>
-  return (
-    <img src={url} alt={name} width={size} height={size * 0.67}
-      style={{ objectFit: "cover", borderRadius: 4, display: "block" }}
-      onError={(e) => { e.target.style.display = "none" }} />
-  )
-}
+import TeamFlag from "../components/TeamFlag.jsx"
+import { ScorePicker } from "../components/InlinePrediction.jsx"
 
 export default function MatchDetailPage() {
   const { id } = useParams()
@@ -29,19 +20,24 @@ export default function MatchDetailPage() {
   const [error, setError] = useState(null)
   const [playerStreak, setPlayerStreak] = useState(0)
   const [totalChallenges, setTotalChallenges] = useState(0)
+  const [myPrediction, setMyPrediction] = useState(null)
+  const [showPicker, setShowPicker] = useState(false)
 
   async function load() {
     setError(null)
     try {
-      const [data, me] = await Promise.all([
+      const [data, me, predictions] = await Promise.all([
         api.get(`/api/matches/${id}`),
         api.get("/api/me").catch(() => null),
+        api.get("/api/predictions").catch(() => []),
       ])
       setMatch(data)
       if (me) {
         setPlayerStreak(me.challenge_streak)
         setTotalChallenges(me.total_challenges_issued)
       }
+      const pred = predictions.find(p => p.match_id === Number(id))?.my_prediction ?? null
+      setMyPrediction(pred)
     } catch (err) {
       setError(err.message || "Match not found")
     } finally {
@@ -82,9 +78,15 @@ export default function MatchDetailPage() {
           ← Back
         </button>
 
-        {/* Match header */}
-        <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12,
-          padding: 20, marginBottom: 16, textAlign: "center" }}>
+        {/* Match header — tappable to predict (upcoming only) */}
+        <div
+          onClick={() => { if (isUpcoming && !showPicker) setShowPicker(true) }}
+          style={{
+            background: "#13131f", border: "1px solid #2d2b55", borderRadius: 12,
+            padding: 20, marginBottom: 16, textAlign: "center",
+            cursor: isUpcoming && !showPicker ? "pointer" : "default",
+          }}
+        >
           <div style={{ color: "#6b7280", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
             letterSpacing: 1, marginBottom: 12 }}>
             {match.round}
@@ -120,24 +122,33 @@ export default function MatchDetailPage() {
               {match.status === "locked" && match.home_score !== null ? "🔴 LIVE" : match.status}
             </div>
           )}
-        </div>
 
-        {/* Quick action links */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 14 }}>
-          <button onClick={() => navigate("/predict")} style={{
-            background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10,
-            padding: "10px 8px", cursor: "pointer", textAlign: "center",
-          }}>
-            <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>🎯 Predict</div>
-            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>Guess the exact score</div>
-          </button>
-          <button onClick={() => navigate("/deep-cuts")} style={{
-            background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10,
-            padding: "10px 8px", cursor: "pointer", textAlign: "center",
-          }}>
-            <div style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>🔪 Deep Cuts</div>
-            <div style={{ color: "#6b7280", fontSize: 10, marginTop: 2 }}>Prop picks for this stage</div>
-          </button>
+          {/* Prediction hint / inline picker */}
+          {isUpcoming && !showPicker && (
+            <div style={{ marginTop: 12, fontSize: 11, fontWeight: 600,
+              color: myPrediction ? "#22d3ee" : "#6b7280" }}>
+              {myPrediction
+                ? `🎯 Your pick: ${myPrediction.home_score_pred}–${myPrediction.away_score_pred} · tap to change`
+                : "Tap to predict the score"}
+            </div>
+          )}
+          {isUpcoming && showPicker && (
+            <div style={{ marginTop: 14, textAlign: "left" }}
+              onClick={e => e.stopPropagation()}
+            >
+              <ScorePicker
+                matchId={Number(id)}
+                prediction={myPrediction}
+                onSaved={(_, h, a) => { setMyPrediction({ home_score_pred: h, away_score_pred: a }); setShowPicker(false) }}
+                onCollapse={() => setShowPicker(false)}
+              />
+              <button onClick={e => { e.stopPropagation(); setShowPicker(false) }} style={{
+                width: "100%", background: "none", border: "1px solid #2d2b55",
+                borderRadius: 8, padding: "6px", fontSize: 11, color: "#6b7280",
+                cursor: "pointer", marginTop: 6,
+              }}>Cancel</button>
+            </div>
+          )}
         </div>
 
         {/* Dare panel */}

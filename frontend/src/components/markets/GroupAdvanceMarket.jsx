@@ -1,21 +1,6 @@
 import { useState } from "react"
-import { flagUrl } from "../../data/teams.js"
+import TeamFlag from "../TeamFlag.jsx"
 
-function TeamFlag({ name }) {
-  const [err, setErr] = useState(false)
-  const url = flagUrl(name, 32)
-  if (err || !url) return null
-  return (
-    <img
-      src={url}
-      alt={name}
-      onError={() => setErr(true)}
-      width={22}
-      height={15}
-      style={{ borderRadius: 2, objectFit: "cover", flexShrink: 0 }}
-    />
-  )
-}
 
 export default function GroupAdvanceMarket({ market, onSelect, selected }) {
   // Use local state so intermediate picks (1 team) don't reset button highlights.

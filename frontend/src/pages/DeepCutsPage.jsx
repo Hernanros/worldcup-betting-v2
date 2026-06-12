@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import { useSearchParams } from "react-router-dom"
+import { useOutletContext } from "react-router-dom"
 import { api } from "../api.js"
 import HelpTip            from "../components/HelpTip.jsx"
 import OverUnderMarket    from "../components/markets/OverUnderMarket.jsx"
@@ -61,6 +62,7 @@ function MarketCard({ market, myBets, selections, stakes, isLocked, isUpcoming, 
 
 export default function DeepCutsPage() {
   const [searchParams] = useSearchParams()
+  const { onBalanceChange } = useOutletContext() ?? {}
   const [stages, setStages] = useState([])
   const [activeStage, setActive] = useState(searchParams.get("stage") || "group_stage")
   const [markets, setMarkets] = useState([])
@@ -70,6 +72,7 @@ export default function DeepCutsPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const [groupsExpanded, setGroupsExpanded] = useState(false)
+  const [cancelling, setCancelling] = useState(null)
 
   useEffect(() => {
     api.get("/api/deep-cuts/stages").then(d => setStages(d.stages || []))
@@ -93,13 +96,25 @@ export default function DeepCutsPage() {
     const stake = stakes[market.key] ?? (market.type === "group_advance" ? 5 : 20)
     setLoading(true); setError(null)
     try {
-      await api.post("/api/deep-cuts/bets", { market_key: market.key, stage: activeStage, selection: sel.selection, stake, odds: sel.odds })
+      const result = await api.post("/api/deep-cuts/bets", { market_key: market.key, stage: activeStage, selection: sel.selection, stake, odds: sel.odds })
+      onBalanceChange?.(result.new_balance)
       const updated = await api.get("/api/deep-cuts/bets")
       setMyBets(updated.bets || [])
       setSelections(prev => { const n = {...prev}; delete n[market.key]; return n })
     } catch (e) {
       setError(e.message || "Prediction failed")
     } finally { setLoading(false) }
+  }
+
+  async function cancelBet(betId) {
+    setCancelling(betId)
+    try {
+      const result = await api.delete(`/api/deep-cuts/bets/${betId}`)
+      onBalanceChange?.(result.new_balance)
+      setMyBets(prev => prev.filter(b => b.id !== betId))
+    } catch (e) {
+      setError(e.message || "Cancel failed")
+    } finally { setCancelling(null) }
   }
 
   const activeStageInfo = stages.find(s => s.stage === activeStage)
@@ -117,9 +132,9 @@ export default function DeepCutsPage() {
       <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#1abc9c" }}>
-            🔪 Deep Cuts
+            Deep Cuts
           </h2>
-          <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>Spicy props · stage by stage</p>
+          <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>Bet beyond the score</p>
         </div>
         <HelpTip text="Prop predictions scoped to each tournament stage — from group stage all the way to the final. Each round has unique markets. Picks lock when that stage starts and settle when it ends." />
       </div>
@@ -176,24 +191,51 @@ export default function DeepCutsPage() {
         </div>
       )}
 
-      {myBets.length > 0 && (
-        <div style={{ marginTop: 24 }}>
-          <h3 style={{ fontSize: 14, color: "#888", marginBottom: 10 }}>My Deep Cuts</h3>
-          {myBets.map(b => (
-            <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "#1a1a2e", borderRadius: 6, marginBottom: 6, fontSize: 12 }}>
-              <div>
-                <span style={{ color: "#ccc" }}>{b.market_key.replace(/_/g, " ")}</span>
-                <span style={{ color: "#888", margin: "0 6px" }}>·</span>
-                <span style={{ color: "#fff", fontWeight: 600 }}>{b.selection}</span>
-              </div>
-              <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-                <span style={{ color: "#888" }}>{b.stake}t</span>
-                <span style={{ color: b.status === "won" ? "#1abc9c" : b.status === "lost" ? "#e74c3c" : "#888", fontWeight: 600 }}>{b.status}</span>
-              </div>
+      {/* ── Stage bet summary ── */}
+      {(() => {
+        const stageBets = myBets.filter(b => b.stage === activeStage && b.status !== "cancelled")
+        if (!stageBets.length) return null
+        const totalStaked = stageBets.reduce((s, b) => s + b.stake, 0)
+        const totalToWin  = stageBets.reduce((s, b) => s + Math.floor(b.stake * b.odds), 0)
+        return (
+          <div style={{ marginTop: 24, background: "#13131f", border: "1px solid #2d2b55", borderRadius: 10, padding: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <span style={{ color: "#a78bfa", fontSize: 11, fontWeight: 800, textTransform: "uppercase", letterSpacing: 0.8 }}>
+                My picks this stage
+              </span>
+              <span style={{ fontSize: 10, color: "#6b7280" }}>
+                {stageBets.length} bet{stageBets.length > 1 ? "s" : ""} · {totalStaked} staked · <span style={{ color: "#4ade80" }}>win up to {totalToWin}</span>
+              </span>
             </div>
-          ))}
-        </div>
-      )}
+            {stageBets.map(b => {
+              const statusColor = b.status === "won" ? "#4ade80" : b.status === "lost" ? "#f87171" : "#6b7280"
+              const canCancel = b.status === "pending" && !isLocked
+              return (
+                <div key={b.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 10px", background: "#0c0c14", borderRadius: 7, marginBottom: 6, fontSize: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <span style={{ color: "#9ca3af" }}>{b.market_key.replace(/_/g, " ")}</span>
+                    <span style={{ color: "#4b5563", margin: "0 5px" }}>·</span>
+                    <span style={{ color: "#e2e8f0", fontWeight: 600 }}>{b.selection}</span>
+                  </div>
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexShrink: 0 }}>
+                    <span style={{ color: "#fbbf24", fontSize: 11 }}>{b.stake}🪙 @ {b.odds}×</span>
+                    <span style={{ color: statusColor, fontSize: 10, fontWeight: 700 }}>{b.status.toUpperCase()}</span>
+                    {canCancel && (
+                      <button
+                        onClick={() => cancelBet(b.id)}
+                        disabled={cancelling === b.id}
+                        style={{ background: "none", border: "1px solid #ef4444", borderRadius: 5, color: "#ef4444", fontSize: 10, padding: "2px 8px", cursor: "pointer", opacity: cancelling === b.id ? 0.5 : 1 }}
+                      >
+                        {cancelling === b.id ? "…" : "Cancel"}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })()}
     </div>
   )
 }

@@ -35,14 +35,23 @@ export default function DeepCutsBanner() {
     ? Math.max(0, (new Date(stage.lock_time) - Date.now()) / 3_600_000)
     : null
   const isUrgent = hoursLeft !== null && hoursLeft < 24
+
+  const STAGE_QUESTIONS = {
+    tournament:  "How will this tournament play out?",
+    group_stage: "Which team will dominate the group stage?",
+    r32:         "How bloody will it get?",
+    r16:         "Which defense will leak?",
+    qf:          "Supersubs to the rescue?",
+    sf:          "Red card drama?",
+    final:       "Goals fest?",
+  }
+
   const headline = isUrgent
     ? `⏰ Last call — ${STAGE_LABELS[stage.stage]} picks close in ${Math.ceil(hoursLeft)}h`
-    : `🔪 ${stage.market_count} ${STAGE_LABELS[stage.stage]} props to pick`
+    : (STAGE_QUESTIONS[stage.stage] ?? `${stage.market_count} ${STAGE_LABELS[stage.stage]} props to pick`)
   const subline = isUrgent
-    ? `Locks ${lockStr} · don't miss out`
-    : lockStr
-      ? `Closes ${lockStr} · spicy stage-specific bets`
-      : `Spicy stage-specific bets — open now`
+    ? `Bet beyond the score · locks ${lockStr ?? "soon"}`
+    : `Bet beyond the score`
 
   return (
     <div onClick={() => navigate(`/deep-cuts?stage=${stage.stage}`)} style={{
@@ -54,7 +63,6 @@ export default function DeepCutsBanner() {
       boxShadow: `0 4px 15px rgba(${isUrgent ? "231,76,60" : "26,188,156"},0.3)`,
       position: "relative",
     }}>
-      <span style={{ fontSize: 28 }}>🔪</span>
       <div style={{ flex: 1 }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: "#fff" }}>{headline}</div>
         <div style={{ fontSize: 11, color: "rgba(255,255,255,0.85)", marginTop: 2 }}>{subline}</div>
