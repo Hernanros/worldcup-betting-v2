@@ -666,39 +666,45 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam, predictionsMap = {}, on
               {ilDateTimeFull(teamNext.kickoff_time)}
             </div>
           )}
-          {/* Inline predict */}
-          <button onClick={() => setShowPredict(v => !v)} style={{
-            width: "100%", fontSize: 10, fontWeight: 700, padding: "4px 6px",
-            borderRadius: 6, cursor: "pointer",
-            border: `1px solid ${teamPred ? "rgba(34,211,238,0.4)" : "rgba(168,85,247,0.4)"}`,
-            background: teamPred ? "rgba(34,211,238,0.08)" : "rgba(168,85,247,0.06)",
-            color: teamPred ? "#22d3ee" : "#c4b5fd",
-          }}>
-            {teamPred
-              ? `🎯 ${teamPred.home_score_pred}–${teamPred.away_score_pred} · change`
-              : "🎯 Predict"}
-          </button>
-          {showPredict && (
-            <div style={{ marginTop: 8 }} onClick={e => e.stopPropagation()}>
-              <ScorePicker
-                matchId={teamNext.id}
-                prediction={teamPred}
-                onSaved={(doublesUsed, h, a) => onPredictionSaved?.(teamNext.id, h, a)}
-                onCollapse={() => setShowPredict(false)}
-              />
-              <button
-                onClick={() => navigate(`/matches/${teamNext.id}?tab=challenges`)}
-                style={{
-                  width: "100%", marginTop: 6, padding: "6px 4px", borderRadius: 7,
-                  fontSize: 11, fontWeight: 700, cursor: "pointer",
-                  border: "1px solid rgba(168,85,247,0.3)",
-                  background: "rgba(168,85,247,0.08)", color: "#c4b5fd",
-                }}
-              >
-                ⚔️ Challenge a friend
-              </button>
-            </div>
-          )}
+          {/* Tap to expand inline predict */}
+          <div
+            onClick={() => { if (!showPredict) setShowPredict(true) }}
+            style={{
+              borderRadius: 8, padding: "6px 8px", cursor: showPredict ? "default" : "pointer",
+              border: `1px solid ${teamPred ? "rgba(34,211,238,0.25)" : "rgba(168,85,247,0.2)"}`,
+              background: teamPred ? "rgba(34,211,238,0.05)" : "rgba(168,85,247,0.04)",
+            }}
+          >
+            {!showPredict && (
+              <div style={{ textAlign: "center", fontSize: 10, fontWeight: 700,
+                color: teamPred ? "#22d3ee" : "#a78bfa" }}>
+                {teamPred ? `🎯 ${teamPred.home_score_pred}–${teamPred.away_score_pred}` : "tap to predict"}
+              </div>
+            )}
+            {showPredict && (
+              <div onClick={e => e.stopPropagation()}>
+                <ScorePicker
+                  matchId={teamNext.id}
+                  prediction={teamPred}
+                  onSaved={(doublesUsed, h, a) => { onPredictionSaved?.(teamNext.id, h, a); setShowPredict(false) }}
+                  onCollapse={() => setShowPredict(false)}
+                />
+                <button
+                  onClick={() => navigate(`/matches/${teamNext.id}?tab=challenges`)}
+                  style={{
+                    width: "100%", marginTop: 6, padding: "7px 4px", borderRadius: 7,
+                    fontSize: 11, fontWeight: 700, cursor: "pointer",
+                    border: "1px solid rgba(168,85,247,0.3)",
+                    background: "rgba(168,85,247,0.08)", color: "#c4b5fd",
+                  }}
+                >⚔️ Challenge a friend</button>
+                <button onClick={() => setShowPredict(false)} style={{
+                  width: "100%", background: "none", border: "none",
+                  padding: "3px", fontSize: 9, color: "#4b5563", cursor: "pointer",
+                }}>✕ close</button>
+              </div>
+            )}
+          </div>
         </div>
       )}
       {!opponent && (

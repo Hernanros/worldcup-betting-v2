@@ -58,38 +58,43 @@ function MatchResult({ match }) {
   )
 }
 
-/* ── Upcoming match row with inline predict ──────────────────── */
+/* ── Upcoming match row — tap to expand score picker ────────── */
 function UpcomingPredictRow({ match, prediction, onPredictionSaved, navigate }) {
   const [open, setOpen] = useState(false)
   const hasPred = prediction != null
 
   return (
-    <div style={{ padding: "6px 0", borderBottom: "1px solid #1f2937" }}>
+    <div
+      onClick={() => { if (!open) setOpen(true) }}
+      style={{
+        padding: "8px 0", borderBottom: "1px solid #1f2937",
+        cursor: open ? "default" : "pointer",
+      }}
+    >
+      {/* Collapsed row — always visible */}
       <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
         {/* Home */}
         <div style={{ display: "flex", alignItems: "center", gap: 4, flex: 1, minWidth: 0 }}>
-          <TeamFlag name={match.home} size={20} />
+          <TeamFlag name={match.home} size={22} />
           <span style={{ fontSize: 13, color: "#e2e8f0", fontWeight: 600,
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {match.home}
           </span>
         </div>
 
-        {/* Centre: kickoff + predict button */}
-        <div style={{ flexShrink: 0, textAlign: "center" }}>
-          <div style={{ fontSize: 10, color: "#6b7280", marginBottom: 3 }}>
+        {/* Centre: time + prediction badge */}
+        <div style={{ flexShrink: 0, textAlign: "center", minWidth: 48 }}>
+          <div style={{ fontSize: 10, color: "#6b7280" }}>
             {match.kickoff_time ? ilTime(match.kickoff_time) : "—"}
           </div>
-          <button onClick={() => setOpen(v => !v)} style={{
-            fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, cursor: "pointer",
-            border: `1px solid ${hasPred ? "rgba(34,211,238,0.4)" : "rgba(168,85,247,0.4)"}`,
-            background: hasPred ? "rgba(34,211,238,0.08)" : "rgba(168,85,247,0.06)",
-            color: hasPred ? "#22d3ee" : "#c4b5fd",
-          }}>
-            {hasPred
-              ? `🎯 ${prediction.home_score_pred}–${prediction.away_score_pred}`
-              : "🎯 Predict"}
-          </button>
+          {hasPred && (
+            <div style={{ fontSize: 10, color: "#22d3ee", fontWeight: 700, marginTop: 2 }}>
+              {prediction.home_score_pred}–{prediction.away_score_pred}
+            </div>
+          )}
+          {!hasPred && !open && (
+            <div style={{ fontSize: 9, color: "#a855f7", marginTop: 2 }}>tap to predict</div>
+          )}
         </div>
 
         {/* Away */}
@@ -98,24 +103,25 @@ function UpcomingPredictRow({ match, prediction, onPredictionSaved, navigate }) 
             overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", textAlign: "right" }}>
             {match.away}
           </span>
-          <TeamFlag name={match.away} size={20} />
+          <TeamFlag name={match.away} size={22} />
         </div>
       </div>
 
+      {/* Expanded: score picker + challenge */}
       {open && (
-        <div style={{ marginTop: 8, borderTop: "1px solid #1e1e3a", paddingTop: 8 }}
+        <div style={{ marginTop: 10, borderTop: "1px solid #1e1e3a", paddingTop: 10 }}
           onClick={e => e.stopPropagation()}>
           <ScorePicker
             matchId={match.id}
             prediction={prediction}
-            onSaved={(doublesUsed, h, a) => onPredictionSaved?.(match.id, h, a)}
+            onSaved={(doublesUsed, h, a) => { onPredictionSaved?.(match.id, h, a); setOpen(false) }}
             onCollapse={() => setOpen(false)}
           />
           <button
             onClick={() => navigate(`/matches/${match.id}?tab=challenges`)}
             style={{
-              width: "100%", marginTop: 6, padding: "7px 6px", borderRadius: 8,
-              fontSize: 12, fontWeight: 700, cursor: "pointer",
+              width: "100%", marginTop: 8, padding: "9px 6px", borderRadius: 8,
+              fontSize: 13, fontWeight: 700, cursor: "pointer",
               border: "1px solid rgba(168,85,247,0.3)",
               background: "rgba(168,85,247,0.08)", color: "#c4b5fd",
             }}
@@ -123,10 +129,10 @@ function UpcomingPredictRow({ match, prediction, onPredictionSaved, navigate }) 
             ⚔️ Challenge a friend
           </button>
           <button onClick={() => setOpen(false)} style={{
-            width: "100%", background: "none", border: "1px solid #2d2b55",
-            borderRadius: 8, padding: "5px", fontSize: 11, color: "#6b7280",
-            cursor: "pointer", marginTop: 4,
-          }}>Cancel</button>
+            width: "100%", background: "none", border: "none",
+            padding: "4px", fontSize: 10, color: "#4b5563",
+            cursor: "pointer", marginTop: 2,
+          }}>✕ close</button>
         </div>
       )}
     </div>
