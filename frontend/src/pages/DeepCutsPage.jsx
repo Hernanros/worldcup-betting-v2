@@ -15,6 +15,15 @@ const STAGE_LABELS = {
   tournament: "🏆 Tournament", group_stage: "🗓️ Group Stage", r32: "⚔️ Round of 32",
   r16: "🏟️ Round of 16", qf: "🥊 Quarter-Finals", sf: "🌟 Semi-Finals", final: "🏆 Final",
 }
+const STAGE_HEADLINE = {
+  tournament:  "How will this tournament play out?",
+  group_stage: "Who will dominate the group stage?",
+  r32:         "Will there be blood?",
+  r16:         "Where is the leak?",
+  qf:          "Supersubs to the rescue?",
+  sf:          "Will we finish on time?",
+  final:       "Goalfest?",
+}
 const STATUS_BADGE = {
   open:     { label: "Open",     color: "#1abc9c" },
   locked:   { label: "Locked",   color: "#e74c3c" },
@@ -132,7 +141,7 @@ export default function DeepCutsPage() {
       <div style={{ marginBottom: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div>
           <h2 style={{ margin: 0, fontSize: 22, fontWeight: 800, color: "#1abc9c" }}>
-            Deep Cuts
+            {STAGE_HEADLINE[activeStage] ?? "Deep Cuts"}
           </h2>
           <p style={{ margin: "2px 0 0", fontSize: 13, color: "#6b7280" }}>Bet beyond the score</p>
         </div>
