@@ -155,6 +155,13 @@ async def _run_migrations():
         ))
         await db.commit()
 
+        # challenges.addressee_id (targeted dares)
+        await db.execute(text(
+            "ALTER TABLE challenges ADD COLUMN IF NOT EXISTS "
+            "addressee_id INTEGER REFERENCES players(id)"
+        ))
+        await db.commit()
+
         # ── PHASE 2: DATA MIGRATIONS (ORM queries) ───────────────────────────
         # All columns exist now — autoflush is safe.
 
