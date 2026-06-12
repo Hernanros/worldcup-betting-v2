@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { api } from "../api.js"
 import TeamFlag from "./TeamFlag.jsx"
 import { ScorePicker } from "./InlinePrediction.jsx"
@@ -58,7 +59,7 @@ function MatchResult({ match }) {
 }
 
 /* ── Upcoming match row with inline predict ──────────────────── */
-function UpcomingPredictRow({ match, prediction, onPredictionSaved }) {
+function UpcomingPredictRow({ match, prediction, onPredictionSaved, navigate }) {
   const [open, setOpen] = useState(false)
   const hasPred = prediction != null
 
@@ -110,6 +111,17 @@ function UpcomingPredictRow({ match, prediction, onPredictionSaved }) {
             onSaved={(doublesUsed, h, a) => onPredictionSaved?.(match.id, h, a)}
             onCollapse={() => setOpen(false)}
           />
+          <button
+            onClick={() => navigate(`/matches/${match.id}?tab=challenges`)}
+            style={{
+              width: "100%", marginTop: 6, padding: "7px 6px", borderRadius: 8,
+              fontSize: 12, fontWeight: 700, cursor: "pointer",
+              border: "1px solid rgba(168,85,247,0.3)",
+              background: "rgba(168,85,247,0.08)", color: "#c4b5fd",
+            }}
+          >
+            ⚔️ Challenge a friend
+          </button>
           <button onClick={() => setOpen(false)} style={{
             width: "100%", background: "none", border: "1px solid #2d2b55",
             borderRadius: 8, padding: "5px", fontSize: 11, color: "#6b7280",
@@ -293,6 +305,7 @@ function MomentCard({ moment }) {
 }
 
 export default function DailyFeed({ predictions = {}, onPredictionSaved }) {
+  const navigate = useNavigate()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [tab, setTab] = useState("results") // "results" | "moments" | "scores"
@@ -420,6 +433,7 @@ export default function DailyFeed({ predictions = {}, onPredictionSaved }) {
                       match={m}
                       prediction={predictions[m.id]}
                       onPredictionSaved={onPredictionSaved}
+                      navigate={navigate}
                     />
                   ))
                 : data.matches.map(m => (

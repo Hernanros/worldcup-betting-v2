@@ -686,6 +686,17 @@ function MyTeamCard({ favoriteTeam, matches, onPickTeam, predictionsMap = {}, on
                 onSaved={(doublesUsed, h, a) => onPredictionSaved?.(teamNext.id, h, a)}
                 onCollapse={() => setShowPredict(false)}
               />
+              <button
+                onClick={() => navigate(`/matches/${teamNext.id}?tab=challenges`)}
+                style={{
+                  width: "100%", marginTop: 6, padding: "6px 4px", borderRadius: 7,
+                  fontSize: 11, fontWeight: 700, cursor: "pointer",
+                  border: "1px solid rgba(168,85,247,0.3)",
+                  background: "rgba(168,85,247,0.08)", color: "#c4b5fd",
+                }}
+              >
+                ⚔️ Challenge a friend
+              </button>
             </div>
           )}
         </div>
