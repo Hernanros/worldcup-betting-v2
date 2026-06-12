@@ -17,7 +17,6 @@ const POPULAR_PLAYERS = [
   "Kylian Mbappé",
   "Erling Haaland",
   "Vinicius Jr",
-  "Neymar Jr",
   "Harry Kane",
   "Mohamed Salah",
   "Son Heung-min",
@@ -31,9 +30,7 @@ const POPULAR_PLAYERS = [
   "Julián Álvarez",
   "Federico Valverde",
   "Darwin Núñez",
-  "Robert Lewandowski",
   "Alphonso Davies",
-  "Victor Osimhen",
   "Christian Pulisic",
   "Bruno Fernandes",
   "Bernardo Silva",
@@ -42,6 +39,9 @@ const POPULAR_PLAYERS = [
   "Sadio Mané",
   "Achraf Hakimi",
   "Rodri",
+  "Martin Ødegaard",
+  "Alexander Isak",
+  "Hakan Çalhanoğlu",
 ]
 
 export default function PlayerPickMarket({ market, onSelect, selected }) {

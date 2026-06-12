@@ -76,7 +76,7 @@ EXHAUSTED_PLAYER_LIST = sorted([
     "John Stones", "Harry Maguire", "Jordan Pickford",
 
     # ── GERMANY ──────────────────────────────────────────────────────────────
-    "Karim Adeyemi", "Rasmus Højlund", "Leroy Sané", "Serge Gnabry",
+    "Karim Adeyemi", "Leroy Sané", "Serge Gnabry",
     "Florian Wirtz", "Kai Havertz", "Thomas Müller",
     "Joshua Kimmich", "Leon Goretzka", "Ilkay Gündoğan",
     "Antonio Rüdiger", "Nico Schlotterbeck", "Marc-André ter Stegen",
@@ -108,10 +108,6 @@ EXHAUSTED_PLAYER_LIST = sorted([
     "Sadio Mané", "Idrissa Gueye", "Cheikhou Kouyaté",
     "Ismaïla Sarr", "Formose Mendy", "Edouard Mendy",
 
-    # ── NIGERIA ──────────────────────────────────────────────────────────────
-    "Victor Osimhen", "Alex Iwobi", "Ademola Lookman",
-    "Wilfred Ndidi", "Taiwo Awoniyi", "Samuel Chukwueze",
-
     # ── EGYPT ────────────────────────────────────────────────────────────────
     "Mohamed Salah", "Mohamed Elneny", "Mostafa Mohamed", "Trezeguet",
 
@@ -130,10 +126,6 @@ EXHAUSTED_PLAYER_LIST = sorted([
     # ── TURKEY ───────────────────────────────────────────────────────────────
     "Hakan Çalhanoğlu", "Arda Güler", "Kerem Aktürkoğlu",
     "Kenan Yıldız", "Baris Alper Yilmaz", "Zeki Çelik",
-
-    # ── UKRAINE ──────────────────────────────────────────────────────────────
-    "Andriy Yarmolenko", "Mykhailo Mudryk", "Viktor Tsygankov",
-    "Oleksandr Zinchenko", "Sergiy Sydorchuk", "Andriy Lunin",
 
     # ── SOUTH KOREA ──────────────────────────────────────────────────────────
     "Son Heung-min", "Lee Kang-in", "Hwang Hee-chan",
@@ -164,10 +156,6 @@ EXHAUSTED_PLAYER_LIST = sorted([
     "Moisés Caicedo", "Enner Valencia", "Jeremy Sarmiento",
     "Ángel Mena", "Piero Hincapié",
 
-    # ── POLAND ───────────────────────────────────────────────────────────────
-    "Robert Lewandowski", "Piotr Zieliński", "Sebastian Szymański",
-    "Arkadiusz Milik", "Wojciech Szczęsny", "Jan Bednarek",
-
     # ── SWITZERLAND ──────────────────────────────────────────────────────────
     "Granit Xhaka", "Xherdan Shaqiri", "Breel Embolo",
     "Remo Freuler", "Yann Sommer", "Manuel Akanji",
@@ -175,10 +163,6 @@ EXHAUSTED_PLAYER_LIST = sorted([
     # ── AUSTRALIA ────────────────────────────────────────────────────────────
     "Mathew Leckie", "Ajdin Hrustic", "Aaron Mooy",
     "Mitchell Duke", "Aziz Behich", "Mat Ryan",
-
-    # ── CHILE ────────────────────────────────────────────────────────────────
-    "Alexis Sánchez", "Ben Brereton Díaz", "Gary Medel",
-    "Arturo Vidal", "Charles Aránguiz",
 
     # ── PARAGUAY ─────────────────────────────────────────────────────────────
     "Miguel Almirón", "Antonio Sanabria", "Ángel Romero",
@@ -267,13 +251,6 @@ EXHAUSTED_PLAYER_LIST = sorted([
     "Rolando Blackburn", "José Fajardo", "Adalberto Carrasquilla",
     "Cecilio Waterman", "Roderick Miller",
 
-    # ── GHANA ────────────────────────────────────────────────────────────────
-    "Mohammed Kudus", "Thomas Partey", "André Ayew",
-    "Jordan Ayew", "Antoine Semenyo", "Lawrence Ati-Zigi",
-
-    # ── CROATIA ──────────────────────────────────────────────────────────────
-    "Luka Modrić", "Mateo Kovačić", "Joško Gvardiol",
-    "Andrej Kramarić", "Bruno Petković", "Dominik Livaković",
 ])
 
 

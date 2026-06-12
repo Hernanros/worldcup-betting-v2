@@ -14,6 +14,7 @@ TOURNAMENT_LOCK_TIME = datetime(2026, 6, 15, 23, 59, 0, tzinfo=timezone.utc)
 
 # Winner odds from The Odds API (fetched 2026-05-24, best price across bookmakers)
 WINNER_ODDS = [
+    # Group A
     {"name": "Spain",                 "odds": 5.5},
     {"name": "France",                "odds": 5.5},
     {"name": "England",               "odds": 7.0},
@@ -43,23 +44,26 @@ WINNER_ODDS = [
     {"name": "South Korea",           "odds": 301.0},
     {"name": "Egypt",                 "odds": 301.0},
     {"name": "Algeria",               "odds": 301.0},
-    {"name": "Italy",                 "odds": 460.0},
     {"name": "Australia",             "odds": 501.0},
     {"name": "Tunisia",               "odds": 501.0},
     {"name": "Iran",                  "odds": 501.0},
     {"name": "South Africa",          "odds": 501.0},
     {"name": "DR Congo",              "odds": 751.0},
     {"name": "New Zealand",           "odds": 1000.0},
-    {"name": "Poland",                "odds": 1000.0},
     {"name": "Saudi Arabia",          "odds": 1000.0},
-    {"name": "Bolivia",               "odds": 1000.0},
-    {"name": "Jamaica",               "odds": 1000.0},
     {"name": "Panama",                "odds": 1000.0},
-    {"name": "Honduras",              "odds": 1000.0},
-    {"name": "El Salvador",           "odds": 1000.0},
-    {"name": "Venezuela",             "odds": 1000.0},
-    {"name": "Slovenia",              "odds": 1000.0},
-    {"name": "Nigeria",               "odds": 1000.0},
+    # WC 2026 teams at longshot odds
+    {"name": "Sweden",                "odds": 1000.0},
+    {"name": "Scotland",              "odds": 1000.0},
+    {"name": "Austria",               "odds": 1000.0},
+    {"name": "Bosnia-Herzegovina",    "odds": 1000.0},
+    {"name": "Qatar",                 "odds": 1000.0},
+    {"name": "Haiti",                 "odds": 1000.0},
+    {"name": "Curaçao",               "odds": 1000.0},
+    {"name": "Cape Verde",            "odds": 1000.0},
+    {"name": "Iraq",                  "odds": 1000.0},
+    {"name": "Jordan",                "odds": 1000.0},
+    {"name": "Uzbekistan",            "odds": 1000.0},
 ]
 
 # Golden Boot player odds — sourced from bookmaker markets (2026-05-24).
