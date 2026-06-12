@@ -512,35 +512,6 @@ function NextMatchHero({ match, navigate, myPrediction, onPredictionSaved }) {
   )
 }
 
-/* ── Challenge a friend card ────────────────────────────── */
-function ChallengeFriendCard({ matches, navigate }) {
-  const upcoming = matches.filter(m => m.status === "upcoming").slice(0, 3)
-  if (!upcoming.length) return null
-  return (
-    <div style={{ background: "#13131f", border: "1px solid #2d2b55", borderRadius: 14,
-      padding: "14px 14px 10px", marginBottom: 14 }}>
-      <div style={{ color: "#a78bfa", fontSize: 10, fontWeight: 700, textTransform: "uppercase",
-        letterSpacing: 0.8, marginBottom: 10 }}>⚔️ Challenge a friend</div>
-      {upcoming.map(m => (
-        <button key={m.id} onClick={() => navigate(`/matches/${m.id}?tab=challenges`)} style={{
-          width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between",
-          background: "rgba(168,85,247,0.04)", border: "1px solid #2d2b55", borderRadius: 10,
-          padding: "10px 12px", cursor: "pointer", marginBottom: 6,
-        }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            {flagImg(m.home_team, 22)}
-            <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>{m.home_team}</span>
-            <span style={{ color: "#4b5563", fontSize: 11 }}>vs</span>
-            <span style={{ color: "#e2e8f0", fontSize: 13, fontWeight: 700 }}>{m.away_team}</span>
-            {flagImg(m.away_team, 22)}
-          </div>
-          <span style={{ color: "#a78bfa", fontSize: 12, fontWeight: 700, flexShrink: 0, marginLeft: 8 }}>Dare →</span>
-        </button>
-      ))}
-    </div>
-  )
-}
-
 /* ── Team picker modal ──────────────────────────────────── */
 function TeamPickerModal({ onPick, onClose, saving }) {
   useEffect(() => {
@@ -886,8 +857,6 @@ export default function HomePage() {
             {/* My open dares */}
             {!loading && <MyOpenDares dares={openChallenges.my_open} onCancel={cancelDare} />}
 
-            {/* Challenge a friend */}
-            {!loading && <ChallengeFriendCard matches={matches} navigate={navigate} />}
           </>
         )}
 
